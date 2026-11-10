@@ -25,6 +25,8 @@ Stack: Vite, React 18, TypeScript, three.js com @react-three/fiber, drei e postp
 
 No modo apresentação, `→` (ou o clicker, que envia PageDown) segue para o próximo aparelho quando as partes acabam. Sem ele, as setas dão a volta nas partes do mesmo aparelho.
 
+As micro-animações que abrem ou tiram algo (tampa do fotossensor, tampa do controle, bateria da sirene, sirene fora do suporte) ficam abertas até o botão de desfazer do card ("Fechar", "Recolocar", "Encaixar"), que volta pelo mesmo caminho.
+
 `?hq` na URL mantém o reflexo e o pós-processamento completos mesmo que o FPS caia.
 
 ## Onde fica cada coisa
@@ -57,4 +59,4 @@ A lista de partes de cada aparelho, com primitivas, proporções e materiais, es
 
 - Modelo da bateria do controle remoto.
 - Destino do QR Code do verso da placa. O que aparece no demo é ilustrativo e não codifica nada.
-- Posição exata do LED de status no Módulo e do tamper na Sirene. As fotos não mostram os dois com clareza; o demo usa uma posição plausível.
+- Botão 190 do Módulo: o demo mostra o LED como o cristal na face, perto da borda da frente, e o botão como o ponto no centro desse cristal. Falta confirmar se o botão é só o ponto central ou o cristal inteiro.

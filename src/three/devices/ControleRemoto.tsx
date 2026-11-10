@@ -10,7 +10,7 @@ import { iconTexture, type IconId } from '../common/textures'
 import { latheZ, ringSectorGeometry, stadiumGeometry } from '../common/shapes'
 import { DeviceCtx, bump, seg, useActionPhase, type DeviceProps } from '../common/util'
 import type { ActionId } from '../../data/devices'
-import { actionTime, useShowroom, type ArmState } from '../../store/showroomStore'
+import { actionTau, actionTime, useShowroom, type ArmState } from '../../store/showroomStore'
 import { RadioPulse } from '../fx/RadioPulse'
 import { HoldRing } from '../fx/HoldRing'
 import { MiniModulo } from '../fx/MiniModulo'
@@ -29,7 +29,7 @@ const cmdTime = () => { for (const c of CMD) { const t = actionTime(c); if (t >=
 
 /** Controle remoto: chaveiro redondo preto fosco com filete azul, 4 botões em cruz e argola. Frente em +Z. */
 export function ControleRemoto({ interactive = false, pressed }: DeviceProps & { pressed?: () => string | null }) {
-  const body = useMemo(() => latheZ([[0.001, -0.17], [0.8, -0.17], [0.875, -0.12], [0.9, 0], [0.875, 0.12], [0.8, 0.17], [0.001, 0.17]]), [])
+  const body = useMemo(() => latheZ([[0.68, -0.17], [0.8, -0.17], [0.875, -0.12], [0.9, 0], [0.875, 0.12], [0.8, 0.17], [0.001, 0.17]]), [])
   const sector = useMemo(() => ringSectorGeometry(0.34, 0.7, -38 * D2R, 38 * D2R, 0.03, 0.012), [])
   const tail = useMemo(() => {
     const s = new THREE.Shape()
@@ -38,9 +38,14 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
     g.translate(0, 0, -0.1)
     return g
   }, [])
+  // corpo oco atrás (a tampa fecha a abertura), por isso o material tem dois lados
+  const shellMat = useMemo(() => { const m = M.black.clone(); m.side = THREE.DoubleSide; return m }, [])
+  const coinMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#dfe2e8', roughness: 0.35, metalness: 0.55 }), [])
+  const coverMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#3b3e46', roughness: 0.6 }), [])
   const slit = useMemo(() => stadiumGeometry(0.22, 0.045, 0.01, 0.003), [])
   const icons = useMemo(() => BUTTONS.map((b) => new THREE.MeshBasicMaterial({ map: iconTexture(b.icon), transparent: true, toneMapped: false })), [])
   const btnRefs = useRef<(THREE.Group | null)[]>([])
+  const root = useRef<THREE.Group>(null!)
   const cover = useRef<THREE.Group>(null!)
   const coin = useRef<THREE.Group>(null!)
   const range = useRef<THREE.Mesh>(null!)
@@ -48,6 +53,7 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
   const cmdPhase = useActionPhase(CMD, [0, 1.5])
   const panicOn = useActionPhase('panico') >= 0
   const rangePhase = useActionPhase('alcance', [1.2])
+  const coverPhase = useActionPhase('tampa-controle', [0.8, 1.6], true)
   const tx = () => {
     if (!interactive) return !!pressed?.()
     const t = cmdTime(), s = useShowroom.getState()
@@ -77,11 +83,15 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
       g.position.z = -down * 0.022
     })
     if (!interactive) return
-    const tt = actionTime('tampa-controle')
-    const open = tt < 0 ? 0 : bump(tt, 0, 1.1, 4.7, 5.8)
-    cover.current.rotation.x = -open * 1.2
-    cover.current.position.z = -open * 0.25
-    coin.current.position.z = -(tt < 0 ? 0 : bump(tt, 1.2, 2.3, 3.6, 4.6)) * 0.55
+    // tampa: o controle vira de costas, a tampa inclina ~25° pela borda de cima e sai para trás;
+    // por fim a bateria-moeda desliza para fora do suporte
+    const tt = actionTau('tampa-controle')
+    root.current.rotation.y = tt < 0 ? 0 : seg(tt, 0, 0.8) * Math.PI
+    const off = tt < 0 ? 0 : seg(tt, 2.0, 2.7)
+    cover.current.rotation.x = -(tt < 0 ? 0 : seg(tt, 1.5, 2.0)) * 0.44
+    cover.current.position.set(0, -off * 0.25, -off * 0.7)
+    const slide = tt < 0 ? 0 : seg(tt, 2.9, 3.6)
+    coin.current.position.set(0, slide * 0.62, -slide * 0.08)
     const ta = actionTime('alcance')
     const k = ta < 0 ? 0 : seg(ta, 0.2, 2.6)
     range.current.scale.setScalar(0.2 + k * 5.2)
@@ -90,9 +100,10 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
 
   return (
     <DeviceCtx.Provider value={{ deviceId: 'controle', interactive }}>
-      <group position={[0, 0.1, 0]}>
+      <group ref={root} position={[0, 0.1, 0]}>
         <ClickablePart id="corpo">
-          <mesh geometry={body} material={M.black} castShadow />
+          <mesh geometry={body} material={shellMat} castShadow />
+          <mesh material={M.black} position={[0, 0, -0.03]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.7, 0.7, 0.02, 48]} /></mesh>
           <mesh geometry={tail} material={M.black} castShadow />
           <mesh material={M.blueGlow}><torusGeometry args={[0.895, 0.028, 12, 96]} /></mesh>
           <mesh material={M.blackGloss} position={[0, 0, 0.171]}><ringGeometry args={[0.72, 0.8, 64]} /></mesh>
@@ -127,23 +138,34 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
         </ClickablePart>
 
         {/* traseira e interior */}
+        {/* tampa traseira lisa, com o entalhe no topo e um símbolo em baixo-relevo; levanta pela borda de cima */}
         <ClickablePart id="tampa">
-          <group position={[0, 0.66, -0.175]}>
+          <group position={[0, -0.66, -0.175]}>
             <group ref={cover}>
-              <mesh material={M.greyDark} position={[0, -0.66, 0]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.68, 0.68, 0.025, 56]} /></mesh>
-              <mesh material={M.hole} position={[0, -0.06, -0.006]}><boxGeometry args={[0.2, 0.06, 0.02]} /></mesh>
+              <mesh material={coverMat} position={[0, 0.66, 0]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.68, 0.68, 0.025, 56]} /></mesh>
+              <mesh material={M.hole} position={[0, 1.26, -0.006]}><boxGeometry args={[0.2, 0.07, 0.02]} /></mesh>
+              <mesh material={M.black} position={[0, 0.95, -0.014]} rotation={[Math.PI / 2, Math.PI / 6, 0]}><cylinderGeometry args={[0.07, 0.07, 0.006, 3]} /></mesh>
+              <mesh material={M.black} position={[0, 0.82, -0.014]}><boxGeometry args={[0.2, 0.035, 0.006]} /></mesh>
             </group>
           </group>
         </ClickablePart>
+        {/* placa verde com o suporte metálico dourado e a etiqueta (lisa, sem texto) */}
         <ClickablePart internal>
           <mesh material={M.pcb} position={[0, 0, -0.06]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.62, 0.62, 0.02, 48]} /></mesh>
-          <mesh material={M.gold} position={[0, 0, -0.085]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.46, 0.46, 0.03, 40, 1, true]} /></mesh>
+          <mesh material={M.gold} position={[0, -0.05, -0.085]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.46, 0.46, 0.03, 40, 1, true, 2.2, 5.0]} /></mesh>
+          <mesh material={M.gold} position={[0, -0.05, -0.145]}><boxGeometry args={[0.18, 0.5, 0.008]} /></mesh>
+          <mesh material={M.white} position={[0, -0.5, -0.072]}><boxGeometry args={[0.5, 0.1, 0.004]} /></mesh>
         </ClickablePart>
         <ClickablePart id="bateria">
           <group ref={coin}>
-            <mesh material={M.metal} position={[0, 0, -0.11]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.42, 0.42, 0.06, 48]} /></mesh>
+            <mesh material={coinMat} position={[0, -0.05, -0.11]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.42, 0.42, 0.06, 48]} /></mesh>
           </group>
         </ClickablePart>
+        {interactive && coverPhase === 0 && (
+          <Html position={[0, 0.78, -0.2]} center style={{ pointerEvents: 'none' }}>
+            <div className="fx-tag -translate-y-7 text-center text-xs font-semibold text-accent">entalhe<div className="text-xl leading-none">▼</div></div>
+          </Html>
+        )}
       </group>
 
       {interactive && (

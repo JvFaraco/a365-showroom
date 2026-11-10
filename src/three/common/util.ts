@@ -1,7 +1,7 @@
 import { createContext, useContext, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { ActionId, DeviceId } from '../../data/devices'
-import { actionTime } from '../../store/showroomStore'
+import { actionTau, actionTime } from '../../store/showroomStore'
 
 export type DeviceProps = {
   /** false nas cenas de kit/rede/ação: sem hover, sem clique por parte, sem micro-animações */
@@ -31,12 +31,12 @@ export const reducedMotion = () =>
  * Fase atual de uma micro-animação: -1 se inativa, senão o índice do último marco (s) já passado.
  * Só re-renderiza quando a fase muda.
  */
-export function useActionPhase(id: ActionId | ActionId[], marks: number[] = [0]): number {
+export function useActionPhase(id: ActionId | ActionId[], marks: number[] = [0], tau = false): number {
   const [phase, setPhase] = useState(-1)
   const cur = useRef(-1)
   useFrame(() => {
     let t = -1
-    if (Array.isArray(id)) { for (const i of id) { t = actionTime(i); if (t >= 0) break } } else t = actionTime(id)
+    if (Array.isArray(id)) { for (const i of id) { t = actionTime(i); if (t >= 0) break } } else t = tau ? actionTau(id) : actionTime(id)
     let p = -1
     if (t >= 0) for (let i = 0; i < marks.length; i++) if (t >= marks[i]) p = i
     if (p !== cur.current) { cur.current = p; setPhase(p) }

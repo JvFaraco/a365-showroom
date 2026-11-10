@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { DEVICES, DEVICE_BY_ID, getPart, hasInternal, type ActionId, type DeviceId } from '../data/devices'
 import { ARM_TO_LED, type LedStateId } from '../data/ledStates'
+import { ACTIONS } from '../data/actions'
 
 export type Scene = 'intro' | 'showroom' | 'network' | 'inaction' | 'outro'
 export type View = 'normal' | 'exploded' | 'xray' | 'manual'
@@ -17,7 +18,7 @@ type State = {
   tour: boolean
   armState: ArmState
   ledState: LedStateId
-  action: { id: ActionId; t0: number } | null
+  action: { id: ActionId; t0: number; undoAt?: number } | null
   hold: number // 0..1 progresso do botão segurado (190 / pânico)
   holding: boolean
   holdMsg: '' | 'solte' | 'ok'
@@ -46,6 +47,7 @@ type State = {
   setLed: (l: LedStateId) => void
   startAction: (id: ActionId) => void
   stopAction: () => void
+  undoAction: () => void
   reset: () => void
   set: (p: Partial<State>) => void
 }
@@ -120,6 +122,7 @@ export const useShowroom = create<State>((set, get) => ({
   setLed: (ledState) => set({ ledState }),
   startAction: (id) => set({ ...clean, sirenOn: id === 'som', action: { id, t0: now() } }),
   stopAction: () => set({ ...clean }),
+  undoAction: () => { const a = get().action; if (a && !a.undoAt) set({ action: { ...a, undoAt: now() } }) },
   reset: () =>
     set((s) => ({
       scene: 'showroom', part: null, hovered: null, view: 'normal', tour: false,
@@ -131,6 +134,20 @@ export const useShowroom = create<State>((set, get) => ({
 export function actionTime(id: ActionId): number {
   const a = useShowroom.getState().action
   return a && a.id === id ? now() - a.t0 : -1
+}
+
+export const UNDO_SPEED = 1.4
+
+/**
+ * Progresso (s) de uma ação com estado: avança até `hold` e fica aberta; depois do
+ * "desfazer", volta pelo mesmo caminho até 0. -1 se a ação não estiver ativa.
+ */
+export function actionTau(id: ActionId): number {
+  const a = useShowroom.getState().action
+  if (!a || a.id !== id) return -1
+  const hold = ACTIONS[id].hold ?? Infinity
+  const fwd = Math.min((a.undoAt ?? now()) - a.t0, hold)
+  return a.undoAt ? Math.max(0, fwd - (now() - a.undoAt) * UNDO_SPEED) : fwd
 }
 
 // acesso pelo console / testes automatizados

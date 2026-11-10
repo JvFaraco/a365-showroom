@@ -7,9 +7,9 @@ export type LedOut = { color: string; on: number }
 /**
  * LED emissivo (com bloom). `sample` é chamado a cada frame e preenche cor + intensidade (0..1).
  */
-export function Led({ sample, children, boost = 3.2, ...props }: { sample: (t: number, out: LedOut) => void; children: ReactNode; boost?: number } & JSX.IntrinsicElements['mesh']) {
+export function Led({ sample, children, boost = 3.2, baseColor = '#111318', ...props }: { sample: (t: number, out: LedOut) => void; children?: ReactNode; boost?: number; baseColor?: string } & JSX.IntrinsicElements['mesh']) {
   const mesh = useRef<THREE.Mesh>(null!)
-  const mat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#111318', emissive: '#000000', roughness: 0.3, toneMapped: false }), [])
+  const mat = useMemo(() => new THREE.MeshStandardMaterial({ color: baseColor, emissive: '#000000', roughness: 0.3, toneMapped: false }), [baseColor])
   const out = useRef<LedOut>({ color: '#000000', on: 0 })
   const last = useRef('')
   useFrame(({ clock }) => {

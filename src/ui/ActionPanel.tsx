@@ -146,7 +146,12 @@ export function ActionPanel() {
           </button>
         </div>
       )}
-      {a.duration && (
+      {a.undo && (
+        <button className="btn btn-primary w-full" disabled={!!action.undoAt} onClick={() => { beep('click'); useShowroom.getState().undoAction() }}>
+          {action.undoAt ? `${a.undo}…` : a.undo}
+        </button>
+      )}
+      {a.duration && !a.undo && (
         <div className="h-1 overflow-hidden rounded-full bg-white/10" aria-hidden>
           <div key={action.t0} className="h-full bg-accent" style={{ animation: `action-bar ${a.duration}s linear forwards` }} />
         </div>

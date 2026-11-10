@@ -29,3 +29,4 @@ canvas { touch-action: none; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.15s !important; }
 }
 @keyframes action-bar { from { width: 0; } to { width: 100%; } }
+@keyframes blink { 50% { opacity: 0.15; } }

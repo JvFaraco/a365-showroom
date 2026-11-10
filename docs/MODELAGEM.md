@@ -9,17 +9,19 @@ Materiais: plástico branco acetinado (`white`), branco em relevo (`whiteRelief`
 | part.id | Como é modelada |
 |---|---|
 | `tampa` | `LatheGeometry` em cúpula, com os vértices escalados para a face cair para a frente; logo em relevo. Branco. |
-| `botao-sos` | Dois cilindros achatados em oval e um ponto central escuro, perto da borda da frente. |
-| `led` | Barra emissiva na borda frontal da tampa. |
-| `antena` | Conector dourado com anéis de rosca, cotovelo esférico e pá em `RoundedBox`, saindo da traseira. |
-| `aletas` | Saia cônica cinza e 52 aletas em `InstancedMesh`. O fundo cinza e os pés acompanham esta parte. |
+| `led` | Cristal de cantos redondos na face, perto da borda da frente, com moldura em relevo. Emissivo: é ele que acende com a cor do estado. |
+| `botao-sos` | Ponto oval escuro no centro do cristal. |
+| `antena` | Conector dourado com anéis de rosca, cotovelo esférico e pá em `RoundedBox`. Sai da base cinza, não da cúpula. |
+| `aletas` | Saia cônica cinza e 52 aletas em `InstancedMesh`. O fundo cinza, as duas pecinhas e a etiqueta lisa acompanham esta parte. |
 | `alto-falante` | Disco com textura de grade de furos e furo do microfone, no fundo. |
 | `ethernet` | Rebaixo escuro com a porta e os contatos dourados, no fundo. |
 | `fonte` | Conector redondo com pino central, no fundo. |
 | `placa-principal` (i) | Disco verde com chips e blindagens. |
-| `ventoinha` (i) | Moldura cilíndrica e rotor de 7 pás, que gira. |
+| `ventoinha` (i) | Moldura quadrada e rotor de 7 pás, que gira. Fica perto da saída da antena. |
 | `chip-4g` (i) | Slot metálico com o chip encaixado. |
-| `bateria` (i) | Bloco em `RoundedBox` com etiqueta e cabo vermelho e preto. |
+| `bateria` (i) | Bloco em `RoundedBox` com etiqueta e cabo vermelho e preto, sobre a placa. |
+
+Vista explodida em três camadas: a cúpula branca sobe mais; a placa verde (com ventoinha, slot do chip e bateria) sobe menos; a base cinza fica parada, com a antena, o alto-falante, a Ethernet e a fonte.
 
 ## Fotossensor (0,8 × 1,95 × 0,5, frente em +Z)
 
@@ -47,15 +49,19 @@ Materiais: plástico branco acetinado (`white`), branco em relevo (`whiteRelief`
 
 ## Sirene (raio 1, face em +Z)
 
+A traseira é uma placa branca plana, sem tampa extra: é o suporte que cobre essa face. Por isso bateria, placa, elemento sonoro e tamper ficam na traseira e são partes internas.
+
 | part.id | Como é modelada |
 |---|---|
-| `corpo` | Cúpula baixa em `LatheGeometry` com face plana, logo em relevo e aba superior. |
-| `led` | Fenda perto da borda da face. |
-| `suporte` | Disco de parede com nervuras em cruz, furo central e parafusos. |
-| `tamper` | Chave pequena com pino metálico, na traseira. |
-| `elemento-sonoro` (i) | Cilindro central com anéis concêntricos. |
-| `bateria` (i) | Cilindro preto deitado, com rótulo laranja, no berço. |
-| `placa` (i) | Placa verde pequena, com conector e cabo vermelho e preto. |
+| `corpo` | Cúpula baixa em `LatheGeometry` com face plana e logo em relevo. |
+| `led` | Fenda na borda de baixo da face, virada para o chão. |
+| `suporte` | Prato de parede: aro em `LatheGeometry`, fundo extrudado com furo grande e recortes, canal vertical, abas da baioneta e parafusos. |
+| `tamper` (i) | Alavanca de gatilho numa guia em U, na traseira. O suporte a mantém pressionada; ela salta quando a sirene sai do suporte. |
+| `elemento-sonoro` (i) | Círculo em relevo com anéis concêntricos na traseira, e a câmara cilíndrica por dentro. |
+| `bateria` (i) | Cilindro preto deitado, com etiqueta laranja, num nicho no alto da traseira, preso por uma trava. |
+| `placa` (i) | Plaquinha verde ao lado da bateria, com conector branco de 2 fios (vermelho e preto). |
+
+A traseira também tem os furos quadrados e os ganchos em "L" do encaixe, e a etiqueta como um retângulo liso.
 
 ## Controle Remoto (raio 0,9, frente em +Z)
 
@@ -66,8 +72,8 @@ Materiais: plástico branco acetinado (`white`), branco em relevo (`whiteRelief`
 | `led` | Fenda no topo. |
 | `corpo` | Disco de borda arredondada em `LatheGeometry`, preto fosco, com o filete azul em toro e a cauda em gota. |
 | `argola` | Toro preto com filete azul. |
-| `tampa` | Disco traseiro com o encaixe no topo. |
-| `bateria` (i) | Bateria-moeda metálica sobre a placa verde e o suporte. |
+| `tampa` | Disco traseiro liso, com o entalhe no topo e um símbolo em relevo. Levanta pela borda de cima. |
+| `bateria` (i) | Bateria-moeda no suporte metálico dourado, sobre a placa verde (com a etiqueta como retângulo liso). |
 
 ## Placa de aviso (1,5 × 2,0)
 

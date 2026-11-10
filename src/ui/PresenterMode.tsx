@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { ACTIONS } from '../data/actions'
 import { DEVICES } from '../data/devices'
-import { useShowroom } from '../store/showroomStore'
+import { UNDO_SPEED, useShowroom } from '../store/showroomStore'
 import { setSiren } from './audio'
 
 const TOUR_SECONDS = 5
@@ -73,10 +73,12 @@ export function PresenterMode() {
     return () => clearTimeout(t)
   }, [tour, part, device, action])
 
-  // micro-animações com duração fixa terminam sozinhas
+  // micro-animações com duração fixa terminam sozinhas; as com estado, quando o "desfazer" termina
   useEffect(() => {
-    const d = action ? ACTIONS[action.id].duration : undefined
-    if (!action || !d) return
+    if (!action) return
+    const cfg = ACTIONS[action.id]
+    const d = action.undoAt ? Math.min(action.undoAt - action.t0, cfg.hold ?? 0) / UNDO_SPEED + 0.15 : cfg.undo ? undefined : cfg.duration
+    if (!d) return
     const t = setTimeout(() => { if (useShowroom.getState().action === action) useShowroom.getState().stopAction() }, d * 1000)
     return () => clearTimeout(t)
   }, [action])

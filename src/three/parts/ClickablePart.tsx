@@ -65,7 +65,7 @@ export function ClickablePart({ id, follow, internal: internalProp, children }: 
       // durante uma micro-animação o aparelho inteiro volta a aparecer (salvo as que mostram o interior)
       const showAll = !!s.action && !ACTIONS[s.action.id].keepDim
       if (s.part && !showAll) { sel = !!id && s.part === id; target = sel ? 1 : 0.1 }
-      else if (s.view === 'xray' && !internal) target = 0.16
+      else if (s.view === 'xray' && !internal && !showAll) target = 0.16
     }
     const f = fade.current
     easing.damp(f, 'v', target, 0.18, dt)

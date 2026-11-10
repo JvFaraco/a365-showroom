@@ -7,6 +7,7 @@ import { M, fxBasic } from '../common/materials'
 import { LogoRelief } from '../common/Logo'
 import { Led } from '../common/Led'
 import { grilleTexture } from '../common/textures'
+import { roundedRectGeometry } from '../common/shapes'
 import { DeviceCtx, bump, seg, useActionPhase, type DeviceProps } from '../common/util'
 import { LED_BY_ID, ledSample } from '../../data/ledStates'
 import { actionTime, useShowroom } from '../../store/showroomStore'
@@ -42,6 +43,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
   const cable = useMemo(() => new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
     new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.5, -0.02, -0.1), new THREE.Vector3(1.3, -0.02, 0.2), new THREE.Vector3(2.4, -0.02, 0.1),
   ]), 24, 0.03, 8), [])
+  const bezel = useMemo(() => roundedRectGeometry(0.3, 0.25, 0.085, 0.02, 0.006), [])
+  const crystal = useMemo(() => roundedRectGeometry(0.25, 0.2, 0.07, 0.02, 0.008), [])
   const cableMat = useMemo(() => fxBasic('#2a2d35'), [])
   const fins = useRef<THREE.InstancedMesh>(null!)
   const finsReady = useRef(false)
@@ -98,30 +101,28 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         <LogoRelief r={0.3} position={[0, 0.3, -0.05]} rotation={[-Math.PI / 2 + 0.09, 0, 0]} />
       </ClickablePart>
 
+      {/* cristal na face, perto da borda da frente: é o LED de status; no centro dele fica o botão 190 */}
+      <ClickablePart id="led">
+        <group position={[0, 0.232, 0.68]} rotation={[0.16, 0, 0]}>
+          <mesh geometry={bezel} material={M.whiteRelief} rotation={[-Math.PI / 2, 0, 0]} />
+          <Led sample={sampleLed} baseColor="#e6ebf5" boost={2.2} geometry={crystal} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]} />
+        </group>
+      </ClickablePart>
       <ClickablePart id="botao-sos">
         <group position={[0, 0.232, 0.68]} rotation={[0.16, 0, 0]}>
           <group ref={button}
             onPointerDown={(e) => { if (sosActive) { e.stopPropagation(); useShowroom.getState().set({ holding: true, holdMsg: '' }) } }}
             onPointerUp={() => sosActive && useShowroom.getState().set({ holding: false })}
             onPointerLeave={() => sosActive && useShowroom.getState().set({ holding: false })}>
-            <mesh material={M.whiteRelief} scale={[1.55, 1, 1]}><cylinderGeometry args={[0.075, 0.08, 0.03, 40]} /></mesh>
-            <mesh material={M.white} scale={[1.55, 1, 1]} position={[0, 0.012, 0]}><cylinderGeometry args={[0.06, 0.06, 0.02, 40]} /></mesh>
-            <mesh material={M.greyDark} position={[0, 0.024, 0]}><cylinderGeometry args={[0.022, 0.022, 0.006, 20]} /></mesh>
+            <mesh material={M.blackGloss} scale={[0.75, 1, 1.25]} position={[0, 0.03, 0]}><cylinderGeometry args={[0.03, 0.03, 0.012, 24]} /></mesh>
           </group>
-          {interactive && <HoldRing radius={0.19} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} />}
+          {interactive && <HoldRing radius={0.2} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]} />}
         </group>
-      </ClickablePart>
-
-      <ClickablePart id="led">
-        <mesh material={M.whiteRelief} position={[0, 0.062, 1.008]} rotation={[-0.12, 0, 0]}><boxGeometry args={[0.3, 0.05, 0.02]} /></mesh>
-        <Led sample={sampleLed} position={[0, 0.062, 1.016]} rotation={[-0.12, 0, 0]}>
-          <boxGeometry args={[0.24, 0.024, 0.016]} />
-        </Led>
       </ClickablePart>
 
       {/* ---------- antena tipo pá, com conector rosqueado ---------- */}
       <ClickablePart id="antena">
-        <group position={[0, 0.03, -0.96]}>
+        <group position={[0, -0.12, -0.84]}>
           <mesh material={M.gold} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.03]}><cylinderGeometry args={[0.05, 0.05, 0.08, 16]} /></mesh>
           <group ref={antenna}>
             {[0, 1, 2, 3].map((i) => (
@@ -146,9 +147,11 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
       </ClickablePart>
       <ClickablePart follow="aletas">
         <mesh material={M.grey} position={[0, -0.365, 0]}><cylinderGeometry args={[0.8, 0.78, 0.05, 64]} /></mesh>
-        {[[0.55, 0.55], [-0.55, 0.55], [0.55, -0.4], [-0.55, -0.4]].map(([x, z], i) => (
+        {/* as duas pecinhas do fundo e a etiqueta (lisa, sem texto) */}
+        {[[0.58, 0.2], [-0.58, 0.2]].map(([x, z], i) => (
           <mesh key={i} material={M.greyDark} position={[x, -0.395, z]}><cylinderGeometry args={[0.06, 0.06, 0.02, 16]} /></mesh>
         ))}
+        <mesh material={M.white} position={[0, -0.3915, -0.18]}><boxGeometry args={[0.34, 0.004, 0.2]} /></mesh>
       </ClickablePart>
 
       <ClickablePart id="alto-falante">
@@ -167,26 +170,29 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         <mesh material={M.gold} position={[0.3, -0.405, -0.55]}><cylinderGeometry args={[0.014, 0.014, 0.012, 10]} /></mesh>
       </ClickablePart>
 
-      {/* ---------- interior ---------- */}
+      {/* ---------- interior: uma camada só, a placa verde com ventoinha, slot do chip e bateria ---------- */}
       <ClickablePart id="placa-principal">
         <mesh material={M.pcb} position={[0, -0.08, 0]}><cylinderGeometry args={[0.76, 0.76, 0.025, 48]} /></mesh>
-        <mesh material={M.metal} position={[0.05, -0.05, 0.28]}><boxGeometry args={[0.3, 0.035, 0.24]} /></mesh>
-        <mesh material={M.chip} position={[-0.3, -0.055, -0.25]}><boxGeometry args={[0.2, 0.025, 0.2]} /></mesh>
-        <mesh material={M.chip} position={[0.42, -0.055, 0.1]}><boxGeometry args={[0.12, 0.025, 0.16]} /></mesh>
-        <mesh material={M.metal} position={[-0.1, -0.05, -0.55]}><boxGeometry args={[0.16, 0.05, 0.12]} /></mesh>
-        {[[-0.55, 0.05], [-0.5, -0.05], [0.2, -0.1], [0.6, -0.2], [-0.1, 0.55]].map(([x, z], i) => (
+        <mesh material={M.metal} position={[0.08, -0.05, 0.3]}><boxGeometry args={[0.3, 0.035, 0.24]} /></mesh>
+        <mesh material={M.chip} position={[-0.52, -0.055, -0.28]}><boxGeometry args={[0.18, 0.025, 0.18]} /></mesh>
+        <mesh material={M.chip} position={[0.46, -0.055, 0.02]}><boxGeometry args={[0.12, 0.025, 0.16]} /></mesh>
+        <mesh material={M.metal} position={[-0.28, -0.05, -0.58]}><boxGeometry args={[0.16, 0.05, 0.12]} /></mesh>
+        {[[-0.6, 0.05], [-0.56, -0.08], [0.6, -0.2], [-0.1, 0.6], [0.36, 0.52]].map(([x, z], i) => (
           <mesh key={i} material={i % 2 ? M.chip : M.gold} position={[x, -0.058, z]}><boxGeometry args={[0.05, 0.02, 0.08]} /></mesh>
         ))}
       </ClickablePart>
+      {/* ventoinha quadrada, perto da saída da antena */}
       <ClickablePart id="ventoinha">
-        <group position={[0.32, -0.02, -0.32]}>
-          <mesh material={M.chip}><cylinderGeometry args={[0.2, 0.2, 0.07, 28, 1, true]} /></mesh>
-          <mesh material={M.chip} position={[0, -0.035, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.16, 0.2, 28]} /></mesh>
+        <group position={[0.2, -0.025, -0.48]}>
+          {[[0, 0.16, 0.36, 0.04], [0, -0.16, 0.36, 0.04], [0.16, 0, 0.04, 0.36], [-0.16, 0, 0.04, 0.36]].map(([x, z, w, d], i) => (
+            <mesh key={i} material={M.chip} position={[x, 0, z]}><boxGeometry args={[w, 0.08, d]} /></mesh>
+          ))}
+          <mesh material={M.chip} position={[0, -0.036, 0]}><boxGeometry args={[0.34, 0.008, 0.34]} /></mesh>
           <group ref={fan}>
-            <mesh material={M.black}><cylinderGeometry args={[0.065, 0.065, 0.06, 16]} /></mesh>
+            <mesh material={M.black}><cylinderGeometry args={[0.055, 0.055, 0.06, 16]} /></mesh>
             {Array.from({ length: 7 }, (_, i) => (
               <group key={i} rotation={[0, (i / 7) * Math.PI * 2, 0]}>
-                <mesh material={M.black} position={[0.115, 0, 0]} rotation={[0.5, 0, 0]}><boxGeometry args={[0.12, 0.008, 0.07]} /></mesh>
+                <mesh material={M.black} position={[0.095, 0, 0]} rotation={[0.5, 0, 0]}><boxGeometry args={[0.09, 0.008, 0.06]} /></mesh>
               </group>
             ))}
           </group>
@@ -200,10 +206,10 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         </group>
       </ClickablePart>
       <ClickablePart id="bateria">
-        <RoundedBox args={[0.74, 0.14, 0.42]} radius={0.03} smoothness={3} position={[0, -0.22, 0.05]} material={M.blue} />
-        <mesh material={M.yellow} position={[0, -0.148, 0.05]}><boxGeometry args={[0.4, 0.004, 0.2]} /></mesh>
-        <mesh material={M.red} position={[0.4, -0.18, 0.1]} rotation={[0, 0, 0.9]}><cylinderGeometry args={[0.012, 0.012, 0.2, 6]} /></mesh>
-        <mesh material={M.black} position={[0.4, -0.18, 0.02]} rotation={[0, 0, 0.9]}><cylinderGeometry args={[0.012, 0.012, 0.2, 6]} /></mesh>
+        <RoundedBox args={[0.44, 0.1, 0.28]} radius={0.025} smoothness={3} position={[-0.1, -0.017, -0.05]} material={M.blue} />
+        <mesh material={M.yellow} position={[-0.1, 0.034, -0.05]}><boxGeometry args={[0.26, 0.004, 0.14]} /></mesh>
+        <mesh material={M.red} position={[0.17, -0.04, -0.02]} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[0.01, 0.01, 0.12, 6]} /></mesh>
+        <mesh material={M.black} position={[0.17, -0.04, -0.07]} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[0.01, 0.01, 0.12, 6]} /></mesh>
       </ClickablePart>
 
       {/* ---------- efeitos das micro-animações ---------- */}

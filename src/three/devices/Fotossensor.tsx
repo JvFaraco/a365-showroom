@@ -9,7 +9,7 @@ import { Led } from '../common/Led'
 import { fresnelTexture, polaroidTexture } from '../common/textures'
 import { stadiumGeometry } from '../common/shapes'
 import { DeviceCtx, bump, seg, useActionPhase, type DeviceProps } from '../common/util'
-import { actionTime } from '../../store/showroomStore'
+import { actionTau, actionTime } from '../../store/showroomStore'
 import { DetectionFan, LowPolyDog, LowPolyPerson } from '../fx/DetectionFan'
 import { CameraFlash } from '../fx/CameraFlash'
 
@@ -60,10 +60,9 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
     tilt.current.rotation.x = Math.sin(ts * 0.8) * 0.12 * amp
     ruler.current.visible = ts >= 0
     // tampa traseira abre e as pilhas deslizam
-    const tt = actionTime('tampa-foto')
-    const open = tt < 0 ? 0 : bump(tt, 0, 1.2, 4.6, 5.8)
-    cover.current.rotation.x = open * 1.9
-    cells.current.position.z = -(tt < 0 ? 0 : bump(tt, 1.2, 2.4, 3.6, 4.6)) * 0.55
+    const tt = actionTau('tampa-foto')
+    cover.current.rotation.x = (tt < 0 ? 0 : seg(tt, 0, 0.8)) * 1.9
+    cells.current.position.z = -(tt < 0 ? 0 : seg(tt, 1.0, 1.8)) * 0.55
     // câmera: polaroid voa para fora
     const tc = actionTime('camera')
     const k = tc < 0 ? 0 : bump(tc, 0.9, 2.0, 6.3, 6.9)
