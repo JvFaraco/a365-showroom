@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; margin: 0; background: #05070f; overflow: hidden; }
+body { font-family: 'Encode Sans', system-ui, sans-serif; color: #e8ecf8; -webkit-font-smoothing: antialiased; }
+* { -webkit-tap-highlight-color: transparent; }
+canvas { touch-action: none; }
+
+@layer components {
+  .glass { @apply bg-[#0b1126]/80 backdrop-blur-md border border-white/10 shadow-xl shadow-black/40; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium font-body transition
+    border border-white/10 bg-white/5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent; }
+  .btn-on { @apply bg-brand-light border-brand-glow text-white hover:bg-brand-light; }
+  .btn-primary { @apply bg-accent text-ink font-semibold border-transparent hover:bg-yellow-300; }
+  .kbd { @apply rounded border border-white/20 bg-white/10 px-1.5 text-[11px] font-mono; }
+}
+
+/* modo apresentação: textos maiores */
+.presenter { font-size: 118%; }
+.presenter .part-card { font-size: 1.15rem; }
+
+.pin-label { font-family: 'Encode Sans', sans-serif; white-space: nowrap; pointer-events: auto; cursor: pointer; }
+.fx-tag { font-family: 'Poppins', sans-serif; white-space: nowrap; pointer-events: none; user-select: none; }
+
+@keyframes logo-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.15s !important; }
+}
+@keyframes action-bar { from { width: 0; } to { width: 100%; } }
