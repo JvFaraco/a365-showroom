@@ -1,6 +1,6 @@
 # Alarme 365 · Showroom 3D
 
-> **Licença:** esta pasta não está sob a licença MIT da raiz do repositório. Todos os direitos reservados. "Orsegups", "Alarme 365", o logo e o telefone são marcas e informações da Orsegups, usados só para apresentação. Veja [`LICENSE.md`](LICENSE.md).
+> **Licença:** todos os direitos reservados. "Orsegups", "Alarme 365", o logo e o telefone são marcas e informações da Orsegups, usados só para apresentação. Veja [`LICENSE.md`](LICENSE.md).
 
 Apresentação interativa em 3D dos 7 equipamentos do Alarme 365 (Orsegups). O público gira cada aparelho, clica numa parte, a câmera voa até ela e abre um card curto explicando o que é e para que serve.
 
@@ -47,7 +47,7 @@ Parâmetros de URL:
 
 ## Comparar com a foto (`?ref=1`)
 
-Coloque as fotos de referência em `ref/` na raiz desta pasta: `modulo.jpg`, `sirene.jpg`, `fotossensor.jpg`, `controle.jpg`, `placa.jpg`, `app.jpg` (as oficiais) e `modulo-topo-led-azul.jpg` (o módulo visto de cima). A pasta `ref/` fica fora do git e fora do build. Com `npm run dev`, abra `/?ref=1`: a foto aparece por cima do canvas com um slider de opacidade, e a câmera trava no ângulo da foto. `&r=modulo-topo` escolhe a foto e `&cam=px,py,pz,tx,ty,tz,fov,roll` afina o ângulo sem recompilar. Os ângulos ficam em `src/dev/RefMode.tsx`.
+Coloque as fotos de referência em `ref/` na raiz do projeto: `modulo.jpg`, `sirene.jpg`, `fotossensor.jpg`, `controle.jpg`, `placa.jpg`, `app.jpg` (as oficiais) e `modulo-topo-led-azul.jpg` (o módulo visto de cima). A pasta `ref/` fica fora do git e fora do build. Com `npm run dev`, abra `/?ref=1`: a foto aparece por cima do canvas com um slider de opacidade, e a câmera trava no ângulo da foto. `&r=modulo-topo` escolhe a foto e `&cam=px,py,pz,tx,ty,tz,fov,roll` afina o ângulo sem recompilar. Os ângulos ficam em `src/dev/RefMode.tsx`.
 
 ## Onde fica cada coisa
 
