@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion'
 import { DEVICES, type DeviceId } from '../data/devices'
 import { useShowroom } from '../store/showroomStore'
 import { beep } from './audio'
@@ -25,10 +26,12 @@ export function DeviceDock() {
             <button
               aria-label={`${i + 1}. ${d.name}`} aria-current={device === d.id}
               onClick={() => { beep(); useShowroom.getState().setDevice(d.id) }}
-              className={`flex w-[4.6rem] flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[0.68em] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-24 md:text-[0.75em] ${device === d.id ? 'bg-brand-light text-white shadow-lg shadow-brand/50' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
-              <svg viewBox="0 0 32 32" className="h-7 w-7 md:h-8 md:w-8" aria-hidden>{ICON[d.id]}</svg>
-              <span className="leading-tight">{d.short}</span>
-              <span className="kbd hidden opacity-60 md:inline">{i + 1}</span>
+              className={`relative flex w-[4.6rem] flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-xs transition-colors duration-fast ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-accent active:scale-[.98] md:w-24 ${device === d.id ? 'text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
+              {/* o destaque azul desliza de um aparelho para o outro */}
+              {device === d.id && <motion.span layoutId="dock-ativo" className="absolute inset-0 rounded-xl bg-brand-light shadow-lg shadow-brand/50" transition={{ type: 'spring', visualDuration: 0.25, bounce: 0.15 }} />}
+              <svg viewBox="0 0 32 32" className="relative h-7 w-7 md:h-8 md:w-8" aria-hidden>{ICON[d.id]}</svg>
+              <span className="relative leading-tight">{d.short}</span>
+              <span className="kbd relative hidden opacity-70 md:inline">{i + 1}</span>
             </button>
           </li>
         ))}

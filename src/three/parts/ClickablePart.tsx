@@ -89,7 +89,7 @@ export function ClickablePart({ id, follow, internal: internalProp, children }: 
     if (active) {
       // durante uma micro-animação o aparelho inteiro volta a aparecer (salvo as que mostram o interior)
       const showAll = !!s.action && !ACTIONS[s.action.id].keepDim
-      if (s.part && !showAll) { sel = !!id && s.part === id; if (!sel) { target = 0.06; fres = 0.3 } }
+      if (s.part && !showAll) { sel = !!id && s.part === id; if (!sel) { target = 0.05; fres = 0.1 } }
       else if (s.view === 'xray' && !internal && !showAll) { target = 0.12; fres = 0.9 }
     }
     const f = fade.current

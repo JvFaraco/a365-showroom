@@ -23,7 +23,7 @@ function Region({ id, interactive, children, className = '' }: { id: string; int
     <div
       role={interactive ? 'button' : undefined}
       aria-label={interactive ? name : undefined}
-      className={`relative rounded-xl transition-all duration-300 ${interactive ? 'cursor-pointer' : ''} ${className}`}
+      className={`relative rounded-xl transition-[opacity,outline-color,box-shadow] duration-base ease-out ${interactive ? 'cursor-pointer' : ''} ${className}`}
       style={{ opacity: sel && sel !== id ? 0.22 : 1, outline: hov || sel === id ? '2.5px solid #5B8CFF' : '2.5px solid transparent', outlineOffset: 2, boxShadow: hov ? '0 0 18px #5B8CFF99' : 'none' }}
       onPointerEnter={() => interactive && useShowroom.getState().setHovered(id)}
       onPointerLeave={() => { const s = useShowroom.getState(); if (interactive && s.hovered === id) s.setHovered(null) }}

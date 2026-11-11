@@ -1,5 +1,8 @@
 import type { ActionId, Vec3 } from './devices'
 
+/** Tempo (s) que o Tour fica em cada parte. */
+export const TOUR_SECONDS = 5
+
 // Duração (s) das micro-animações com tempo fixo. As sem duração são interativas e
 // ficam abertas até o usuário fechar ou trocar de parte.
 export const ACTIONS: Record<ActionId, {

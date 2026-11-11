@@ -1,10 +1,14 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { ACTIONS } from '../data/actions'
+import { ACTIONS, TOUR_SECONDS } from '../data/actions'
 import { DEVICE_BY_ID, getPart } from '../data/devices'
 import { useShowroom } from '../store/showroomStore'
 import { ActionPanel } from './ActionPanel'
 import { beep } from './audio'
 import { Chevron, Close, Play } from './icons'
+
+// entra em 250 ms e sai mais rápido (180 ms), como manda a regra "saída ≈ 75% da entrada"
+const EASE_OUT = [0.2, 0, 0, 1] as const
+const EASE_IN = [0.4, 0, 1, 1] as const
 
 /** Card de informação da parte selecionada. No desktop fica ao lado; no celular vira bottom sheet. */
 export function PartCard() {
@@ -27,12 +31,14 @@ export function PartCard() {
           id="part-card"
           role="dialog"
           aria-label={`${part.name}: informações`}
-          initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 24 }} transition={{ duration: 0.25 }}
-          className="part-card glass pointer-events-auto max-h-[58vh] w-full overflow-y-auto rounded-2xl p-4 md:max-h-full md:w-[360px]"
+          initial={{ opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0, transition: { duration: 0.25, ease: EASE_OUT } }}
+          exit={{ opacity: 0, x: 16, transition: { duration: 0.18, ease: EASE_IN } }}
+          className="part-card glass pointer-events-auto max-h-[50vh] w-full overflow-y-auto rounded-2xl p-4 md:max-h-full md:w-[360px]"
         >
           <div className="mb-1 flex items-start justify-between gap-3">
             <div>
-              <div className="text-[0.7em] uppercase tracking-widest text-white/50">{idx + 1} de {d.parts.length}{part.internal ? ' · parte interna' : ''}</div>
+              <div className="text-[0.8em] uppercase tracking-wider text-white/60">{idx + 1} de {d.parts.length}{part.internal ? ' · parte interna' : ''}</div>
               <h2 className="font-title text-[1.35em] font-semibold leading-tight text-white">{part.name}</h2>
             </div>
             <button className="btn !p-2" aria-label="Voltar à vista inteira" onClick={() => st().selectPart(null)}><Close size={16} /></button>
@@ -61,7 +67,13 @@ export function PartCard() {
             </button>
           )}
 
-          <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/10 pt-3">
+          {/* tour: barra fina mostrando quando vem a próxima parte */}
+          {tour && !action && (
+            <div className="mt-3 h-0.5 overflow-hidden rounded-full bg-white/10" aria-hidden>
+              <div className="h-full w-full origin-left bg-accent" style={{ animation: `action-bar ${TOUR_SECONDS}s linear forwards` }} />
+            </div>
+          )}
+          <div className={`flex items-center justify-between gap-2 border-t border-white/10 pt-3 ${tour && !action ? 'mt-0 border-transparent' : 'mt-3'}`}>
             <button className="btn" aria-label="Parte anterior" onClick={() => st().stepPart(-1)}><Chevron dir="left" size={16} /> anterior</button>
             {tour && <span className="text-xs text-accent">Tour ligado</span>}
             <button className="btn" aria-label="Próxima parte" onClick={() => st().stepPart(1)}>próxima <Chevron size={16} /></button>
@@ -77,8 +89,8 @@ export function PartCard() {
 export function CalloutLine() {
   return (
     <svg className="pointer-events-none fixed inset-0 z-20 h-full w-full" aria-hidden>
-      <line id="callout-line" stroke="#5B8CFF" strokeWidth="1.5" strokeDasharray="5 4" style={{ opacity: 0, transition: 'opacity .3s' }} />
-      <circle id="callout-dot" r="5" fill="#F9E000" stroke="#05070f" strokeWidth="2" style={{ opacity: 0, transition: 'opacity .3s' }} />
+      <line id="callout-line" stroke="#5B8CFF" strokeWidth="1.5" strokeDasharray="5 4" style={{ opacity: 0, transition: 'opacity var(--duration-base) var(--ease-out)' }} />
+      <circle id="callout-dot" r="5" fill="#F9E000" stroke="#05070f" strokeWidth="2" style={{ opacity: 0, transition: 'opacity var(--duration-base) var(--ease-out)' }} />
     </svg>
   )
 }

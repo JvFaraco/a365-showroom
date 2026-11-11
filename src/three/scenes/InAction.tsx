@@ -109,7 +109,7 @@ export function InAction() {
       {step >= 4 && (
         <Html position={[3.0, 2.55, 2.4]} center style={{ pointerEvents: 'none' }}>
           <div className="fx-tag w-40 rounded-xl bg-white p-1.5 text-center text-[11px] font-semibold text-[#1E398D] shadow-xl">
-            <img src={aiPhotoDataUrl(true)} alt="" className="mb-1 rounded-lg" />
+            <img src={aiPhotoDataUrl(true)} alt="" width={148} height={111} className="mb-1 rounded-lg" />
             Nova imagem do disparo
           </div>
         </Html>

@@ -1,4 +1,5 @@
 import { Suspense, lazy, useRef, useState } from 'react'
+import { MotionConfig } from 'framer-motion'
 import { Canvas } from '@react-three/fiber'
 import { AdaptiveDpr, PerformanceMonitor } from '@react-three/drei'
 import { Bloom, EffectComposer, N8AO, Outline, SMAA, Selection, ToneMapping, Vignette } from '@react-three/postprocessing'
@@ -68,7 +69,7 @@ export default function App() {
     else if (s.quality < 3) s.set({ quality: Math.max(2, s.quality + 1) as 2 | 3 })
   }
   return (
-    <div className={`relative h-full w-full ${presenter ? 'presenter' : ''}`}>
+    <main className={`relative h-full w-full ${presenter ? 'presenter' : ''}`}>
       {/* eventSource no contêiner: arrastar por cima da tela do celular (Html) também gira a câmera */}
       <div ref={container} className="absolute inset-0 isolate z-0">
         <Canvas
@@ -93,9 +94,10 @@ export default function App() {
           {!FORCE_HQ && !REF_ON && <PerformanceMonitor flipflops={3} onDecline={decline} onFallback={() => useShowroom.getState().set({ quality: 3 })} />}
         </Canvas>
       </div>
-      {REF_ON ? <RefOverlay /> : <UI />}
+      {/* a camada 2D respeita prefers-reduced-motion também nas animações do framer-motion */}
+      <MotionConfig reducedMotion="user">{REF_ON ? <RefOverlay /> : <UI />}</MotionConfig>
       <PresenterMode />
       <Loader />
-    </div>
+    </main>
   )
 }

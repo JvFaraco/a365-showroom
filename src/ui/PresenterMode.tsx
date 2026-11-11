@@ -1,10 +1,9 @@
 import { useEffect } from 'react'
-import { ACTIONS } from '../data/actions'
+import { ACTIONS, TOUR_SECONDS } from '../data/actions'
 import { DEVICES } from '../data/devices'
 import { UNDO_SPEED, useShowroom } from '../store/showroomStore'
 import { setSiren } from './audio'
 
-const TOUR_SECONDS = 5
 
 /**
  * Modo apresentação e atalhos de teclado:

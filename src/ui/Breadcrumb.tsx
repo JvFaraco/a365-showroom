@@ -15,7 +15,7 @@ export function Breadcrumb() {
           <Chevron dir="left" size={14} /> Voltar <span className="kbd hidden md:inline">ESC</span>
         </button>
       )}
-      <div className="min-w-0 truncate">
+      <div className="glass min-w-0 truncate rounded-xl px-3 py-1">
         <div className="truncate font-title text-[1.05em] font-semibold leading-tight">
           <button className={part ? 'text-white/60 hover:text-white' : 'text-white'} onClick={() => useShowroom.getState().selectPart(null)}>{d.name}</button>
           {part && <><span className="mx-1.5 text-accent">›</span><span className="text-white">{part.name}</span></>}

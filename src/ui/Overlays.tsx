@@ -85,8 +85,8 @@ function HoverTag() {
   }, [])
   const p = getPart(device, hovered)
   return (
-    <div ref={el} role="tooltip" className="pointer-events-none fixed left-0 top-0 z-40 whitespace-nowrap rounded-full border border-brand-glow bg-[#0b1126]/95 px-3 py-1 text-sm font-medium text-white shadow-lg shadow-brand/40"
-      style={{ transform: `translate(${pos.current[0]}px, ${pos.current[1]}px) translate(-50%, -160%)`, opacity: p ? 1 : 0, transition: 'opacity .12s' }}>{p?.name ?? ''}</div>
+    <div ref={el} role="tooltip" className="pointer-events-none fixed left-0 top-0 z-40 whitespace-nowrap rounded-full border border-brand-glow bg-surface/95 px-3 py-1 text-sm font-medium text-white shadow-lg shadow-brand/40"
+      style={{ transform: `translate(${pos.current[0]}px, ${pos.current[1]}px) translate(-50%, -160%)`, opacity: p ? 1 : 0, transition: 'opacity var(--duration-fast) var(--ease-out)' }}>{p?.name ?? ''}</div>
   )
 }
 
@@ -122,7 +122,8 @@ function ShowroomUI() {
   const presenter = useShowroom((s) => s.presenter)
   return (
     <>
-      <div className="pointer-events-none fixed left-14 right-3 top-[7rem] z-20 sm:left-[7.5rem] md:left-36 md:right-auto md:top-24 md:max-w-[36vw]"><Breadcrumb /></div>
+      <h1 className="sr-only">Alarme 365: showroom dos equipamentos</h1>
+      <div className="pointer-events-none fixed left-14 right-3 top-[7rem] z-20 sm:left-[7.5rem] md:left-36 md:right-auto md:top-24 md:max-w-[42vw]"><Breadcrumb /></div>
       <div className="pointer-events-none fixed right-3 top-[4.5rem] z-20 flex md:right-5 md:top-24"><ViewToggles /></div>
       <PartList />
       <PartCard />
@@ -131,7 +132,7 @@ function ShowroomUI() {
       <ActionToast />
       <DeviceDock />
       {!part && (
-        <p className="pointer-events-none fixed inset-x-0 bottom-[5.8rem] z-10 px-4 text-center text-[0.8em] text-white/55 md:bottom-[7.2rem]">
+        <p className="pointer-events-none fixed inset-x-0 bottom-[5.8rem] z-10 px-4 text-center text-[0.8em] text-white/65 md:bottom-[7.2rem]">
           {view === 'manual' ? 'Clique num número para ver a parte de perto.'
             : view === 'exploded' ? 'Aparelho explodido: as partes internas também são clicáveis.'
             : view === 'xray' ? 'Raio-X: clique numa parte interna.'
@@ -139,7 +140,7 @@ function ShowroomUI() {
         </p>
       )}
       {presenter && !part && (
-        <p className="pointer-events-none fixed bottom-1 right-3 z-10 hidden text-[10px] text-white/40 md:block">→ próxima · ← anterior · 1–7 aparelho · E explode · X raio-X · M manual · T tour · R reseta</p>
+        <p className="pointer-events-none fixed bottom-1 right-3 z-10 hidden text-xs text-white/60 md:block">→ próxima · ← anterior · 1–7 aparelho · E explode · X raio-X · M manual · T tour · R reseta</p>
       )}
     </>
   )
@@ -214,7 +215,7 @@ function InActionUI() {
           {IA_STEPS.map((s, i) => (
             <li key={s.label}>
               <button onClick={() => { ia.t = s.t + 0.01; set({ iaPlaying: true, iaStep: i }) }} aria-current={i === cur && started}
-                className={`w-full rounded-lg px-1 py-1 text-[0.7em] leading-tight transition ${i === cur && started ? 'bg-brand-light text-white' : 'text-white/60 hover:bg-white/10'}`}>{i + 1}. {s.label}</button>
+                className={`tap w-full rounded-lg px-1 py-1 text-xs leading-tight transition-colors duration-fast ease-out ${i === cur && started ? 'bg-brand-light text-white' : 'text-white/60 hover:bg-white/10'}`}>{i + 1}. {s.label}</button>
             </li>
           ))}
         </ol>

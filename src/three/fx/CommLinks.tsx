@@ -50,7 +50,7 @@ export function CommLinks({ from, to, state, labels = true }: {
       </group>
       {labels && to.map((t, i) => (
         <Html key={i} position={t} center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
-          <div ref={(el) => { tags.current[i] = el }} className="fx-tag via-tag rounded-full border-2 bg-[#0b1126]/90 px-3 py-1 text-sm font-semibold text-white" style={{ opacity: 0, transition: 'opacity .3s' }}>
+          <div ref={(el) => { tags.current[i] = el }} className="fx-tag via-tag rounded-full border-2 bg-surface/90 px-3 py-1 text-sm font-semibold text-white" style={{ opacity: 0, transition: 'opacity var(--duration-base) var(--ease-out)' }}>
             {VIAS[i]}
           </div>
         </Html>

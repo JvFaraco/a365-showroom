@@ -2,18 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* tokens de movimento: micro-interação 100–150 ms, abrir/trocar 250 ms, entrada 400 ms; saída ≈ 75% da entrada */
+:root {
+  --duration-instant: 100ms;
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  color-scheme: dark;
+}
+
 html, body, #root { height: 100%; margin: 0; background: #05070f; overflow: hidden; }
+h1, h2 { text-wrap: balance; }
 body { font-family: 'Encode Sans', system-ui, sans-serif; color: #e8ecf8; -webkit-font-smoothing: antialiased; }
 * { -webkit-tap-highlight-color: transparent; }
 canvas { touch-action: none; }
 
 @layer components {
-  .glass { @apply bg-[#0b1126]/80 backdrop-blur-md border border-white/10 shadow-xl shadow-black/40; }
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium font-body transition
-    border border-white/10 bg-white/5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent; }
+  .glass { @apply bg-surface/90 backdrop-blur-md border border-white/10 shadow-xl shadow-black/40; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium font-body
+    border border-white/10 bg-white/5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent
+    transition-[background-color,border-color,color,opacity,transform] duration-fast ease-out
+    active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100; }
   .btn-on { @apply bg-brand-light border-brand-glow text-white hover:bg-brand-light; }
   .btn-primary { @apply bg-accent text-ink font-semibold border-transparent hover:bg-yellow-300; }
-  .kbd { @apply rounded border border-white/20 bg-white/10 px-1.5 text-[11px] font-mono; }
+  .kbd { @apply rounded border border-white/20 bg-white/10 px-1.5 text-xs font-mono; }
+}
+
+/* telas de toque: alvos de pelo menos 44 px (no mouse nada muda) */
+@media (pointer: coarse) {
+  .btn, .tap { min-height: 44px; min-width: 44px; }
 }
 
 /* modo apresentação: textos maiores */
@@ -28,5 +47,6 @@ canvas { touch-action: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.15s !important; }
 }
-@keyframes action-bar { from { width: 0; } to { width: 100%; } }
+/* barra de progresso (ação e tour): só transform, nunca width */
+@keyframes action-bar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes blink { 50% { opacity: 0.15; } }

@@ -72,7 +72,7 @@ function LedPalette() {
   }
   return (
     <div>
-      <div className="grid max-h-[34vh] grid-cols-2 gap-1.5 overflow-y-auto pr-1">
+      <div className="grid max-h-[22vh] grid-cols-2 gap-1.5 overflow-y-auto pr-1 md:max-h-[34vh]">
         {LED_STATES.map((s) => (
           <button key={s.id} aria-pressed={led === s.id} onClick={() => { beep(); timers.current.forEach(clearTimeout); setBooting(false); setLed(s.id) }}
             className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-xs transition ${led === s.id ? 'border-accent bg-white/15' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}>
@@ -165,7 +165,7 @@ export function ActionPanel() {
       )}
       {a.duration && !a.undo && (
         <div className="h-1 overflow-hidden rounded-full bg-white/10" aria-hidden>
-          <div key={action.t0} className="h-full bg-accent" style={{ animation: `action-bar ${a.duration}s linear forwards` }} />
+          <div key={action.t0} className="h-full w-full origin-left bg-accent" style={{ animation: `action-bar ${a.duration}s linear forwards` }} />
         </div>
       )}
     </div>

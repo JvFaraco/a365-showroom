@@ -50,10 +50,10 @@ export function ManualPins() {
           <Html key={p.id} position={c} center zIndexRange={[30, 11]}>
             <button className="pin-label group relative block" aria-label={`${i + 1}. ${p.name}`}
               onClick={() => useShowroom.getState().selectPart(p.id)}>
-              <span className="grid h-6 w-6 place-items-center rounded-full border-2 border-white bg-brand-light text-[11px] font-bold text-white shadow-lg transition group-hover:scale-125 group-hover:bg-accent group-hover:text-ink">{i + 1}</span>
+              <span className="grid h-6 w-6 place-items-center rounded-full border-2 border-white bg-brand-light text-xs font-bold text-white shadow-lg transition group-hover:scale-125 group-hover:bg-accent group-hover:text-ink">{i + 1}</span>
               <span className={`absolute top-1/2 flex -translate-y-1/2 items-center ${left ? 'right-full flex-row-reverse' : 'left-full'}`}>
                 <span className="block h-px w-8 bg-white/70" />
-                <span className="rounded bg-[#0b1126]/90 px-2 py-0.5 text-[11px] font-medium text-white ring-1 ring-white/15 group-hover:ring-accent">{p.name}</span>
+                <span className="rounded bg-surface/90 px-2 py-0.5 text-xs font-medium text-white ring-1 ring-white/15 group-hover:ring-accent">{p.name}</span>
               </span>
             </button>
           </Html>

@@ -16,6 +16,8 @@ const SCENE_CAM: Record<Exclude<Scene, 'showroom'>, { from?: Vec3; position: Vec
   inaction: { position: [0.6, 3.4, 9.6], target: [0, 1.25, -0.6] },
 }
 
+// em retrato (celular) as cenas com o kit inteiro recuam o bastante para os 7 aparelhos caberem
+const PORTRAIT_Z = 3.0
 const PART_FILL = 0.62 // a parte ocupa no máximo ~45% da área livre (0,62² ≈ 0,4)
 const HOME_FILL = 0.86
 const BOX = new THREE.Box3(), DBOX = new THREE.Box3(), SPH = new THREE.Sphere()
@@ -63,7 +65,7 @@ export function CameraRig() {
     c.smoothTime = 0.32
     if (s.scene !== 'showroom') {
       const sc = SCENE_CAM[s.scene]
-      const p = portrait ? [sc.position[0], sc.position[1] * 1.3, sc.position[2] * 2.1] : sc.position
+      const p = portrait ? [sc.position[0], sc.position[1] * 1.3, sc.position[2] * PORTRAIT_Z] : sc.position
       void c.setFocalOffset(0, 0, 0, anim)
       void c.setLookAt(p[0], p[1], p[2], sc.target[0], sc.target[1], sc.target[2], anim)
       return
@@ -140,7 +142,7 @@ export function CameraRig() {
         void c.setLookAt(sc.from[0], sc.from[1], sc.from[2], sc.target[0], sc.target[1], sc.target[2], false)
         c.smoothTime = 1.1
         const portrait = size.width / size.height < 0.8
-        const p = portrait ? [sc.position[0], sc.position[1] * 1.3, sc.position[2] * 2.1] : sc.position
+        const p = portrait ? [sc.position[0], sc.position[1] * 1.3, sc.position[2] * PORTRAIT_Z] : sc.position
         void c.setLookAt(p[0], p[1], p[2], sc.target[0], sc.target[1], sc.target[2], true)
         return
       }
@@ -173,5 +175,5 @@ export function CameraRig() {
     if (s.scene === 'showroom' && !s.part && !s.action && now() - lastInput.current > 4 && !reducedMotion()) void c.rotate(dt * 0.22, 0, false)
   })
 
-  return <CameraControls ref={ref} makeDefault minDistance={0.8} maxDistance={scene === 'showroom' ? 14 : 26} dollySpeed={0.6} smoothTime={0.32} draggingSmoothTime={0.12} />
+  return <CameraControls ref={ref} makeDefault minDistance={0.8} maxDistance={scene === 'showroom' ? 14 : 30} dollySpeed={0.6} smoothTime={0.32} draggingSmoothTime={0.12} />
 }
