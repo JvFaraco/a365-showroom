@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useProgress } from '@react-three/drei'
 import { IA_DURATION, IA_STEPS } from '../data/inAction'
 import { DEVICE_BY_ID, SLOGAN, getPart } from '../data/devices'
-import { useShowroom, type Scene } from '../store/showroomStore'
+import { actionTau, ia, useShowroom, type Scene } from '../store/showroomStore'
+import type { ActionId } from '../data/devices'
 import { Breadcrumb } from './Breadcrumb'
 import { DeviceDock } from './DeviceDock'
 import { PartCard, CalloutLine } from './PartCard'
@@ -22,11 +23,12 @@ const SCENES: { id: Scene; label: string }[] = [
 /** Carregamento: o logo é desenhado com o traço animado enquanto a cena prepara. */
 export function Loader() {
   const { active } = useProgress()
+  const ready = useShowroom((s) => s.ready)
   const [minDone, setMinDone] = useState(false)
   useEffect(() => { const t = setTimeout(() => setMinDone(true), 1700); return () => clearTimeout(t) }, [])
   return (
     <AnimatePresence>
-      {(active || !minDone) && (
+      {(active || !minDone || !ready) && (
         <motion.div exit={{ opacity: 0 }} transition={{ duration: 0.6 }} className="fixed inset-0 z-50 grid place-items-center bg-ink" role="status" aria-label="Carregando">
           <div className="flex flex-col items-center gap-4">
             <OrsegupsLogo size={120} draw />
@@ -71,17 +73,45 @@ function TopBar() {
 function HoverTag() {
   const device = useShowroom((s) => s.device)
   const hovered = useShowroom((s) => (s.scene === 'showroom' ? s.hovered : null))
-  const [pos, setPos] = useState<[number, number]>([0, 0])
+  const el = useRef<HTMLDivElement>(null)
+  const pos = useRef<[number, number]>([0, 0])
   useEffect(() => {
-    const mv = (e: PointerEvent) => setPos([e.clientX, e.clientY])
+    const mv = (e: PointerEvent) => {
+      pos.current = [e.clientX, e.clientY]
+      if (el.current) el.current.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -160%)`
+    }
     window.addEventListener('pointermove', mv)
     return () => window.removeEventListener('pointermove', mv)
   }, [])
   const p = getPart(device, hovered)
-  if (!p) return null
   return (
-    <div role="tooltip" className="pointer-events-none fixed z-40 -translate-x-1/2 -translate-y-[160%] whitespace-nowrap rounded-full border border-brand-glow bg-[#0b1126]/95 px-3 py-1 text-sm font-medium text-white shadow-lg shadow-brand/40"
-      style={{ left: pos[0], top: pos[1] }}>{p.name}</div>
+    <div ref={el} role="tooltip" className="pointer-events-none fixed left-0 top-0 z-40 whitespace-nowrap rounded-full border border-brand-glow bg-[#0b1126]/95 px-3 py-1 text-sm font-medium text-white shadow-lg shadow-brand/40"
+      style={{ transform: `translate(${pos.current[0]}px, ${pos.current[1]}px) translate(-50%, -160%)`, opacity: p ? 1 : 0, transition: 'opacity .12s' }}>{p?.name ?? ''}</div>
+  )
+}
+
+// avisos das micro-animações: aparecem como toast abaixo do breadcrumb (nunca por cima da navegação)
+const TOASTS: Partial<Record<ActionId, { at: number; text: string }>> = {
+  tamper: { at: 0.6, text: 'Sirene aberta: o sistema não arma' },
+  'tampa-foto': { at: 2.7, text: 'Tampa aberta: o sistema avisa a Central' },
+}
+function ActionToast() {
+  const id = useShowroom((s) => s.action?.id)
+  const el = useRef<HTMLDivElement>(null)
+  const cfg = id ? TOASTS[id] : undefined
+  useEffect(() => {
+    if (!id || !cfg) return
+    let raf = 0
+    const tick = () => { if (el.current) el.current.style.opacity = actionTau(id) >= cfg.at ? '1' : '0'; raf = requestAnimationFrame(tick) }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [id, cfg])
+  if (!cfg) return null
+  return (
+    <div ref={el} role="status" className="pointer-events-none fixed left-3 top-[10rem] z-20 flex items-center gap-2 rounded-full bg-alert px-4 py-1.5 text-sm font-bold text-white shadow-lg transition-opacity duration-200 md:left-36 md:top-[9.4rem]" style={{ opacity: 0 }}>
+      <span className="inline-block h-2.5 w-2.5 rounded-full bg-white" style={{ animation: 'blink 0.6s steps(2) infinite' }} />
+      {cfg.text}
+    </div>
   )
 }
 
@@ -98,6 +128,7 @@ function ShowroomUI() {
       <PartCard />
       <CalloutLine />
       <HoverTag />
+      <ActionToast />
       <DeviceDock />
       {!part && (
         <p className="pointer-events-none fixed inset-x-0 bottom-[5.8rem] z-10 px-4 text-center text-[0.8em] text-white/55 md:bottom-[7.2rem]">
@@ -154,27 +185,36 @@ function NetworkUI() {
 }
 
 function InActionUI() {
-  const t = useShowroom((s) => s.iaT)
+  const cur = useShowroom((s) => s.iaStep)
   const playing = useShowroom((s) => s.iaPlaying)
   const set = useShowroom((s) => s.set)
-  const cur = IA_STEPS.reduce((acc, s, i) => (t >= s.t ? i : acc), 0)
+  const bar = useRef<HTMLDivElement>(null)
+  const [started, setStarted] = useState(false)
+  // a barra de tempo é atualizada direto no DOM (o tempo corre em `ia.t`, fora do React)
+  useEffect(() => {
+    let raf = 0
+    const tick = () => { if (bar.current) bar.current.style.width = `${(ia.t / IA_DURATION) * 100}%`; raf = requestAnimationFrame(tick) }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+  useEffect(() => { if (playing) setStarted(true) }, [playing])
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-4 z-20 flex justify-center px-3">
       <div className="glass pointer-events-auto w-full max-w-3xl rounded-2xl p-3 md:p-4">
         <div className="mb-2 flex items-center gap-3">
-          <button className="btn btn-primary !p-3" aria-label={playing ? 'Pausar' : 'Reproduzir'} onClick={() => set(t >= IA_DURATION ? { iaT: 0, iaPlaying: true } : { iaPlaying: !playing })}>
+          <button className="btn btn-primary !p-3" aria-label={playing ? 'Pausar' : 'Reproduzir'} onClick={() => { if (ia.t >= IA_DURATION) ia.t = 0; set({ iaPlaying: !playing }) }}>
             {playing ? <Pause size={18} /> : <Play size={18} />}
           </button>
           <p className="flex-1 text-[0.95em] text-white" aria-live="polite">
-            {t === 0 && !playing ? 'Dê Play para ver o alarme em ação. Clique num aparelho para abri-lo no showroom.' : <><b className="text-accent">{cur + 1}.</b> {IA_STEPS[cur].text}</>}
+            {!started ? 'Dê Play para ver o alarme em ação. Clique num aparelho para abri-lo no showroom.' : <><b className="text-accent">{cur + 1}.</b> {IA_STEPS[cur].text}</>}
           </p>
         </div>
-        <div className="relative h-1.5 rounded-full bg-white/10"><div className="absolute inset-y-0 left-0 rounded-full bg-accent" style={{ width: `${(t / IA_DURATION) * 100}%` }} /></div>
+        <div className="relative h-1.5 rounded-full bg-white/10"><div ref={bar} className="absolute inset-y-0 left-0 rounded-full bg-accent" style={{ width: 0 }} /></div>
         <ol className="mt-2 grid grid-cols-5 gap-1">
           {IA_STEPS.map((s, i) => (
             <li key={s.label}>
-              <button onClick={() => set({ iaT: s.t + 0.01, iaPlaying: true })} aria-current={i === cur && t > 0}
-                className={`w-full rounded-lg px-1 py-1 text-[0.7em] leading-tight transition ${i === cur && t > 0 ? 'bg-brand-light text-white' : 'text-white/60 hover:bg-white/10'}`}>{i + 1}. {s.label}</button>
+              <button onClick={() => { ia.t = s.t + 0.01; set({ iaPlaying: true, iaStep: i }) }} aria-current={i === cur && started}
+                className={`w-full rounded-lg px-1 py-1 text-[0.7em] leading-tight transition ${i === cur && started ? 'bg-brand-light text-white' : 'text-white/60 hover:bg-white/10'}`}>{i + 1}. {s.label}</button>
             </li>
           ))}
         </ol>

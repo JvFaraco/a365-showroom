@@ -3,8 +3,8 @@ import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import { IA_DURATION } from '../../data/inAction'
-import { useShowroom } from '../../store/showroomStore'
-import { Stage } from '../Stage'
+import { ia, useShowroom } from '../../store/showroomStore'
+import { IA_STEPS } from '../../data/inAction'
 import { Placed } from './Kit'
 import { ModuloComando } from '../devices/ModuloComando'
 import { Fotossensor } from '../devices/Fotossensor'
@@ -17,7 +17,7 @@ import { LowPolyPerson } from '../fx/DetectionFan'
 import { bump, seg } from '../common/util'
 import { aiPhotoDataUrl } from '../common/textures'
 
-const T = () => useShowroom.getState().iaT
+const T = () => ia.t
 const doorOpen = () => seg(T(), 3.2, 4.6)
 const flashP = () => bump(T(), 7.6, 7.7, 7.8, 8.3)
 const MOD: [number, number, number] = [-2.7, 1.25, -2.2]
@@ -31,15 +31,20 @@ export function InAction() {
   const wood = useMemo(() => new THREE.MeshStandardMaterial({ color: '#7a6450', roughness: 0.8 }), [])
   const door = useRef<THREE.Group>(null!)
   const intruder = useRef<THREE.Group>(null!)
-  const step = useShowroom((s) => (s.iaT >= 13 ? 4 : s.iaT >= 8 ? 3 : s.iaT >= 0 ? 0 : 0))
+  const step = useShowroom((s) => s.iaStep)
+  const boxOn = useShowroom((s) => s.iaStep >= 2 && s.iaPlaying) || step >= 3
 
   useFrame((_, dt) => {
     const s = useShowroom.getState()
     if (s.iaPlaying) {
-      const t = s.iaT + dt
-      s.set(t >= IA_DURATION ? { iaT: IA_DURATION, iaPlaying: false } : { iaT: t })
+      ia.t = Math.min(IA_DURATION, ia.t + dt)
+      if (ia.t >= IA_DURATION) s.set({ iaPlaying: false })
     }
-    const t = s.iaT
+    const t = ia.t
+    // o passo só vai para o estado quando muda (5 vezes na cena inteira)
+    let st = 0
+    for (let i = 0; i < IA_STEPS.length; i++) if (t >= IA_STEPS[i].t) st = i
+    if (st !== s.iaStep) s.set({ iaStep: st })
     door.current.rotation.y = -doorOpen() * 0.6
     intruder.current.visible = t > 4.4
     intruder.current.position.set(1.65 - seg(t, 4.6, 7.4) * 1.2, Math.abs(Math.sin(t * 6)) * 0.03 * (t < 7.4 ? 1 : 0), -3.4 + seg(t, 4.6, 7.4) * 2.4)
@@ -48,8 +53,6 @@ export function InAction() {
   const hinge = DOOR_X + 3.05 * MAG_S
   return (
     <>
-      <Stage floorY={-0.02} />
-      <pointLight position={[0, 3.1, 1]} intensity={40} distance={12} color="#cfd8ff" />
       {/* cômodo em corte */}
       <mesh material={floor} position={[0, 0.02, 0]} raycast={() => null}><boxGeometry args={[8, 0.04, 6]} /></mesh>
       <mesh material={wall} position={[-4.05, 1.7, 0]} raycast={() => null}><boxGeometry args={[0.1, 3.4, 6]} /></mesh>
@@ -79,7 +82,7 @@ export function InAction() {
         <SensorMagnetico open={doorOpen} />
       </group>
       <group position={[-1.2, 2.7, -2.88]} scale={0.36} onClick={(e) => { e.stopPropagation(); useShowroom.getState().setDevice('sirene') }}>
-        <Sirene sounding={() => T() >= 10} />
+        <Sirene sounding={() => T() >= 10 && T() < 16.5} />
       </group>
       <group position={[-2.6, 1.3, 2.3]} rotation={[-0.2, 0.3, 0]} scale={0.34} onClick={(e) => { e.stopPropagation(); useShowroom.getState().setDevice('controle') }}>
         <ControleRemoto pressed={() => { const t = T(); return t > 0.5 && t < 1.3 ? 'btn-armar' : null }} />
@@ -94,7 +97,7 @@ export function InAction() {
 
       <group ref={intruder} visible={false}>
         <LowPolyPerson scale={1.8} color="#3b4256" />
-        {step >= 3 && (
+        {boxOn && (
           <Html position={[0, 0.95, 0]} center style={{ pointerEvents: 'none' }}>
             <div className="fx-tag flex flex-col items-center">
               <div className="h-[150px] w-[70px] border-2 border-ok bg-ok/30" />

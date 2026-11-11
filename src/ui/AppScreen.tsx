@@ -64,7 +64,9 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
   ]
 
   return (
-    <div className="flex h-[688px] w-[320px] select-none flex-col overflow-hidden rounded-[34px] bg-[#f3f5fa] font-body text-[#1b2233]" lang="pt-BR">
+    <div className="relative flex h-[688px] w-[320px] select-none flex-col overflow-hidden rounded-[34px] bg-[#f3f5fa] font-body text-[#1b2233]" lang="pt-BR">
+      {/* reflexo do vidro por cima da interface */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 z-10" style={{ background: 'linear-gradient(118deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.16) 44%, rgba(255,255,255,0) 52%)' }} />
       <div className="flex items-center justify-between px-6 pt-3 text-[11px] font-semibold"><span>17:50</span><span className="h-4 w-20 rounded-full bg-black" /><span>4G ▮▮▮</span></div>
 
       <div className="flex items-center justify-between px-4 pt-3">

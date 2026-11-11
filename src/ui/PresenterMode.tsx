@@ -20,7 +20,7 @@ export function PresenterMode() {
   const sirenOn = useShowroom((s) => s.sirenOn)
   const sirenLevel = useShowroom((s) => s.sirenLevel)
   const sound = useShowroom((s) => s.sound)
-  const iaSiren = useShowroom((s) => s.scene === 'inaction' && s.iaPlaying && s.iaT >= 10)
+  const iaSiren = useShowroom((s) => s.scene === 'inaction' && s.iaPlaying && s.iaStep === 3)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

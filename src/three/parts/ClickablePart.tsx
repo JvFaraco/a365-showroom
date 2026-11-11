@@ -5,13 +5,28 @@ import { useCursor } from '@react-three/drei'
 import { Select } from '@react-three/postprocessing'
 import { easing } from 'maath'
 import { ACTIONS } from '../../data/actions'
-import { DEVICE_BY_ID, getPart } from '../../data/devices'
+import { getPart } from '../../data/devices'
 import { useShowroom } from '../../store/showroomStore'
 import { explodeAmt, useDeviceCtx } from '../common/util'
+import { registerPart } from '../common/registry'
 
-type Tracked = { mat: THREE.Material & { opacity: number; emissive?: THREE.Color; emissiveIntensity?: number }; base: number; baseTransparent: boolean; baseDepthWrite: boolean; led: boolean; baseEmissive?: THREE.Color; baseEI?: number }
+type Mat = THREE.Material & { opacity: number; emissive?: THREE.Color; emissiveIntensity?: number; isMeshStandardMaterial?: boolean }
+type Tracked = { mat: Mat; base: number; baseDepthWrite: boolean; led: boolean; baseEmissive?: THREE.Color; baseEI?: number; fres: { value: number } }
 
 const GLOW = new THREE.Color('#2f66ff')
+
+// Contorno fresnel (Raio-X e partes esmaecidas): a borda da carcaça fica visível e o miolo, quase
+// transparente. É um uniform, então ligar/desligar não compila shader novo.
+function fresnelPatch(this: { fres: { value: number } }, shader: { uniforms: Record<string, { value: unknown }>; fragmentShader: string }) {
+  shader.uniforms.uFres = this.fres
+  shader.fragmentShader = shader.fragmentShader
+    .replace('#include <common>', '#include <common>\nuniform float uFres;')
+    .replace('#include <dithering_fragment>', `#include <dithering_fragment>
+      float frs = pow(1.0 - clamp(abs(dot(normalize(normal), normalize(vViewPosition))), 0.0, 1.0), 2.2) * uFres;
+      gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.72, 0.82, 1.0), frs * 0.75);
+      gl_FragColor.a = clamp(gl_FragColor.a + frs * 0.85, 0.0, 1.0);`)
+}
+const FRES_KEY = () => 'a365-fresnel'
 
 function isInternalObject(o: THREE.Object3D | null) {
   for (; o; o = o.parent) if (o.userData.internalPart) return true
@@ -31,55 +46,64 @@ export function ClickablePart({ id, follow, internal: internalProp, children }: 
   const explode = data?.explode
   const group = useRef<THREE.Group>(null!)
   const tracked = useRef<Tracked[]>([])
-  const fade = useRef({ v: 1, applied: -1, sel: false })
+  const fade = useRef({ v: 1, f: 0, applied: -1, fApplied: -1, sel: false })
   const [hover, setHover] = useState(false)
-  useCursor(hover)
+  // só o aparelho ativo recebe eventos; os outros 6 ficam montados, mas invisíveis e inertes
+  const current = useShowroom((s) => interactive && s.scene === 'showroom' && s.device === deviceId)
+  const warm = useShowroom((s) => interactive && s.warm)
+  useCursor(hover && current)
 
-  // materiais próprios da parte, para esmaecer sem afetar as outras
+  // materiais próprios da parte, para esmaecer sem afetar as outras. Ficam sempre "transparent",
+  // com opacidade 1: assim esmaecer, Raio-X e voltar ao normal nunca trocam de programa de shader.
   useLayoutEffect(() => {
     const list: Tracked[] = []
     group.current.traverse((o) => {
       const m = o as THREE.Mesh
       if (!m.isMesh || m.userData.fx) return
-      const mat = (m.material as THREE.Material).clone() as Tracked['mat']
+      const mat = (m.material as THREE.Material).clone() as Mat
+      const t: Tracked = {
+        mat, base: mat.opacity, baseDepthWrite: mat.depthWrite, led: !!m.userData.led,
+        baseEmissive: mat.emissive?.clone(), baseEI: mat.emissiveIntensity, fres: { value: 0 },
+      }
+      // vale também para os aparelhos das outras cenas: assim todos usam os mesmos programas de shader
+      mat.transparent = true
+      if (mat.isMeshStandardMaterial) { mat.onBeforeCompile = fresnelPatch.bind(t) as never; mat.customProgramCacheKey = FRES_KEY }
       m.material = mat
-      list.push({
-        mat, base: mat.opacity, baseTransparent: mat.transparent, baseDepthWrite: mat.depthWrite, led: !!m.userData.led,
-        baseEmissive: mat.emissive?.clone(), baseEI: mat.emissiveIntensity,
-      })
+      list.push(t)
     })
     tracked.current = list
-    return () => list.forEach((t) => t.mat.dispose())
-  }, [])
+    const off = interactive ? registerPart(deviceId, { group: group.current, id, explode, internal }) : undefined
+    return () => { off?.(); list.forEach((t) => t.mat.dispose()) }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useFrame((_, dt) => {
+    if (!interactive) return
     const g = group.current
     const s = useShowroom.getState()
-    const active = interactive && s.scene === 'showroom' && s.device === deviceId
+    const active = s.scene === 'showroom' && s.device === deviceId
     const k = active ? explodeAmt.v : 0
     if (explode) g.position.set(explode[0] * k, explode[1] * k, explode[2] * k)
 
-    let target = 1
+    let target = 1, fres = 0
     let sel = false
     if (active) {
       // durante uma micro-animação o aparelho inteiro volta a aparecer (salvo as que mostram o interior)
       const showAll = !!s.action && !ACTIONS[s.action.id].keepDim
-      if (s.part && !showAll) { sel = !!id && s.part === id; target = sel ? 1 : 0.1 }
-      else if (s.view === 'xray' && !internal && !showAll) target = 0.16
+      if (s.part && !showAll) { sel = !!id && s.part === id; if (!sel) { target = 0.06; fres = 0.3 } }
+      else if (s.view === 'xray' && !internal && !showAll) { target = 0.12; fres = 0.9 }
     }
     const f = fade.current
     easing.damp(f, 'v', target, 0.18, dt)
-    if (Math.abs(f.v - f.applied) > 0.004 || sel !== f.sel) {
-      f.applied = f.v; f.sel = sel
+    easing.damp(f, 'f', fres, 0.18, dt)
+    if (Math.abs(f.v - f.applied) > 0.004 || Math.abs(f.f - f.fApplied) > 0.004 || sel !== f.sel) {
+      f.applied = f.v; f.fApplied = f.f; f.sel = sel
       for (const t of tracked.current) {
-        const o = t.base * f.v
-        t.mat.opacity = o
-        const tr = t.baseTransparent || f.v < 0.985
-        if (t.mat.transparent !== tr) { t.mat.transparent = tr; t.mat.needsUpdate = true }
+        t.mat.opacity = t.base * f.v
         t.mat.depthWrite = t.baseDepthWrite && f.v > 0.5
+        t.fres.value = f.f
         if (!t.led && t.mat.emissive && t.baseEmissive) {
-          if (sel) { const dark = t.baseEmissive.r + t.baseEmissive.g + t.baseEmissive.b < 0.01
-            if (dark) { t.mat.emissive.copy(GLOW); t.mat.emissiveIntensity = 0.03 } }
+          const dark = t.baseEmissive.r + t.baseEmissive.g + t.baseEmissive.b < 0.01
+          if (sel && dark) { t.mat.emissive.copy(GLOW); t.mat.emissiveIntensity = 0.03 }
           else { t.mat.emissive.copy(t.baseEmissive); t.mat.emissiveIntensity = t.baseEI ?? 1 }
         }
       }
@@ -87,9 +111,7 @@ export function ClickablePart({ id, follow, internal: internalProp, children }: 
   })
 
   const clickable = (e: ThreeEvent<PointerEvent | MouseEvent>) => {
-    if (!interactive || !id) return false
     const s = useShowroom.getState()
-    if (s.scene !== 'showroom') return false
     const open = s.view !== 'normal' || !!getPart(deviceId, s.part)?.internal
     if (internal) return open
     // com o interior à mostra, a parte interna atrás da carcaça tem prioridade
@@ -97,7 +119,7 @@ export function ClickablePart({ id, follow, internal: internalProp, children }: 
     return true
   }
 
-  const handlers = useMemo(() => (!interactive || !id ? {} : {
+  const handlers = useMemo(() => (!current || !id ? {} : {
     onPointerOver: (e: ThreeEvent<PointerEvent>) => {
       if (!clickable(e)) return
       e.stopPropagation(); setHover(true); useShowroom.getState().setHovered(id)
@@ -113,15 +135,13 @@ export function ClickablePart({ id, follow, internal: internalProp, children }: 
       const s = useShowroom.getState()
       if (s.part !== id) s.selectPart(id)
     },
-  }), [interactive, id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }), [current, id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <Select enabled={hover}>
+    <Select enabled={(hover && current) || (warm && !!id)}>
       <group ref={group} name={id ?? `shell:${follow ?? ''}`} userData={{ partId: id, internalPart: internal && !!id }} {...handlers}>
         {children}
       </group>
     </Select>
   )
 }
-
-export const partCount = (deviceId: keyof typeof DEVICE_BY_ID) => DEVICE_BY_ID[deviceId].parts.length

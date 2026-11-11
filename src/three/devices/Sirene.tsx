@@ -4,9 +4,9 @@ import { useFrame } from '@react-three/fiber'
 import { Html, RoundedBox } from '@react-three/drei'
 import { ClickablePart } from '../parts/ClickablePart'
 import { M, fxBasic } from '../common/materials'
-import { LogoRelief } from '../common/Logo'
+import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
-import { latheZ, stadiumGeometry } from '../common/shapes'
+import { latheZ, smoothLatheZ, stadiumGeometry } from '../common/shapes'
 import { DeviceCtx, bump, clamp01, explodeAmt, seg, useActionPhase, type DeviceProps } from '../common/util'
 import { actionTau, actionTime, useShowroom } from '../../store/showroomStore'
 import { SoundWaves } from '../fx/SoundWaves'
@@ -35,7 +35,8 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
   const batt = useRef<THREE.Group>(null!)
   const plugRef = useRef<THREE.Group>(null!)
   const lever = useRef<THREE.Group>(null!)
-  const dome = useMemo(() => latheZ([[1.0, -0.25], [0.99, -0.15], [0.94, 0.03], [0.86, 0.18], [0.76, 0.27], [0.62, 0.3], [0.001, 0.3]]), [])
+  // face plana, chanfro largo e macio até a lateral, e a lateral descendo com leve conicidade
+  const dome = useMemo(() => smoothLatheZ([[1.0, -0.25], [0.995, -0.18], [0.975, -0.02], [0.95, 0.1], [0.905, 0.2], [0.83, 0.265], [0.74, 0.296], [0.7, 0.3], [0.5, 0.3], [0.25, 0.3], [0.001, 0.3]], 128, 80), [])
   const rim = useMemo(() => latheZ([[0.9, -0.63], [0.86, -0.45], [0.82, -0.29]]), [])
   const floor = useMemo(supportFloor, [])
   const slit = useMemo(() => stadiumGeometry(0.12, 0.04, 0.008, 0.003), [])
@@ -43,7 +44,6 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
   const ringMat = useMemo(() => fxBasic('#8fb4ff', 0), [])
   const sparkMat = useMemo(() => fxBasic('#fff3b0', 0), [])
   const clicPhase = useActionPhase('encaixe', [2.6])
-  const tamperPhase = useActionPhase('tamper', [0.6], true)
 
   const isOn = () => (sounding ? sounding() : interactive && useShowroom.getState().sirenOn)
   const level = () => (isOn() ? (interactive ? useShowroom.getState().sirenLevel : 2) : 0)
@@ -84,7 +84,10 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
         <ClickablePart id="corpo">
           <group ref={shell}>
             <mesh geometry={dome} material={M.white} castShadow />
-            <LogoRelief r={0.19} position={[0.1, -0.02, 0.3]} depth={0.008} />
+            {/* linha de partição entre a face e o corpo, e o mesmo símbolo do módulo em sulcos finos */}
+            <mesh material={M.partition} position={[0, 0, 0.2985]} scale={[1, 1, 0.3]}><torusGeometry args={[0.715, 0.006, 6, 128]} /></mesh>
+            <mesh material={M.partition} position={[0, 0, -0.235]}><torusGeometry args={[0.997, 0.006, 6, 128]} /></mesh>
+            <LogoGroove r={0.3} position={[0, 0.02, 0.3005]} />
           </group>
         </ClickablePart>
         <ClickablePart id="led">
@@ -175,14 +178,6 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
       {interactive && clicPhase >= 0 && (
         <Html position={[0, 1.25, 0]} center style={{ pointerEvents: 'none' }}>
           <div className="fx-tag rounded-full bg-ok px-4 py-1.5 text-sm font-bold text-[#05210c]">Clic! Travada no suporte</div>
-        </Html>
-      )}
-      {interactive && tamperPhase >= 0 && (
-        <Html position={[0, -1.3, 0.9]} center style={{ pointerEvents: 'none' }}>
-          <div className="fx-tag flex items-center gap-2 rounded-full bg-alert px-4 py-1.5 text-sm font-bold text-white">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-white" style={{ animation: 'blink 0.6s steps(2) infinite' }} />
-            Sirene aberta: o sistema não arma
-          </div>
         </Html>
       )}
     </DeviceCtx.Provider>

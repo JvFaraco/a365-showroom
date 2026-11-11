@@ -1,5 +1,7 @@
 # Alarme 365 · Showroom 3D
 
+> **Licença:** esta pasta não está sob a licença MIT da raiz do repositório. Todos os direitos reservados. "Orsegups", "Alarme 365", o logo e o telefone são marcas e informações da Orsegups, usados só para apresentação. Veja [`LICENSE.md`](LICENSE.md).
+
 Apresentação interativa em 3D dos 7 equipamentos do Alarme 365 (Orsegups). O público gira cada aparelho, clica numa parte, a câmera voa até ela e abre um card curto explicando o que é e para que serve.
 
 ```bash
@@ -27,7 +29,25 @@ No modo apresentação, `→` (ou o clicker, que envia PageDown) segue para o pr
 
 As micro-animações que abrem ou tiram algo (tampa do fotossensor, tampa do controle, bateria da sirene, sirene fora do suporte) ficam abertas até o botão de desfazer do card ("Fechar", "Recolocar", "Encaixar"), que volta pelo mesmo caminho.
 
-`?hq` na URL mantém o reflexo e o pós-processamento completos mesmo que o FPS caia.
+## Fluidez
+
+- Os 7 aparelhos do showroom ficam montados o tempo todo. Trocar de aparelho só muda `visible` e anima a posição.
+- Atrás da tela de carregamento há um aquecimento: tudo fica visível por alguns frames, o contorno do hover e a sombra de contato são exercitados e `gl.compile` fecha os shaders. Depois disso, nenhum clique, zoom, Raio-X ou micro-animação compila shader novo.
+- O que muda a cada frame (anel de 5 s, linha do tempo, etiqueta do hover) corre em refs e direto no DOM, fora do estado do React.
+- Qualidade adaptativa: quando o FPS cai, primeiro o DPR vai a 1; depois sai o AO; por último saem o reflexo do piso, a vinheta e o SMAA.
+- Sombra de contato assada uma vez por aparelho; AO em meia resolução; bloom só nos emissivos; sem DOF.
+
+Parâmetros de URL:
+
+| Parâmetro | Efeito |
+|---|---|
+| `?hq` | mantém reflexo e pós-processamento completos mesmo que o FPS caia |
+| `?debug=1` | só em `npm run dev`: FPS, draw calls e triângulos (`r3f-perf`) |
+| `?ref=1` | só em `npm run dev`: modo de comparação com a foto (veja abaixo) |
+
+## Comparar com a foto (`?ref=1`)
+
+Coloque as fotos de referência em `ref/<id>.jpg` na raiz desta pasta (`modulo`, `sirene`, `fotossensor`, `controle`, `placa`, `app`). A pasta `ref/` fica fora do git e fora do build. Com `npm run dev`, abra `/?ref=1`: a foto aparece por cima do canvas com um slider de opacidade, e a câmera trava no ângulo da foto. `&d=sirene` escolhe o aparelho e `&cam=px,py,pz,tx,ty,tz,fov,roll` afina o ângulo sem recompilar. Os ângulos ficam em `src/dev/RefMode.tsx`.
 
 ## Onde fica cada coisa
 
@@ -57,6 +77,6 @@ A lista de partes de cada aparelho, com primitivas, proporções e materiais, es
 
 ## Pendências a confirmar com a Orsegups
 
-- Modelo da bateria do controle remoto.
 - Destino do QR Code do verso da placa. O que aparece no demo é ilustrativo e não codifica nada.
-- Botão 190 do Módulo: o demo mostra o LED como o cristal na face, perto da borda da frente, e o botão como o ponto no centro desse cristal. Falta confirmar se o botão é só o ponto central ou o cristal inteiro.
+- Cor do filete lateral do controle: azul na arte oficial, amarelo na foto real. O demo usa o azul.
+- "Aletas de ventilação": o card continua dizendo que elas refrigeram a eletrônica, mas as fotos mostram que não há ventoinha.

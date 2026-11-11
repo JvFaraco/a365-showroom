@@ -5,6 +5,7 @@ import { ClickablePart } from '../parts/ClickablePart'
 import { M } from '../common/materials'
 import { roundedRectGeometry } from '../common/shapes'
 import { DeviceCtx, useActionPhase, type DeviceProps } from '../common/util'
+import { useShowroom } from '../../store/showroomStore'
 import { AppScreen } from '../../ui/AppScreen'
 import { MiniModulo } from '../fx/MiniModulo'
 
@@ -21,6 +22,8 @@ export function Smartphone({ interactive = false }: DeviceProps) {
   const frame = useMemo(() => roundedRectGeometry(0.95, 1.95, 0.13, 0.07, 0.012), [])
   const glass = useMemo(() => roundedRectGeometry(0.89, 1.89, 0.11, 0.004, 0), [])
   const armOn = useActionPhase('alarme-geral') >= 0
+  // no showroom os 7 aparelhos ficam montados: a tela (DOM) só aparece quando o celular é o aparelho ativo
+  const shown = useShowroom((s) => !interactive || (s.scene === 'showroom' && s.device === 'app'))
 
   return (
     <DeviceCtx.Provider value={{ deviceId: 'app', interactive }}>
@@ -31,7 +34,7 @@ export function Smartphone({ interactive = false }: DeviceProps) {
         <mesh material={M.lens} position={[-0.25, 0.7, -0.05]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.09, 0.09, 0.02, 24]} /></mesh>
       </ClickablePart>
       <Html transform occlude={[body]} position={[0, 0, 0.052]} scale={HTML_SCALE} zIndexRange={[10, 0]}
-        style={{ transition: 'opacity .2s' }} pointerEvents={interactive ? 'auto' : 'none'}>
+        style={{ transition: 'opacity .2s', display: shown ? 'block' : 'none' }} pointerEvents={interactive ? 'auto' : 'none'}>
         <AppScreen interactive={interactive} />
       </Html>
       {interactive && armOn && <MiniModulo position={[-1.05, 0.55, 0.1]} scale={0.8} />}

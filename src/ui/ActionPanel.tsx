@@ -1,15 +1,27 @@
 import { useEffect, useRef, useState } from 'react'
 import { ACTIONS } from '../data/actions'
 import { LED_STATES } from '../data/ledStates'
-import { now, useShowroom, type ArmState } from '../store/showroomStore'
+import { holdRef, now, useShowroom, type ArmState } from '../store/showroomStore'
 import { beep } from './audio'
 import { HomePerson, LockClosed, LockOpen } from './icons'
 
 function HoldButton({ okText, label }: { okText: string; label: string }) {
-  const hold = useShowroom((s) => s.hold)
   const msg = useShowroom((s) => s.holdMsg)
   const set = useShowroom((s) => s.set)
   const C = 2 * Math.PI * 34
+  const arc = useRef<SVGCircleElement>(null)
+  const secs = useRef<HTMLSpanElement>(null)
+  // o progresso corre fora do React: o anel é atualizado direto no DOM, por rAF
+  useEffect(() => {
+    let raf = 0
+    const tick = () => {
+      if (arc.current) arc.current.style.strokeDashoffset = String(C * (1 - holdRef.v))
+      if (secs.current) secs.current.textContent = holdRef.v > 0 ? `${(holdRef.v * 5).toFixed(1)} s` : ''
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [C])
   return (
     <div className="flex items-center gap-4">
       <button
@@ -23,7 +35,7 @@ function HoldButton({ okText, label }: { okText: string; label: string }) {
       >
         <svg className="absolute inset-0 -rotate-90" viewBox="0 0 80 80" aria-hidden>
           <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,.25)" strokeWidth="5" />
-          <circle cx="40" cy="40" r="34" fill="none" stroke={msg === 'ok' ? 'hsl(128 53% 50%)' : '#fff'} strokeWidth="5" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - hold)} />
+          <circle ref={arc} cx="40" cy="40" r="34" fill="none" stroke={msg === 'ok' ? 'hsl(128 53% 50%)' : '#fff'} strokeWidth="5" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C} />
         </svg>
         {label}
       </button>
@@ -31,12 +43,12 @@ function HoldButton({ okText, label }: { okText: string; label: string }) {
         {msg === 'ok' ? (
           <>
             <div className="font-semibold text-ok">{okText}</div>
-            <button className="btn mt-2 !py-1 text-xs" onClick={() => set({ hold: 0, holdMsg: '' })}>Repetir</button>
+            <button className="btn mt-2 !py-1 text-xs" onClick={() => { holdRef.v = 0; set({ holdMsg: '' }) }}>Repetir</button>
           </>
         ) : msg === 'solte' ? (
           <div className="font-semibold text-accent">Mantenha pressionado por 5 segundos</div>
         ) : (
-          <div className="text-white/80">Segure o botão por <b>5 segundos</b>. <span className="text-white/60">{hold > 0 ? `${(hold * 5).toFixed(1)} s` : ''}</span></div>
+          <div className="text-white/80">Segure o botão por <b>5 segundos</b>. <span ref={secs} className="text-white/60" /></div>
         )}
       </div>
     </div>

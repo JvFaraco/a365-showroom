@@ -9,6 +9,12 @@ export type ArmState = 'disarmed' | 'armed' | 'partial'
 
 export const now = () => performance.now() / 1000
 
+// Valores que mudam a cada frame ficam fora do React/zustand (lidos em useFrame e por rAF no DOM).
+/** Progresso 0..1 do botão segurado por 5 s (190 no módulo, ✱ no controle). */
+export const holdRef = { v: 0 }
+/** Tempo (s) da cena "Em ação". */
+export const ia = { t: 0 }
+
 type State = {
   scene: Scene
   device: DeviceId
@@ -19,7 +25,6 @@ type State = {
   armState: ArmState
   ledState: LedStateId
   action: { id: ActionId; t0: number; undoAt?: number } | null
-  hold: number // 0..1 progresso do botão segurado (190 / pânico)
   holding: boolean
   holdMsg: '' | 'solte' | 'ok'
   sirenLevel: 1 | 2 | 3
@@ -27,11 +32,14 @@ type State = {
   shockLevel: 1 | 2 | 3 // 1 baixa, 2 média, 3 alta
   knock: { t0: number; fired: boolean } | null
   appPhoto: 'idle' | 'loading' | 'done'
-  iaT: number // tempo da cena "Em ação"
   iaPlaying: boolean
+  iaStep: number // passo atual da cena "Em ação" (o tempo corre em `ia.t`, fora do React)
   presenter: boolean
   sound: boolean
-  lowPerf: boolean
+  /** 0 completo · 1 DPR mínimo · 2 sem AO · 3 sem reflexo nem SMAA/vinheta */
+  quality: 0 | 1 | 2 | 3
+  ready: boolean // aparelhos montados e shaders pré-compilados
+  warm: boolean // aquecimento: tudo visível e selecionado por alguns frames, atrás do carregamento
   listOpen: boolean
   resetTick: number
 
@@ -52,7 +60,7 @@ type State = {
   set: (p: Partial<State>) => void
 }
 
-const clean = { action: null, hold: 0, holding: false, holdMsg: '' as const, sirenOn: false, knock: null, appPhoto: 'idle' as const }
+const clean = { action: null, holding: false, holdMsg: '' as const, sirenOn: false, knock: null, appPhoto: 'idle' as const }
 
 export const useShowroom = create<State>((set, get) => ({
   scene: 'intro',
@@ -65,17 +73,19 @@ export const useShowroom = create<State>((set, get) => ({
   ledState: 'desarmado',
   ...clean,
   sirenLevel: 2,
-  iaT: 0,
   iaPlaying: false,
+  iaStep: 0,
   shockLevel: 2,
   presenter: false,
   sound: false,
-  lowPerf: false,
+  quality: 0,
+  ready: false,
+  warm: true,
   listOpen: typeof window !== 'undefined' && window.innerWidth >= 1024,
   resetTick: 0,
 
-  set: (p) => set(p),
-  setScene: (scene) => set({ scene, part: null, hovered: null, tour: false, view: 'normal', iaT: 0, iaPlaying: false, ...clean }),
+  set: (p) => { if ('action' in p || 'part' in p) holdRef.v = 0; set(p) },
+  setScene: (scene) => { ia.t = 0; holdRef.v = 0; set({ scene, part: null, hovered: null, tour: false, view: 'normal', iaPlaying: false, iaStep: 0, ...clean }) },
   setDevice: (device, part = null) => {
     set({ scene: 'showroom', device, part: null, hovered: null, view: 'normal', ...clean })
     if (part) get().selectPart(part)
@@ -85,6 +95,7 @@ export const useShowroom = create<State>((set, get) => ({
     const p = getPart(s.device, part)
     // parte interna pedida com a carcaça fechada: liga o Raio-X para ela aparecer
     const view = p?.internal && s.view === 'normal' ? 'xray' : s.view
+    holdRef.v = 0
     set({ part: p ? p.id : null, view, hovered: null, ...clean })
   },
   setHovered: (hovered) => set({ hovered }),
@@ -120,8 +131,8 @@ export const useShowroom = create<State>((set, get) => ({
   },
   setArm: (armState) => set({ armState, ledState: ARM_TO_LED[armState] }),
   setLed: (ledState) => set({ ledState }),
-  startAction: (id) => set({ ...clean, sirenOn: id === 'som', action: { id, t0: now() } }),
-  stopAction: () => set({ ...clean }),
+  startAction: (id) => { holdRef.v = 0; set({ ...clean, sirenOn: id === 'som', action: { id, t0: now() } }) },
+  stopAction: () => { holdRef.v = 0; set({ ...clean }) },
   undoAction: () => { const a = get().action; if (a && !a.undoAt) set({ action: { ...a, undoAt: now() } }) },
   reset: () =>
     set((s) => ({

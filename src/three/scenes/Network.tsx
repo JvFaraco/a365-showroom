@@ -1,6 +1,5 @@
 import { Html } from '@react-three/drei'
 import type { Vec3 } from '../../data/devices'
-import { Stage } from '../Stage'
 import { Placed, type Placement } from './Kit'
 import { RadioPulse } from '../fx/RadioPulse'
 import { CommLinks } from '../fx/CommLinks'
@@ -30,7 +29,6 @@ const Tag = ({ position, children, tone = 'dark' }: { position: Vec3; children: 
 export function Network() {
   return (
     <>
-      <Stage floorY={0} />
       {LAYOUT.map((p) => <Placed key={p.id} p={p} />)}
       {RADIO.map((from, i) => <RadioPulse key={i} from={from} to={MOD} speed={0.5 + i * 0.07} />)}
       <CommLinks from={MOD} to={VIAS} state={() => 1} />

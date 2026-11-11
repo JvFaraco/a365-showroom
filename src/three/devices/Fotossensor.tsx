@@ -4,7 +4,7 @@ import { useFrame } from '@react-three/fiber'
 import { Html, RoundedBox } from '@react-three/drei'
 import { ClickablePart } from '../parts/ClickablePart'
 import { M, fxBasic } from '../common/materials'
-import { LogoRelief } from '../common/Logo'
+import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
 import { fresnelTexture, polaroidTexture } from '../common/textures'
 import { stadiumGeometry } from '../common/shapes'
@@ -13,7 +13,9 @@ import { actionTau, actionTime } from '../../store/showroomStore'
 import { DetectionFan, LowPolyDog, LowPolyPerson } from '../fx/DetectionFan'
 import { CameraFlash } from '../fx/CameraFlash'
 
-const PIVOT: [number, number, number] = [0, 0.3, -0.42]
+const PY = 0.66 // altura do pivô do suporte (acima da tampa das pilhas)
+const PIVOT: [number, number, number] = [0, PY, -0.42]
+const CELL_X = [-0.118, 0, 0.118]
 const FAN_Y = -0.93
 const personX = (t: number) => -3.4 + seg(t, 2.5, 6.5) * 6.8
 const dogX = (t: number) => -3.4 + seg(t, 8, 12) * 6.8
@@ -30,7 +32,10 @@ function pirAlert() {
 export function Fotossensor({ interactive = false, flash }: DeviceProps & { flash?: () => number }) {
   const tilt = useRef<THREE.Group>(null!)
   const cover = useRef<THREE.Group>(null!)
-  const cells = useRef<THREE.Group>(null!)
+  const flip = useRef<THREE.Group>(null!)
+  const pin = useRef<THREE.Mesh>(null!)
+  const cellRefs = useRef<(THREE.Group | null)[]>([])
+  const arrowPhase = useActionPhase('tampa-foto', [0.8, 1.5], true)
   const polaroid = useRef<THREE.Group>(null!)
   const person = useRef<THREE.Group>(null!)
   const dog = useRef<THREE.Group>(null!)
@@ -59,10 +64,20 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
     tilt.current.rotation.y = Math.sin(ts * 1.6) * 0.42 * amp
     tilt.current.rotation.x = Math.sin(ts * 0.8) * 0.12 * amp
     ruler.current.visible = ts >= 0
-    // tampa traseira abre e as pilhas deslizam
+    // tampa: o sensor vira de costas, a tampa solta pela borda de cima, inclina ~25° e sai para trás;
+    // o pino do anti-sabotagem salta e as 3 pilhas AAA deslizam para fora, uma de cada vez
     const tt = actionTau('tampa-foto')
-    cover.current.rotation.x = (tt < 0 ? 0 : seg(tt, 0, 0.8)) * 1.9
-    cells.current.position.z = -(tt < 0 ? 0 : seg(tt, 1.0, 1.8)) * 0.55
+    flip.current.rotation.y = tt < 0 ? 0 : seg(tt, 0, 0.8) * Math.PI
+    const off = tt < 0 ? 0 : seg(tt, 2.0, 2.6)
+    // "clic" ao fechar: a tampa assenta com um leve pulso
+    const clic = tt >= 0 && tt < 1.5 ? bump(tt, 1.2, 1.35, 1.4, 1.5) * 0.015 : 0
+    cover.current.rotation.x = -(tt < 0 ? 0 : seg(tt, 1.5, 2.0)) * 0.44
+    cover.current.position.set(0, -off * 0.15, -off * 0.75 + clic)
+    pin.current.position.z = -0.262 - (tt < 0 ? 0 : seg(tt, 2.6, 2.8)) * 0.04
+    for (let i = 0; i < 3; i++) {
+      const c = cellRefs.current[i]
+      if (c) { const k = tt < 0 ? 0 : seg(tt, 2.9 + i * 0.15, 3.4 + i * 0.15); c.position.set(0, k * 0.1, -k * 0.5) }
+    }
     // câmera: polaroid voa para fora
     const tc = actionTime('camera')
     const k = tc < 0 ? 0 : bump(tc, 0.9, 2.0, 6.3, 6.9)
@@ -85,6 +100,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
 
   return (
     <DeviceCtx.Provider value={{ deviceId: 'fotossensor', interactive }}>
+      <group ref={flip}>
       <group position={PIVOT}>
         <group ref={tilt}>
           <group position={[-PIVOT[0], -PIVOT[1], -PIVOT[2]]}>
@@ -92,7 +108,19 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
             <ClickablePart follow="corpo">
               <RoundedBox args={[0.8, 1.76, 0.5]} radius={0.2} smoothness={6} position={[0, 0.07, 0]} material={M.white} castShadow />
               <RoundedBox args={[0.74, 0.66, 0.1]} radius={0.045} smoothness={4} position={[0, -0.14, 0.23]} material={M.white} />
-              <LogoRelief r={0.065} position={[0, -0.62, 0.251]} depth={0.006} />
+              <LogoGroove r={0.075} position={[0, -0.62, 0.2505]} />
+              {/* linhas de partição: entre o corpo e a base, e em volta da tampa das pilhas */}
+              <RoundedBox args={[0.806, 0.014, 0.506]} radius={0.006} smoothness={2} position={[0, -0.772, 0]} material={M.partition} />
+              <RoundedBox args={[0.71, 1.3, 0.012]} radius={0.006} smoothness={2} position={[0, -0.2, -0.2475]} material={M.partition} />
+              {/* berço das pilhas: fundo, divisórias e contatos metálicos (molas) nas pontas */}
+              <mesh material={M.greyDark} position={[0, -0.2, -0.2545]} rotation={[0, Math.PI, 0]}><planeGeometry args={[0.66, 1.24]} /></mesh>
+              {[-0.059, 0.059].map((x) => <mesh key={x} material={M.whiteRelief} position={[x, -0.25, -0.265]}><boxGeometry args={[0.012, 0.5, 0.03]} /></mesh>)}
+              {CELL_X.map((x, i) => (
+                <group key={x}>
+                  <mesh material={M.metal} position={[x, -0.25 + (i % 2 ? 0.245 : -0.245), -0.262]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.028, 0.006, 6, 16]} /></mesh>
+                  <mesh material={M.metal} position={[x, -0.25 + (i % 2 ? -0.24 : 0.24), -0.262]}><boxGeometry args={[0.06, 0.01, 0.05]} /></mesh>
+                </group>
+              ))}
             </ClickablePart>
 
             {/* módulo oval em relevo: câmera + janela do flash/LED */}
@@ -102,7 +130,10 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
             <ClickablePart id="camera">
               <mesh material={M.blackGloss} position={[0, 0.62, 0.345]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.075, 0.075, 0.03, 32]} /></mesh>
               <mesh material={M.lens} position={[0, 0.62, 0.362]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.045, 0.045, 0.012, 32]} /></mesh>
-              <mesh material={M.blue} position={[0, 0.62, 0.3685]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.018, 0.018, 0.004, 16]} /></mesh>
+              <mesh material={M.blue} position={[0, 0.62, 0.3685]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.014, 0.014, 0.004, 16]} /></mesh>
+              {/* anéis internos da íris */}
+              {[0.026, 0.036].map((r) => <mesh key={r} material={M.greyDark} position={[0, 0.62, 0.3685]}><torusGeometry args={[r, 0.0025, 6, 32]} /></mesh>)}
+              <mesh material={M.chrome} position={[0, 0.62, 0.36]}><torusGeometry args={[0.076, 0.004, 6, 48]} /></mesh>
             </ClickablePart>
             <ClickablePart id="flash">
               <mesh geometry={win} material={M.blackGloss} position={[0, 0.44, 0.335]} />
@@ -133,33 +164,45 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
               <RoundedBox args={[0.81, 0.2, 0.51]} radius={0.09} smoothness={5} position={[0, -0.87, 0]} material={M.greyDark} castShadow />
             </ClickablePart>
 
-            {/* traseira */}
+            {/* tampa traseira: ocupa quase toda a traseira; entalhe no topo (alavanca) e abas que prendem embaixo */}
             <ClickablePart id="tampa-traseira">
-              <group position={[0, -0.8, -0.26]}>
+              <group position={[0, -0.84, -0.285]}>
                 <group ref={cover}>
-                  <RoundedBox args={[0.56, 1.0, 0.035]} radius={0.015} smoothness={3} position={[0, 0.5, 0]} material={M.whiteRelief} />
-                  <mesh material={M.grey} position={[0, 0.92, -0.02]}><boxGeometry args={[0.16, 0.05, 0.02]} /></mesh>
+                  <RoundedBox args={[0.7, 1.28, 0.07]} radius={0.03} smoothness={4} position={[0, 0.64, 0]} material={M.white} castShadow />
+                  <mesh material={M.hole} position={[0, 1.255, -0.03]}><boxGeometry args={[0.16, 0.04, 0.02]} /></mesh>
+                  {[-0.2, 0.2].map((x) => <mesh key={x} material={M.whiteRelief} position={[x, 0.0, 0.02]}><boxGeometry args={[0.1, 0.05, 0.03]} /></mesh>)}
                 </group>
               </group>
             </ClickablePart>
+            {/* 3 pilhas AAA lado a lado, na vertical, com as polaridades alternadas */}
             <ClickablePart id="pilhas">
-              <group ref={cells}>
-                {[-0.13, 0.13].map((x) => (
-                  <group key={x} position={[x, -0.3, -0.1]}>
-                    <mesh material={M.chip}><cylinderGeometry args={[0.1, 0.1, 0.62, 24]} /></mesh>
-                    <mesh material={M.orange} position={[0, 0.12, 0]}><cylinderGeometry args={[0.102, 0.102, 0.2, 24]} /></mesh>
-                    <mesh material={M.metal} position={[0, 0.33, 0]}><cylinderGeometry args={[0.035, 0.035, 0.05, 12]} /></mesh>
+              {CELL_X.map((x, i) => (
+                <group key={x} ref={(gr) => { cellRefs.current[i] = gr }}>
+                  <group position={[x, -0.25, -0.257]} rotation={[0, 0, i % 2 ? Math.PI : 0]}>
+                    <mesh material={M.cell}><capsuleGeometry args={[0.05, 0.36, 4, 20]} /></mesh>
+                    <mesh material={M.metal} position={[0, 0.222, 0]}><cylinderGeometry args={[0.019, 0.019, 0.03, 12]} /></mesh>
+                    <mesh material={M.metal} position={[0, -0.226, 0]}><cylinderGeometry args={[0.034, 0.034, 0.008, 12]} /></mesh>
+                    <mesh material={M.partition} position={[0, 0.16, 0]}><cylinderGeometry args={[0.051, 0.051, 0.012, 20]} /></mesh>
                   </group>
-                ))}
-              </group>
+                </group>
+              ))}
             </ClickablePart>
+            {/* pino do anti-sabotagem, ao lado do berço: a tampa o mantém pressionado */}
+            <ClickablePart follow="tampa-traseira" internal>
+              <mesh ref={pin} material={M.grey} position={[0.27, 0.22, -0.262]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.025, 0.025, 0.05, 12]} /></mesh>
+            </ClickablePart>
+            {interactive && arrowPhase === 0 && (
+              <Html position={[0, 0.5, -0.36]} center style={{ pointerEvents: 'none' }}>
+                <div className="fx-tag -translate-y-7 text-center text-xs font-semibold text-accent">entalhe<div className="text-xl leading-none">▼</div></div>
+              </Html>
+            )}
             <ClickablePart id="fixacao">
-              <RoundedBox args={[0.46, 0.5, 0.03]} radius={0.012} smoothness={3} position={[0, 0.3, -0.3]} material={M.grey} />
-              {[[-0.16, 0.16], [0.16, 0.16], [-0.16, -0.16], [0.16, -0.16]].map(([x, y], i) => (
-                <mesh key={i} material={M.hole} position={[x, 0.3 + y, -0.316]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.025, 0.025, 0.004, 12]} /></mesh>
+              <RoundedBox args={[0.46, 0.34, 0.03]} radius={0.012} smoothness={3} position={[0, PY, -0.3]} material={M.grey} />
+              {[[-0.16, 0.1], [0.16, 0.1], [-0.16, -0.1], [0.16, -0.1]].map(([x, y], i) => (
+                <mesh key={i} material={M.hole} position={[x, PY + y, -0.316]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.025, 0.025, 0.004, 12]} /></mesh>
               ))}
               {[-0.2, 0.2].map((x) => (
-                <mesh key={x} material={M.metal} position={[x, 0.3, -0.322]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.03, 0.03, 0.02, 6]} /></mesh>
+                <mesh key={x} material={M.metal} position={[x, PY, -0.322]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.03, 0.03, 0.02, 6]} /></mesh>
               ))}
             </ClickablePart>
           </group>
@@ -169,12 +212,15 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
       {/* suporte articulado: esfera do pivô, braço curto e placa de parede */}
       <ClickablePart id="suporte">
         <mesh material={M.white} position={PIVOT}><sphereGeometry args={[0.1, 24, 16]} /></mesh>
-        <mesh material={M.white} position={[0, 0.3, -0.58]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.055, 0.07, 0.3, 20]} /></mesh>
-        <RoundedBox args={[0.42, 0.62, 0.05]} radius={0.02} smoothness={3} position={[0, 0.3, -0.75]} material={M.white} castShadow />
+        <mesh material={M.white} position={[0, PY, -0.58]} rotation={[Math.PI / 2, 0, 0]}><capsuleGeometry args={[0.058, 0.2, 6, 20]} /></mesh>
+        <mesh material={M.partition} position={PIVOT} rotation={[0, 0, 0]}><torusGeometry args={[0.101, 0.004, 6, 32]} /></mesh>
+        <RoundedBox args={[0.42, 0.52, 0.05]} radius={0.022} smoothness={4} position={[0, PY, -0.75]} material={M.white} castShadow />
         {[0.2, -0.2].map((y) => (
-          <mesh key={y} material={M.metal} position={[0, 0.3 + y, -0.722]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.03, 0.03, 0.01, 12]} /></mesh>
+          <mesh key={y} material={M.metal} position={[0, PY + y * 0.85, -0.722]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.03, 0.03, 0.01, 12]} /></mesh>
         ))}
       </ClickablePart>
+
+      </group>
 
       {interactive && (
         <>

@@ -1,0 +1,4 @@
+node_modules/
+dist/
+# fotos de referência do modo ?ref=1 (só locais, não versionadas)
+ref/

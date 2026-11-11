@@ -1,11 +1,14 @@
 import * as THREE from 'three'
 import { logoPath2D } from './Logo'
 
-function canvas(w: number, h: number) {
+function canvas(w: number, h: number, scale = 1) {
   const c = document.createElement('canvas')
-  c.width = w; c.height = h
-  return [c, c.getContext('2d')!] as const
+  c.width = Math.round(w * scale); c.height = Math.round(h * scale)
+  const ctx = c.getContext('2d')!
+  ctx.scale(scale, scale)
+  return [c, ctx] as const
 }
+const HI = 2048 / 768 // texturas da placa de aviso com 2048 px de largura
 function tex(c: HTMLCanvasElement) {
   const t = new THREE.CanvasTexture(c)
   t.colorSpace = THREE.SRGBColorSpace
@@ -120,7 +123,7 @@ const AZUL = '#1E398D', AMARELO = '#F9E000'
 
 export const placaLogoTexture = () =>
   memo('placa-logo', () => {
-    const [c, ctx] = canvas(768, 640)
+    const [c, ctx] = canvas(768, 640, HI)
     ctx.fillStyle = AZUL; ctx.fillRect(0, 0, 768, 640)
     logoPath2D(ctx, 384, 300, 190, AMARELO)
     return tex(c)
@@ -128,7 +131,7 @@ export const placaLogoTexture = () =>
 
 export const placaFoneTexture = () =>
   memo('placa-fone', () => {
-    const [c, ctx] = canvas(768, 220)
+    const [c, ctx] = canvas(768, 220, HI)
     ctx.fillStyle = AZUL; ctx.fillRect(0, 0, 768, 220)
     ctx.textAlign = 'center'
     ctx.fillStyle = AMARELO; ctx.font = '700 84px Poppins, sans-serif'
@@ -140,7 +143,7 @@ export const placaFoneTexture = () =>
 
 export const placaFaixaTexture = () =>
   memo('placa-faixa', () => {
-    const [c, ctx] = canvas(768, 190)
+    const [c, ctx] = canvas(768, 190, HI)
     ctx.fillStyle = AMARELO; ctx.fillRect(0, 0, 768, 190)
     // câmera de segurança
     ctx.fillStyle = AZUL; ctx.strokeStyle = AZUL; ctx.lineWidth = 12
@@ -174,7 +177,7 @@ function fakeQr(ctx: CanvasRenderingContext2D, x: number, y: number, size: numbe
 
 export const placaRodapeTexture = () =>
   memo('placa-rodape', () => {
-    const [c, ctx] = canvas(768, 150)
+    const [c, ctx] = canvas(768, 150, HI)
     ctx.fillStyle = AZUL; ctx.fillRect(0, 0, 768, 150)
     ctx.fillStyle = '#fff'; ctx.font = '700 70px Poppins, sans-serif'; ctx.textAlign = 'center'
     ctx.fillText('ALARME 365', 384, 100)
@@ -183,7 +186,7 @@ export const placaRodapeTexture = () =>
 
 export const placaVersoTexture = () =>
   memo('placa-verso', () => {
-    const [c, ctx] = canvas(768, 1024)
+    const [c, ctx] = canvas(768, 1024, HI)
     ctx.fillStyle = AZUL; ctx.fillRect(0, 0, 768, 1024)
     ctx.fillStyle = '#fff'; ctx.font = '700 96px Poppins, sans-serif'; ctx.textAlign = 'center'
     ctx.fillText('ALARME 365', 384, 290)
@@ -218,5 +221,63 @@ export const grilleTexture = () =>
       const x = 23 + i * 21, y = 23 + j * 21
       if (Math.hypot(x - 128, y - 128) < 112) { ctx.beginPath(); ctx.arc(x, y, 6.2, 0, Math.PI * 2); ctx.fill() }
     }
+    return tex(c)
+  })
+
+// ---------- acabamento ----------
+/** Micro-textura do plástico injetado: normal map sutil, gerado uma vez. */
+export const microNormalTexture = () =>
+  memo('micro-normal', () => {
+    const N = 128
+    const h = new Float32Array(N * N)
+    let seed = 7
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
+    for (let i = 0; i < h.length; i++) h[i] = rnd()
+    // suaviza um pouco para virar "casca de laranja" fina, e não ruído puro
+    const b = new Float32Array(N * N)
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      let a = 0
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) a += h[((y + dy + N) % N) * N + ((x + dx + N) % N)]
+      b[y * N + x] = a / 9
+    }
+    const [c, ctx] = canvas(N, N)
+    const img = ctx.createImageData(N, N)
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const dx = b[y * N + ((x + 1) % N)] - b[y * N + ((x - 1 + N) % N)]
+      const dy = b[((y + 1) % N) * N + x] - b[((y - 1 + N) % N) * N + x]
+      const i = (y * N + x) * 4
+      img.data[i] = 128 + dx * 420; img.data[i + 1] = 128 + dy * 420; img.data[i + 2] = 255; img.data[i + 3] = 255
+    }
+    ctx.putImageData(img, 0, 0)
+    const t = new THREE.CanvasTexture(c)
+    t.wrapS = t.wrapT = THREE.RepeatWrapping
+    t.repeat.set(6, 6)
+    return t
+  })
+
+/** Placa de circuito: verde com trilhas, ilhas e serigrafia ilegível (sem marcas nem textos). */
+export const pcbTexture = () =>
+  memo('pcb', () => {
+    const [c, ctx] = canvas(512, 512)
+    ctx.fillStyle = '#157a3c'; ctx.fillRect(0, 0, 512, 512)
+    let seed = 365
+    const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280)
+    ctx.lineCap = 'round'
+    for (let i = 0; i < 90; i++) {
+      ctx.strokeStyle = `rgba(60,170,95,${0.35 + rnd() * 0.35})`
+      ctx.lineWidth = 1 + rnd() * 2.2
+      let x = rnd() * 512, y = rnd() * 512
+      ctx.beginPath(); ctx.moveTo(x, y)
+      for (let k = 0; k < 3; k++) { if (rnd() > 0.5) x += (rnd() - 0.5) * 180; else y += (rnd() - 0.5) * 180; ctx.lineTo(x, y) }
+      ctx.stroke()
+    }
+    for (let i = 0; i < 160; i++) {
+      const x = rnd() * 512, y = rnd() * 512
+      ctx.fillStyle = rnd() > 0.5 ? 'rgba(214,190,120,.9)' : 'rgba(15,60,30,.9)'
+      ctx.beginPath(); ctx.arc(x, y, 1.5 + rnd() * 2, 0, Math.PI * 2); ctx.fill()
+    }
+    // serigrafia: tracinhos brancos que lembram texto, mas não formam nada legível
+    ctx.fillStyle = 'rgba(235,245,238,.75)'
+    for (let i = 0; i < 70; i++) { const x = rnd() * 500, y = rnd() * 500; for (let k = 0; k < 2 + rnd() * 4; k++) ctx.fillRect(x + k * 4, y, 2.5, 1.2 + rnd() * 2.5) }
     return tex(c)
   })

@@ -5,10 +5,11 @@ import { Html } from '@react-three/drei'
 import { DEVICE_BY_ID, getPart } from '../../data/devices'
 import { useShowroom } from '../../store/showroomStore'
 import { explodeAmt } from '../common/util'
+import { partCenter } from '../common/registry'
 
 /**
  * Linha-guia entre o card de informação (DOM, #part-card) e a parte selecionada (3D).
- * Projeta o ponto da parte na tela a cada frame e move a linha SVG #callout-line.
+ * Projeta o centro da parte na tela a cada frame e move a linha SVG #callout-line.
  */
 export function PartCallout() {
   const v = useMemo(() => new THREE.Vector3(), [])
@@ -19,9 +20,8 @@ export function PartCallout() {
     const s = useShowroom.getState()
     const p = s.scene === 'showroom' ? getPart(s.device, s.part) : undefined
     const card = document.getElementById('part-card')
-    if (!p || !card || (s.action && s.action.id)) { line.style.opacity = dot.style.opacity = '0'; return }
-    const e = p.explode ?? [0, 0, 0], k = explodeAmt.v
-    v.set(p.camera.target[0] + e[0] * k, p.camera.target[1] + e[1] * k, p.camera.target[2] + e[2] * k).project(camera)
+    if (!p || !card || s.action) { line.style.opacity = dot.style.opacity = '0'; return }
+    partCenter(s.device, p.id, explodeAmt.v, v).project(camera)
     const x = (v.x * 0.5 + 0.5) * size.width, y = (-v.y * 0.5 + 0.5) * size.height
     const r = card.getBoundingClientRect()
     const desktop = size.width >= 768
@@ -38,16 +38,16 @@ export function PartCallout() {
 /** Modo Manual: todas as partes com pinos numerados e callouts, como num desenho técnico. */
 export function ManualPins() {
   const device = useShowroom((s) => s.device)
-  const show = useShowroom((s) => s.scene === 'showroom' && s.view === 'manual' && !s.part)
+  const show = useShowroom((s) => s.scene === 'showroom' && s.view === 'manual' && !s.part && s.ready)
   if (!show) return null
   const parts = DEVICE_BY_ID[device].parts
   return (
     <>
       {parts.map((p, i) => {
-        const e = p.explode ?? [0, 0, 0]
-        const left = p.camera.target[0] + e[0] < -0.02 || (Math.abs(p.camera.target[0] + e[0]) <= 0.02 && i % 2 === 1)
+        const c = partCenter(device, p.id, 1, new THREE.Vector3())
+        const left = c.x < -0.02 || (Math.abs(c.x) <= 0.02 && i % 2 === 1)
         return (
-          <Html key={p.id} position={[p.camera.target[0] + e[0], p.camera.target[1] + e[1], p.camera.target[2] + e[2]]} center zIndexRange={[30, 11]}>
+          <Html key={p.id} position={c} center zIndexRange={[30, 11]}>
             <button className="pin-label group relative block" aria-label={`${i + 1}. ${p.name}`}
               onClick={() => useShowroom.getState().selectPart(p.id)}>
               <span className="grid h-6 w-6 place-items-center rounded-full border-2 border-white bg-brand-light text-[11px] font-bold text-white shadow-lg transition group-hover:scale-125 group-hover:bg-accent group-hover:text-ink">{i + 1}</span>

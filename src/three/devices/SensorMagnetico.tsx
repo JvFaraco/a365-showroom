@@ -4,7 +4,7 @@ import { useFrame } from '@react-three/fiber'
 import { Html, RoundedBox } from '@react-three/drei'
 import { ClickablePart } from '../parts/ClickablePart'
 import { M } from '../common/materials'
-import { LogoRelief } from '../common/Logo'
+import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
 import { stadiumGeometry } from '../common/shapes'
 import { DeviceCtx, bump, useActionPhase, type DeviceProps } from '../common/util'
@@ -50,7 +50,10 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
       </ClickablePart>
       <ClickablePart id="corpo">
         <RoundedBox args={[0.56, 1.9, 0.34]} radius={0.085} smoothness={5} position={[-0.2, 0, 0.04]} material={M.white} castShadow />
-        <LogoRelief r={0.085} position={[-0.2, -0.62, 0.211]} depth={0.006} />
+        <LogoGroove r={0.1} position={[-0.2, -0.62, 0.2105]} />
+        {/* linha de partição da tampa e marca de alinhamento com o ímã */}
+        <RoundedBox args={[0.566, 1.906, 0.012]} radius={0.006} smoothness={2} position={[-0.2, 0, -0.128]} material={M.partition} />
+        <mesh material={M.partition} position={[0.045, 0, 0.2105]}><boxGeometry args={[0.05, 0.012, 0.002]} /></mesh>
       </ClickablePart>
       <ClickablePart id="led">
         <mesh geometry={slit} material={M.blackGloss} position={[-0.2, 0.62, 0.203]} />
@@ -79,6 +82,8 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
           <group position={[-HINGE_X, 0, 0.3]}>
             <ClickablePart id="ima">
               <RoundedBox args={[0.32, 1.25, 0.3]} radius={0.07} smoothness={5} position={[0.29, 0, 0]} material={M.white} castShadow />
+              <mesh material={M.partition} position={[0.165, 0, 0.1505]}><boxGeometry args={[0.05, 0.012, 0.002]} /></mesh>
+              <RoundedBox args={[0.326, 1.256, 0.012]} radius={0.006} smoothness={2} position={[0.29, 0, -0.11]} material={M.partition} />
             </ClickablePart>
             <group ref={doorFx} visible={sceneOn}>
               <mesh material={doorMat} position={[1.57, 0, -0.24]} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[2.9, 4.4, 0.14]} /></mesh>

@@ -2,17 +2,18 @@ import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { fxBasic } from '../common/materials'
-import { useShowroom } from '../../store/showroomStore'
+import { holdRef, useShowroom } from '../../store/showroomStore'
 
 const SEG = 60
 
-/** Anel de progresso dos 5 s (botão 190 e pânico), lido de `store.hold`. Plano XY. */
+/** Anel de progresso dos 5 s (botão 190 e pânico), lido de `holdRef`. Plano XY. */
 export function HoldRing({ radius = 0.2, ...props }: { radius?: number } & JSX.IntrinsicElements['group']) {
   const inst = useRef<THREE.InstancedMesh>(null!)
   const track = useMemo(() => fxBasic('#ffffff', 0.18), [])
-  const mat = useMemo(() => fxBasic('#ff3b3b', 1), [])
+  const mat = useMemo(() => { const m = fxBasic('#ff3b3b', 1); m.color.setRGB(2.4, 0.35, 0.35); return m }, [])
   const geo = useMemo(() => new THREE.PlaneGeometry((2 * Math.PI * radius) / SEG * 1.15, radius * 0.16), [radius])
   const ready = useRef(false)
+  const wasOk = useRef<boolean | null>(null)
   useFrame(() => {
     const m = inst.current
     if (!ready.current) {
@@ -27,9 +28,10 @@ export function HoldRing({ radius = 0.2, ...props }: { radius?: number } & JSX.I
       ready.current = true
     }
     const s = useShowroom.getState()
-    m.count = Math.round(s.hold * SEG)
-    mat.color.set(s.holdMsg === 'ok' ? '#35d46a' : '#ff3b3b')
-    m.visible = track.visible = s.hold > 0 || s.holding
+    m.count = Math.round(holdRef.v * SEG)
+    const ok = s.holdMsg === 'ok'
+    if (ok !== wasOk.current) { wasOk.current = ok; ok ? mat.color.setRGB(0.4, 2.2, 0.8) : mat.color.setRGB(2.4, 0.35, 0.35) }
+    m.visible = track.visible = holdRef.v > 0 || s.holding
   })
   return (
     <group {...props}>
