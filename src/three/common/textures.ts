@@ -121,41 +121,50 @@ export const polaroidTexture = () =>
 // ---------- placa de aviso ----------
 const AZUL = '#1E398D', AMARELO = '#F9E000'
 
+/** Texto em caixa alta que encolhe até caber na largura dada. */
+function fitText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, size: number, font: string) {
+  let sz = size
+  do { ctx.font = font.replace('SIZE', String(sz)); sz -= 1 } while (ctx.measureText(text).width > maxW && sz > 8)
+  ctx.fillText(text, x, y)
+}
+
+// logo: anel grande (≈ 60% da largura da placa) com o swoosh recortado
 export const placaLogoTexture = () =>
   memo('placa-logo', () => {
-    const [c, ctx] = canvas(768, 640, HI)
-    ctx.fillStyle = AZUL; ctx.fillRect(0, 0, 768, 640)
-    logoPath2D(ctx, 384, 300, 190, AMARELO)
+    const [c, ctx] = canvas(768, 567, HI)
+    ctx.fillStyle = AZUL; ctx.fillRect(0, 0, 768, 567)
+    logoPath2D(ctx, 384, 290, 262, AMARELO)
     return tex(c)
   })
 
 export const placaFoneTexture = () =>
   memo('placa-fone', () => {
-    const [c, ctx] = canvas(768, 220, HI)
-    ctx.fillStyle = AZUL; ctx.fillRect(0, 0, 768, 220)
+    const [c, ctx] = canvas(768, 201, HI)
+    ctx.fillStyle = AZUL; ctx.fillRect(0, 0, 768, 201)
     ctx.textAlign = 'center'
-    ctx.fillStyle = AMARELO; ctx.font = '700 84px Poppins, sans-serif'
-    ctx.fillText('ORSEGUPS', 384, 92)
-    ctx.fillStyle = '#fff'; ctx.font = '700 58px Poppins, sans-serif'
-    ctx.fillText('4020.4411', 384, 180)
+    ctx.fillStyle = AMARELO
+    ;(ctx as unknown as { letterSpacing: string }).letterSpacing = '3px'
+    ctx.font = '700 62px Poppins, sans-serif'; ctx.fillText('ORSEGUPS', 384, 74)
+    ;(ctx as unknown as { letterSpacing: string }).letterSpacing = '0px'
+    ctx.fillStyle = '#fff'; ctx.font = '700 44px Poppins, sans-serif'; ctx.fillText('4020.4411', 384, 152)
     return tex(c)
   })
 
 export const placaFaixaTexture = () =>
   memo('placa-faixa', () => {
-    const [c, ctx] = canvas(768, 190, HI)
-    ctx.fillStyle = AMARELO; ctx.fillRect(0, 0, 768, 190)
-    // câmera de segurança
-    ctx.fillStyle = AZUL; ctx.strokeStyle = AZUL; ctx.lineWidth = 12
-    ctx.beginPath(); ctx.moveTo(30, 0); ctx.lineTo(30, 70); ctx.lineTo(60, 70); ctx.stroke()
-    ctx.save(); ctx.translate(100, 96); ctx.rotate(0.28)
-    rr(ctx, -70, -32, 140, 64, 14); ctx.fill()
-    ctx.fillStyle = AMARELO; ctx.beginPath(); ctx.arc(40, 0, 20, 0, Math.PI * 2); ctx.fill()
-    ctx.fillStyle = AZUL; ctx.beginPath(); ctx.arc(40, 0, 10, 0, Math.PI * 2); ctx.fill()
+    const [c, ctx] = canvas(768, 177, HI)
+    ctx.fillStyle = AMARELO; ctx.fillRect(0, 0, 768, 177)
+    // câmera de segurança, pendurada no canto
+    ctx.fillStyle = AZUL; ctx.strokeStyle = AZUL; ctx.lineWidth = 11
+    ctx.beginPath(); ctx.moveTo(40, 0); ctx.lineTo(40, 62); ctx.lineTo(66, 62); ctx.stroke()
+    ctx.save(); ctx.translate(98, 92); ctx.rotate(0.3)
+    rr(ctx, -62, -28, 124, 56, 12); ctx.fill()
+    ctx.fillStyle = AMARELO; ctx.beginPath(); ctx.arc(36, 0, 17, 0, Math.PI * 2); ctx.fill()
+    ctx.fillStyle = AZUL; ctx.beginPath(); ctx.arc(36, 0, 8, 0, Math.PI * 2); ctx.fill()
     ctx.restore()
     ctx.fillStyle = AZUL; ctx.textAlign = 'left'
-    ctx.font = '700 74px Poppins, sans-serif'; ctx.fillText('AVISO À POLÍCIA', 196, 90)
-    ctx.font = '500 43px "Encode Sans", sans-serif'; ctx.fillText('COM REGISTRO DE IMAGEM', 200, 150)
+    fitText(ctx, 'AVISO À POLÍCIA', 186, 86, 560, 72, '800 SIZEpx Poppins, sans-serif')
+    fitText(ctx, 'COM REGISTRO DE IMAGEM', 190, 140, 556, 40, '500 SIZEpx "Encode Sans", sans-serif')
     return tex(c)
   })
 
@@ -177,10 +186,11 @@ function fakeQr(ctx: CanvasRenderingContext2D, x: number, y: number, size: numbe
 
 export const placaRodapeTexture = () =>
   memo('placa-rodape', () => {
-    const [c, ctx] = canvas(768, 150, HI)
-    ctx.fillStyle = AZUL; ctx.fillRect(0, 0, 768, 150)
-    ctx.fillStyle = '#fff'; ctx.font = '700 70px Poppins, sans-serif'; ctx.textAlign = 'center'
-    ctx.fillText('ALARME 365', 384, 100)
+    const [c, ctx] = canvas(768, 177, HI)
+    ctx.fillStyle = AZUL; ctx.fillRect(0, 0, 768, 177)
+    ctx.fillStyle = '#fff'; ctx.font = '800 62px Poppins, sans-serif'; ctx.textAlign = 'center'
+    ctx.fillText('ALARME 365', 318, 104)
+    fakeQr(ctx, 590, 36, 104, '#1E398D', '#fff')
     return tex(c)
   })
 
@@ -203,10 +213,10 @@ export const fresnelTexture = () =>
     for (let col = 0; col < 3; col++) for (let row = 0; row < 3; row++) {
       const cx = 43 + col * 85, cy = 43 + row * 85
       ctx.save(); ctx.beginPath(); ctx.rect(col * 85.3, row * 85.3, 85.3, 85.3); ctx.clip()
-      for (let r = 8; r < 80; r += 8) { ctx.strokeStyle = `rgba(120,130,150,${0.5 - r / 240})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke() }
+      for (let r = 8; r < 80; r += 8) { ctx.strokeStyle = `rgba(150,158,172,${0.26 - r / 420})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke() }
       ctx.restore()
     }
-    ctx.strokeStyle = 'rgba(110,120,140,.5)'; ctx.lineWidth = 2
+    ctx.strokeStyle = 'rgba(140,148,164,.28)'; ctx.lineWidth = 1.5
     for (let i = 1; i < 3; i++) { ctx.beginPath(); ctx.moveTo(i * 85.3, 0); ctx.lineTo(i * 85.3, 256); ctx.moveTo(0, i * 85.3); ctx.lineTo(256, i * 85.3); ctx.stroke() }
     return tex(c)
   })

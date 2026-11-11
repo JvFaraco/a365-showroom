@@ -94,12 +94,11 @@ export const DEVICES: Device[] = [
         explode: [0, 1.4, 0],
       },
       {
-        id: 'aletas',
-        name: 'Aletas de ventilação',
-        what: 'Mantêm a eletrônica refrigerada.',
+        id: 'base',
+        name: 'Base cinza',
+        what: 'Fundo do módulo. Reúne a grade do alto-falante, o bolsão por onde entram o cabo de rede e a fonte, a etiqueta de identificação e os pés de apoio.',
         facts: [],
-        tip: 'Não instale dentro de armários ou em locais abafados.',
-        camera: { position: [2.3, 0.15, 1.7], target: [0.85, -0.17, 0.45] },
+        camera: { position: [2.0, -1.4, 1.9], target: [0, -0.3, 0] },
       },
       {
         id: 'alto-falante',

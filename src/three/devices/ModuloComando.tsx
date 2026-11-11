@@ -17,8 +17,8 @@ import { HoldRing } from '../fx/HoldRing'
 
 // ---------- medidas (Y para cima, frente em +Z) ----------
 const RF = 0.9 // raio da face (disco plano)
-const YC = 0.17 // altura do centro da face
-const TILT = Math.atan(0.12) // a face cai para a frente
+const YC = 0.25 // altura do centro da face
+const TILT = Math.atan(0.2) // a face cai para a frente: o corpo fica bem mais fundo atrás
 const CAPSULE_Z = 0.7 // a cápsula do LED/190 fica perto da borda da frente
 const PCB_Y = -0.08 // topo da placa
 const VIAS_TO: [number, number, number][] = [[-1.5, 1.9, -0.6], [0, 2.3, -0.9], [1.5, 1.9, -0.6]]
@@ -29,6 +29,8 @@ const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a))
 /** "Asas" da concha: uma ponta na frente e duas largas atrás (por onde saem a antena e os cabos). */
 const lobeFront = (t: number) => gauss(wrap(t), 0.52)
 const lobeBack = (t: number) => Math.max(gauss(wrap(t - 2.2), 0.6), gauss(wrap(t + 2.2), 0.6))
+/** Metade de trás inteira (0 na frente, 1 atrás): é onde a concha se abre e saem a antena e os cabos. */
+const rear = (t: number) => { const x = Math.min(1, Math.max(0, (Math.abs(wrap(t)) - 1.0) / 1.1)); return x * x * (3 - 2 * x) }
 
 /** Saia da tampa: nasce redonda na borda da face e se abre numa concha de três pontas. */
 function apronGeometry() {
@@ -39,7 +41,7 @@ function apronGeometry() {
     const x0 = RT * Math.sin(t), z0 = RT * Math.cos(t) * Math.cos(TILT), y0 = YC - RT * Math.cos(t) * Math.sin(TILT) - 0.012
     const r0 = Math.hypot(x0, z0), dx = x0 / r0, dz = z0 / r0
     // a saia desce quase reta e só abre de verdade atrás; a borda de baixo é recortada entre as pontas
-    const ro = 1.02 + 0.06 * LF + 0.14 * LB, yl = -0.08 - 0.15 * L
+    const ro = 1.02 + 0.06 * LF + 0.2 * rear(t), yl = -0.08 - 0.15 * L
     for (let j = 0; j <= NP; j++) {
       const u = j / NP
       let r: number, y: number
@@ -318,11 +320,11 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         </ClickablePart>
 
         {/* ================= base cinza: copo liso + borda serrilhada ================= */}
-        <ClickablePart id="aletas">
+        <ClickablePart id="base">
           <mesh geometry={g.base} material={M.grey} castShadow />
           <instancedMesh ref={fins} args={[g.fin, finMat, 60]} castShadow />
         </ClickablePart>
-        <ClickablePart follow="aletas">
+        <ClickablePart follow="base">
           {/* bolsão dos cabos (moldura + fundo mais escuro) e rebaixo raso da etiqueta */}
           <mesh material={M.greyDark} position={[0, -0.4005, -0.56]} rotation={[Math.PI / 2, 0, 0]}><planeGeometry args={[0.98, 0.42]} /></mesh>
           {[[0, -0.775, 1.02, 0.03], [0, -0.345, 1.02, 0.03], [-0.5, -0.56, 0.03, 0.46], [0.5, -0.56, 0.03, 0.46]].map(([x, z, w, d], i) => (

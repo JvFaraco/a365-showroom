@@ -20,6 +20,9 @@ const HTML_SCALE = SCREEN_W / (PX / 40) // drei: 40 px de CSS = 1 unidade de cen
 export function Smartphone({ interactive = false }: DeviceProps) {
   const body = useRef<THREE.Mesh>(null!)
   const frame = useMemo(() => roundedRectGeometry(0.95, 1.95, 0.13, 0.07, 0.012), [])
+  // aro metálico em volta do corpo (grafite), como nos celulares atuais
+  const band = useMemo(() => roundedRectGeometry(0.962, 1.962, 0.136, 0.05, 0.008), [])
+  const bandMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#4a4d55', roughness: 0.28, metalness: 0.95 }), [])
   const glass = useMemo(() => roundedRectGeometry(0.89, 1.89, 0.11, 0.004, 0), [])
   const armOn = useActionPhase('alarme-geral') >= 0
   // no showroom os 7 aparelhos ficam montados: a tela (DOM) só aparece quando o celular é o aparelho ativo
@@ -29,6 +32,7 @@ export function Smartphone({ interactive = false }: DeviceProps) {
     <DeviceCtx.Provider value={{ deviceId: 'app', interactive }}>
       <ClickablePart follow="corpo">
         <mesh ref={body} geometry={frame} material={M.blackGloss} castShadow />
+        <mesh geometry={band} material={bandMat} />
         <mesh geometry={glass} material={M.lens} position={[0, 0, 0.046]} />
         <mesh material={M.metal} position={[0.482, 0.4, 0]}><boxGeometry args={[0.012, 0.22, 0.03]} /></mesh>
         <mesh material={M.lens} position={[-0.25, 0.7, -0.05]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.09, 0.09, 0.02, 24]} /></mesh>

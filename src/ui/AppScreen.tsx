@@ -67,22 +67,24 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
     <div className="relative flex h-[688px] w-[320px] select-none flex-col overflow-hidden rounded-[34px] bg-[#f3f5fa] font-body text-[#1b2233]" lang="pt-BR">
       {/* reflexo do vidro por cima da interface */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-10" style={{ background: 'linear-gradient(118deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.16) 44%, rgba(255,255,255,0) 52%)' }} />
-      <div className="flex items-center justify-between px-6 pt-3 text-[11px] font-semibold"><span>17:50</span><span className="h-4 w-20 rounded-full bg-black" /><span>4G ▮▮▮</span></div>
+      {/* barra de status com o entalhe */}
+      <div className="relative flex items-center justify-between px-7 pt-2.5 text-[11px] font-semibold"><span>17:50</span><span>5G ▮▮▮</span>
+        <span className="absolute left-1/2 top-0 h-[22px] w-[132px] -translate-x-1/2 rounded-b-[14px] bg-black" />
+      </div>
 
-      <div className="flex items-center justify-between px-4 pt-3">
-        <div className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-[#1E398D] text-white"><User size={18} /></span>
-          <span className="font-title text-lg font-semibold">Olá!</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Bell size={20} />
+      {/* topo: ícone de perfil e, à direita, o sino e o botão SOS; a saudação vem embaixo */}
+      <div className="flex items-center justify-between px-4 pt-4">
+        <span className="grid h-8 w-8 place-items-center rounded-full border border-slate-400 text-slate-500"><User size={17} /></span>
+        <div className="flex items-center gap-2 text-slate-600">
+          <Bell size={19} />
           <Region id="sos" interactive={interactive} className="!rounded-full">
             <div className="rounded-full bg-[#e03131] px-4 py-1.5 font-title text-sm font-bold text-white shadow">SOS</div>
           </Region>
         </div>
       </div>
+      <div className="px-4 pt-2 text-[21px] font-light text-slate-700">Olá!</div>
 
-      <div className="flex flex-1 flex-col gap-2.5 px-3 pt-3">
+      <div className="flex flex-1 flex-col gap-2 px-3 pt-2">
         <Region id="alarme-geral" interactive={interactive}>
           <div className="rounded-xl bg-white p-3 shadow-sm">
             <div className="text-[11px] text-slate-500">Alarme geral</div>
@@ -92,7 +94,7 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
               {ARM.map(({ id, label, Icon }) => (
                 <button key={id} aria-label={label} aria-pressed={arm === id} tabIndex={canArm ? 0 : -1}
                   onClick={(e) => { if (!canArm) return; e.stopPropagation(); beep('ui'); useShowroom.getState().setArm(id) }}
-                  className={`grid h-11 place-items-center rounded-lg border transition ${arm === id ? 'border-[#1E398D] bg-[#1E398D] text-white' : 'border-slate-200 bg-slate-50 text-slate-500'} ${canArm ? 'hover:border-[#1E398D]' : ''}`}>
+                  className={`grid h-10 place-items-center rounded-lg border-[1.5px] transition ${arm === id ? 'border-[#2f6bff] bg-[#eef3ff] text-[#2f6bff]' : 'border-slate-200 bg-white text-slate-400'} ${canArm ? 'hover:border-[#2f6bff]' : ''}`}>
                   <Icon size={20} />
                 </button>
               ))}
@@ -103,7 +105,7 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
         <Region id="ultimas-imagens" interactive={interactive}>
           <div className="rounded-xl bg-white p-3 shadow-sm">
             <div className="mb-1.5 text-[11px] text-slate-500">Últimas imagens</div>
-            <div className="relative h-[150px] overflow-hidden rounded-lg bg-slate-200">
+            <div className="relative h-[136px] overflow-hidden rounded-lg bg-slate-200">
               <img src={aiPhotoDataUrl(photo === 'done')} alt="Foto do fotossensor" className="h-full w-full object-cover" draggable={false} />
               {photo === 'loading' && (
                 <div className="absolute inset-0 grid place-items-center bg-black/55 text-white">

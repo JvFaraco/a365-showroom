@@ -12,7 +12,7 @@ Materiais: plástico branco acetinado #F1F2F4 com verniz leve e micro-textura (`
 | `botao-sos` | A cápsula perto da borda da frente (eixo maior tangente à borda): aro cromado fino e guia de luz em `MeshTransmissionMaterial`. A peça inteira afunda enquanto o 190 é segurado. |
 | `led` | Ponto emissivo forte no centro da cápsula e halo fraco pelo contorno. |
 | `antena` | Conector dourado rosqueado, junta com pino (articulação) e pá extrudada com chanfro. Sai da base, atrás. |
-| `aletas` | Copo cinza em `LatheGeometry` e 60 dentes arredondados em `InstancedMesh` (borda serrilhada). Acompanham: bolsão dos cabos, rebaixo da etiqueta, furo de parafuso, pé redondo e as duas travas da placa. |
+| `base` | Base cinza: copo em `LatheGeometry` e 60 dentes arredondados em `InstancedMesh` (borda serrilhada, só forma). Acompanham: bolsão dos cabos, rebaixo da etiqueta, furo de parafuso, pé redondo e as duas travas da placa. |
 | `alto-falante` | Grade de furos redondos em `InstancedMesh`, no fundo do bolsão. |
 | `ethernet`, `fonte` | Porta de rede e conector de energia, lado a lado dentro do bolsão. |
 | `placa-principal` (i) | Placa verde recortada (extrusão), textura de trilhas, 90 componentes SMD em `InstancedMesh`, área de energia, pinos de teste, parafusos e etiqueta lisa. |
@@ -33,7 +33,7 @@ Vista explodida, de cima para baixo: cúpula; placa (com o cartão do chip um po
 | `camera` | Lente em cilindros concêntricos, no módulo oval em relevo (extrusão em forma de estádio). |
 | `flash` | Janela escura com o emissor branco. |
 | `led` | Ponto emissivo abaixo do flash. |
-| `pir` | Moldura e lente Fresnel: segmento de cilindro fosco e translúcido com textura de anéis. |
+| `pir` | Janela fosca levemente curva, com anéis de Fresnel sutis, no capuz trapezoidal que desce até a base. |
 | `base` | `RoundedBox` cinza-escuro. |
 | `suporte` | Esfera do pivô, braço curto e placa de parede com parafusos. |
 | `tampa-traseira` | Ocupa quase toda a traseira, com linha de partição, entalhe no topo e abas embaixo. |
@@ -44,7 +44,7 @@ Vista explodida, de cima para baixo: cúpula; placa (com o cartão do chip um po
 
 | part.id | Como é modelada |
 |---|---|
-| `corpo` | Barra alta em `RoundedBox` branca, com logo embaixo. |
+| `corpo` | Barra alta em `RoundedBox` de chanfro macio, na proporção ~94 × 31 × 23, com linha de partição da tampa, marca de alinhamento e logo em sulco fino. |
 | `ima` | Barra mais fina e curta, paralela e colada ao corpo. |
 | `led` | Fenda escura com LED emissivo. |
 | `choque` (i) | Placa verde com disco piezo dourado e chip. |
@@ -82,7 +82,7 @@ A traseira também tem os furos quadrados e os ganchos em "L" do encaixe, e a et
 
 | part.id | Como é modelada |
 |---|---|
-| `logo` | Plano com o logo amarelo desenhado em canvas, sobre a chapa azul de cantos redondos. |
+| `logo` | Anel amarelo grande com o swoosh recortado, em canvas de 2048 px, sobre a chapa azul de cantos redondos. |
 | `telefone` | Plano com "ORSEGUPS" e "4020.4411". |
 | `faixa` | Faixa amarela com o ícone de câmera e o aviso. |
 | `verso` | Plano traseiro com "ALARME 365" e o QR Code ilustrativo. |

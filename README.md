@@ -47,7 +47,7 @@ Parâmetros de URL:
 
 ## Comparar com a foto (`?ref=1`)
 
-Coloque as fotos de referência em `ref/<id>.jpg` na raiz desta pasta (`modulo`, `sirene`, `fotossensor`, `controle`, `placa`, `app`). A pasta `ref/` fica fora do git e fora do build. Com `npm run dev`, abra `/?ref=1`: a foto aparece por cima do canvas com um slider de opacidade, e a câmera trava no ângulo da foto. `&d=sirene` escolhe o aparelho e `&cam=px,py,pz,tx,ty,tz,fov,roll` afina o ângulo sem recompilar. Os ângulos ficam em `src/dev/RefMode.tsx`.
+Coloque as fotos de referência em `ref/` na raiz desta pasta: `modulo.jpg`, `sirene.jpg`, `fotossensor.jpg`, `controle.jpg`, `placa.jpg`, `app.jpg` (as oficiais) e `modulo-topo-led-azul.jpg` (o módulo visto de cima). A pasta `ref/` fica fora do git e fora do build. Com `npm run dev`, abra `/?ref=1`: a foto aparece por cima do canvas com um slider de opacidade, e a câmera trava no ângulo da foto. `&r=modulo-topo` escolhe a foto e `&cam=px,py,pz,tx,ty,tz,fov,roll` afina o ângulo sem recompilar. Os ângulos ficam em `src/dev/RefMode.tsx`.
 
 ## Onde fica cada coisa
 
@@ -79,4 +79,3 @@ A lista de partes de cada aparelho, com primitivas, proporções e materiais, es
 
 - Destino do QR Code do verso da placa. O que aparece no demo é ilustrativo e não codifica nada.
 - Cor do filete lateral do controle: azul na arte oficial, amarelo na foto real. O demo usa o azul.
-- "Aletas de ventilação": o card continua dizendo que elas refrigeram a eletrônica, mas as fotos mostram que não há ventoinha.

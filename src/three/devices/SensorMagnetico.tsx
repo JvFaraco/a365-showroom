@@ -46,21 +46,21 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
     <DeviceCtx.Provider value={{ deviceId: 'magnetico', interactive }}>
       {/* corpo principal */}
       <ClickablePart internal>
-        <RoundedBox args={[0.54, 1.88, 0.06]} radius={0.025} smoothness={3} position={[-0.2, 0, -0.16]} material={M.whiteRelief} />
+        <RoundedBox args={[0.6, 1.86, 0.08]} radius={0.035} smoothness={4} position={[-0.23, 0, -0.19]} material={M.white} />
       </ClickablePart>
       <ClickablePart id="corpo">
-        <RoundedBox args={[0.56, 1.9, 0.34]} radius={0.085} smoothness={5} position={[-0.2, 0, 0.04]} material={M.white} castShadow />
-        <LogoGroove r={0.1} position={[-0.2, -0.62, 0.2105]} />
+        <RoundedBox args={[0.62, 1.88, 0.38]} radius={0.1} smoothness={7} position={[-0.23, 0, 0.04]} material={M.white} castShadow />
+        <LogoGroove r={0.11} position={[-0.23, -0.6, 0.2305]} />
         {/* linha de partição da tampa e marca de alinhamento com o ímã */}
-        <RoundedBox args={[0.566, 1.906, 0.012]} radius={0.006} smoothness={2} position={[-0.2, 0, -0.128]} material={M.partition} />
-        <mesh material={M.partition} position={[0.045, 0, 0.2105]}><boxGeometry args={[0.05, 0.012, 0.002]} /></mesh>
+        <RoundedBox args={[0.624, 1.884, 0.012]} radius={0.006} smoothness={2} position={[-0.23, 0, -0.148]} material={M.partition} />
+        <mesh material={M.partition} position={[0.04, 0, 0.2305]}><boxGeometry args={[0.05, 0.012, 0.002]} /></mesh>
       </ClickablePart>
       <ClickablePart id="led">
-        <mesh geometry={slit} material={M.blackGloss} position={[-0.2, 0.62, 0.203]} />
+        <mesh geometry={slit} material={M.blackGloss} position={[-0.23, 0.62, 0.223]} />
         <Led sample={(t, o) => {
           const on = interactive ? alarmOn() : (open?.() ?? 0) > 0.08
           o.color = '#ff2a2a'; o.on = on ? (t % 0.4 < 0.2 ? 1 : 0.05) : 0.03
-        }} position={[-0.2, 0.62, 0.216]}>
+        }} position={[-0.23, 0.62, 0.236]}>
           <boxGeometry args={[0.12, 0.018, 0.004]} />
         </Led>
       </ClickablePart>
@@ -81,9 +81,9 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
         <group ref={door}>
           <group position={[-HINGE_X, 0, 0.3]}>
             <ClickablePart id="ima">
-              <RoundedBox args={[0.32, 1.25, 0.3]} radius={0.07} smoothness={5} position={[0.29, 0, 0]} material={M.white} castShadow />
-              <mesh material={M.partition} position={[0.165, 0, 0.1505]}><boxGeometry args={[0.05, 0.012, 0.002]} /></mesh>
-              <RoundedBox args={[0.326, 1.256, 0.012]} radius={0.006} smoothness={2} position={[0.29, 0, -0.11]} material={M.partition} />
+              <RoundedBox args={[0.32, 1.25, 0.32]} radius={0.085} smoothness={7} position={[0.29, 0, 0.0]} material={M.white} castShadow />
+              <mesh material={M.partition} position={[0.165, 0, 0.1605]}><boxGeometry args={[0.05, 0.012, 0.002]} /></mesh>
+              <RoundedBox args={[0.324, 1.254, 0.012]} radius={0.006} smoothness={2} position={[0.29, 0, -0.1]} material={M.partition} />
             </ClickablePart>
             <group ref={doorFx} visible={sceneOn}>
               <mesh material={doorMat} position={[1.57, 0, -0.24]} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[2.9, 4.4, 0.14]} /></mesh>

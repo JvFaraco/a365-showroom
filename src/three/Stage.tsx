@@ -8,6 +8,8 @@ import { actionTime, useShowroom } from '../store/showroomStore'
 import { REF_ON } from '../dev/RefMode'
 
 const DARK = new Set(['controle', 'app'])
+// constante fora do componente: o material refletor recria seus render targets quando `blur` muda de identidade
+const REFLECT_BLUR: [number, number] = [300, 90]
 
 function glowTexture() {
   const c = document.createElement('canvas')
@@ -101,7 +103,7 @@ export function Stage() {
           {quality >= 3 ? (
             <meshStandardMaterial color="#05070d" roughness={1} metalness={0} envMapIntensity={0.2} />
           ) : (
-            <MeshReflectorMaterial mirror={0.4} blur={[300, 90]} resolution={512} mixBlur={1} mixStrength={3.2} roughness={0.95}
+            <MeshReflectorMaterial mirror={0.4} blur={REFLECT_BLUR} resolution={512} mixBlur={1} mixStrength={3.2} roughness={0.95}
               depthScale={1} minDepthThreshold={0.4} maxDepthThreshold={1.3} color="#060913" metalness={0.4} />
           )}
         </mesh>
