@@ -6,7 +6,7 @@ import { ClickablePart } from '../parts/ClickablePart'
 import { M, fxBasic } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
-import { fresnelTexture, polaroidTexture } from '../common/textures'
+import { polaroidTexture } from '../common/textures'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { stadiumGeometry } from '../common/shapes'
 import { DeviceCtx, bump, seg, useActionPhase, type DeviceProps } from '../common/util'
@@ -19,8 +19,10 @@ import { REF_ON } from '../../dev/RefMode'
 // cinza (7 mm) e a placa de fixação atrás, 68 × 144 × 94 mm. 1 unidade = 79 mm (a meia largura é 0,43). ----------
 const mm = (v: number) => v / 79.07
 const HW = 0.43, HD = mm(39) // meia largura e meia profundidade
-const RC = 0.3, RB = 0.16 // frente e laterais arredondadas; traseira mais plana
-const Y_TOP = 0.8, TOP_R = 0.1 // topo plano com a borda arredondada
+// planta em "U": a frente é um meio-cilindro de raio 34 mm (a largura inteira), laterais retas e traseira
+// plana com cantos de ~6 mm
+const RC = HW, RB = mm(6)
+const Y_TOP = 0.8, TOP_R = mm(7) // topo plano com a borda arredondada (~6–8 mm)
 const Y0 = Y_TOP - mm(144) // fundo do aparelho (a altura h da ficha é medida a partir daqui)
 const H = (h: number) => Y0 + mm(h)
 const Y_BASE = H(7) // acima disto é corpo branco; abaixo, a base cinza
@@ -29,15 +31,21 @@ const BAY = { y0: H(64), y1: 0.68, hw: 0.33, floor: HD - 0.24 }
 // pilha AA (50,5 × 14,5 mm): cilindro de ponta reta com o polo + saliente
 const CELL = { r: mm(7.25), len: mm(50.5), y: (H(64) + 0.68) / 2, s: HD - 0.125 }
 const CELL_X = [-0.196, 0, 0.196]
-// Relevo da frente (tudo para DENTRO do corpo; só a cápsula da câmera é saliente):
-// - capuz: corte em arco no alto, onde fica a cápsula;
-// - rebaixo do PIR: depressão de h ≈ 20 a 64, com ~61 mm de boca; o fundo fica uns 16 mm atrás da frente.
-const HOOD = { top: H(128), arc: 0.2, hw: 0.225, depth: 0.1 }
-const WELL = { y0: H(20), y1: H(64), hw: mm(30.5), depth: mm(16), wall: 0.07 }
-const CAP = { top: H(125), bottom: H(68), hwTop: 0.182, hwBottom: 0.15, z: HD - 0.065 } // cápsula: pílula, um pouco mais larga em cima
-const CAP_F = CAP.z + 0.07 // face da frente da cápsula (um pouco à frente da linha do corpo)
-const LENS_Y = H(113), LEDWIN_Y = H(92) // lente da câmera e, abaixo, a janela oval do LED (~10 × 16 mm)
-const PIR = { y0: H(26), y1: H(60), hw: mm(26) } // janela PIR, no fundo do rebaixo
+// Cápsula da câmera: pílula de ~30 × 55 mm, mais larga em cima, INCLINADA (o topo sai mais que a base: a
+// câmera olha um pouco para baixo). Tudo dela é medido a partir da base da cápsula.
+const CAP = { bottom: H(70), h: mm(55), hwTop: mm(15), hwBottom: mm(11), tilt: 0.12, z: HD - 0.09 }
+const CAP_F = 0.085 // face da frente da cápsula, nas coordenadas dela
+const LENS_L = mm(43), LEDWIN_L = mm(22) // altura da lente e da janela do LED dentro da cápsula
+const LENS_Y = CAP.bottom + LENS_L, LEDWIN_Y = CAP.bottom + LEDWIN_L
+// Relevo da frente (tudo para DENTRO do corpo; só a cápsula é saliente):
+// - capuz: corte em arco no alto, que acompanha o topo da cápsula com ~3,5 mm de folga;
+// - funil do PIR: trapézio escavado, estreito logo abaixo da cápsula (~30 mm) e abrindo para baixo até ~61 mm;
+//   as paredes inclinadas são os "ombros"; o fundo fica ~17 mm atrás da frente.
+const HOOD = { hw: mm(18.5), top: CAP.bottom + mm(55 + 3.5), depth: 0.085 }
+const WELL = { y0: H(20), y1: H(64), hwTop: mm(15), hwBottom: mm(30.5), depth: mm(17) }
+// janela PIR: na parte de baixo do funil; convexa (acompanha a curva do corpo), com o meio a ~6 mm da frente,
+// para a frente continuar uma curva contínua de perfil (o meio da lente fica a ~2 mm da linha do corpo)
+const PIR = { y0: H(23), y1: H(51), hw: mm(21), bulge: mm(15) }
 const LOGO_Y = H(13.5)
 // placa de fixação na parede (cinza): ~31 × 67 mm, de h = 0 a 68, ~11 mm de espessura
 const WALL = { hw: mm(15.5), top: H(67), plate: 0.045, rail: 0.085 }
@@ -74,18 +82,24 @@ function backBand(x0: number, x1: number, height: number, proud: number, thick: 
 
 const smooth = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t) }
 /**
- * Frente escavada: devolve o z do ponto (x, y) depois dos dois cortes. Cada corte leva a superfície até um
- * plano recuado (o fundo), com paredes inclinadas; onde a curva do corpo já está atrás do plano, nada muda.
+ * Frente escavada: devolve o z do ponto (x, y) depois dos dois cortes.
+ * O capuz afunda a superfície por igual (acompanha a curva do corpo). O funil leva a superfície até um plano
+ * recuado (o fundo), com as paredes laterais inclinadas e uma rampa longa embaixo, para a frente continuar
+ * uma curva contínua de perfil (sem degrau nem aba).
  */
 function frontCut(x: number, y: number, z: number) {
   const ax = Math.abs(x)
-  // capuz: arco no alto e lados retos; termina logo acima do rebaixo do PIR
-  const yArc = HOOD.top - HOOD.arc
-  const side = y >= yArc ? HOOD.hw * (1 - Math.cbrt((ax / HOOD.hw) ** 3 + ((y - yArc) / HOOD.arc) ** 3)) : HOOD.hw - ax
-  const hood = smooth(0, 0.05, side) * smooth(0, 0.05, y - (WELL.y1 + 0.03))
-  // rebaixo do PIR: boca larga, paredes em funil até o fundo
-  const well = smooth(0, WELL.wall, WELL.hw - ax) * smooth(0, WELL.wall, WELL.y1 - y) * smooth(0, WELL.wall, y - WELL.y0)
-  return Math.min(z - hood * Math.max(0, z - (HD - HOOD.depth)), z - well * Math.max(0, z - (HD - WELL.depth)))
+  // capuz: arco de meia-volta no alto; abaixo dele os lados acompanham a cápsula, que afina, e o corte
+  // emenda no começo do funil (sem degrau entre os dois)
+  const yArc = HOOD.top - HOOD.hw
+  const capHw = CAP.hwBottom + (CAP.hwTop - CAP.hwBottom) * Math.min(1, Math.max(0, (y - CAP.bottom) / CAP.h))
+  const side = y >= yArc ? HOOD.hw - Math.hypot(ax, y - yArc) : capHw + (HOOD.hw - CAP.hwTop) - ax
+  const hood = smooth(0, 0.035, side) * smooth(0, 0.05, y - (WELL.y1 - 0.05))
+  // funil: a largura cresce de cima para baixo
+  const k = Math.min(1, Math.max(0, (WELL.y1 - y) / (WELL.y1 - WELL.y0)))
+  const hw = WELL.hwTop + (WELL.hwBottom - WELL.hwTop) * k
+  const well = smooth(0, 0.1, hw - ax) * smooth(0, 0.03, WELL.y1 - y) * smooth(0, 0.2, y - WELL.y0)
+  return Math.min(z - hood * HOOD.depth, z - well * Math.max(0, z - (HD - WELL.depth)))
 }
 
 /**
@@ -98,28 +112,25 @@ function shellGeometry() {
   const ex = HW - RC, ez = HD - RC, bx = HW - RB, bz = HD - RB
   type Col = { cx: number; cz: number; nx: number; nz: number; r: number; bay: boolean; front: boolean }
   const cols: Col[] = []
-  const phiBay = Math.acos((BAY.hw - bx) / RB) // ângulo, nos cantos de trás, em que x = ±BAY.hw
   // cx vem em "fração" da meia largura do esqueleto (−1..1); frente usa RC, trás usa RB
   const col = (phi: number, fx: number, bay: boolean) => {
     const front = Math.sin(phi) > 1e-9 || (Math.abs(Math.sin(phi)) <= 1e-9 && frontSide)
     cols.push({ cx: fx * (front ? ex : bx), cz: front ? ez : -bz, nx: Math.cos(phi), nz: Math.sin(phi), r: front ? RC : RB, bay, front })
   }
   let frontSide = true
-  const A = 44, F = 2, K = 14
-  // canto direito da frente, frente plana, canto esquerdo da frente
+  const A = 48, C4 = 8, K = 14
+  // frente: meio-cilindro (dois quartos de volta)
   for (let i = 0; i <= A; i++) col((i / A) * (Math.PI / 2), 1, false)
-  for (let i = 1; i < F; i++) col(Math.PI / 2, 1 - (2 * i) / F, false)
   for (let i = 0; i <= A; i++) col(Math.PI / 2 + (i / A) * (Math.PI / 2), -1, false)
   frontSide = false
-  // canto esquerdo de trás, até a parede do compartimento (x = −BAY.hw fica em φ = π + phiBay)
-  const nL = Math.max(2, Math.round((A * phiBay) / (Math.PI / 2)))
-  for (let i = 0; i <= nL; i++) col(Math.PI + (i / nL) * phiBay, -1, false)
-  // dentro do compartimento (as paredes nascem das amostras duplicadas)
-  const nB = Math.max(2, A - nL), span = Math.PI / 2 - phiBay
-  for (let i = 0; i <= nB; i++) col(Math.PI + phiBay + (i / nB) * span, -1, true)
-  for (let i = 1; i < K; i++) col(Math.PI * 1.5, -1 + (2 * i) / K, true)
-  for (let i = 0; i <= nB; i++) col(Math.PI * 1.5 + (i / nB) * span, 1, true)
-  for (let i = 0; i <= nL; i++) col(Math.PI * 2 - phiBay + (i / nL) * phiBay, 1, false)
+  // traseira: canto esquerdo, trecho plano (o compartimento das pilhas abre no meio dele) e canto direito;
+  // as paredes do compartimento nascem das amostras duplicadas em ±BAY.hw
+  const fB = BAY.hw / bx
+  for (let i = 0; i <= C4; i++) col(Math.PI + (i / C4) * (Math.PI / 2), -1, false)
+  col(Math.PI * 1.5, -(1 + fB) / 2, false); col(Math.PI * 1.5, -fB, false); col(Math.PI * 1.5, -fB, true)
+  for (let i = 1; i < K; i++) col(Math.PI * 1.5, -fB + (2 * fB * i) / K, true)
+  col(Math.PI * 1.5, fB, true); col(Math.PI * 1.5, fB, false); col(Math.PI * 1.5, (1 + fB) / 2, false)
+  for (let i = 0; i <= C4; i++) col(Math.PI * 1.5 + (i / C4) * (Math.PI / 2), 1, false)
 
   type Row = { y: number; inset: number; bay: boolean; flat?: boolean }
   const rows: Row[] = []
@@ -165,10 +176,12 @@ function shellGeometry() {
   return { front: half(fi), back: half(bi) }
 }
 
-/** Painel plano no fundo do rebaixo (janela PIR). Fica bem atrás da linha do corpo. */
-function frontPanel(hw: number, y0: number, y1: number, proud: number) {
-  const g = new THREE.PlaneGeometry(hw * 2, y1 - y0)
-  g.translate(0, (y0 + y1) / 2, HD - WELL.depth + proud)
+/** Janela no fundo do funil (PIR): painel levemente convexo. Fica bem atrás da linha do corpo. */
+function frontPanel(hw: number, y0: number, y1: number, proud: number, bulge = 0) {
+  const g = new THREE.PlaneGeometry(hw * 2, y1 - y0, 24, 1)
+  const p = g.attributes.position
+  for (let i = 0; i < p.count; i++) { const x = p.getX(i); p.setXYZ(i, x, p.getY(i) + (y0 + y1) / 2, HD - WELL.depth + proud + bulge * (1 - (x / hw) ** 2)) }
+  g.computeVertexNormals()
   return g
 }
 
@@ -183,12 +196,12 @@ function build() {
   // cápsula da câmera: pílula vertical, com a cabeça (lente) mais larga e a parte do LED mais estreita
   const cp = new THREE.Shape()
   const rT = CAP.hwTop, rB = CAP.hwBottom
-  cp.moveTo(rB, CAP.bottom + rB)
-  cp.lineTo(rT, CAP.top - rT)
-  cp.absarc(0, CAP.top - rT, rT, 0, Math.PI, false)
-  cp.lineTo(-rB, CAP.bottom + rB)
-  cp.absarc(0, CAP.bottom + rB, rB, Math.PI, Math.PI * 2, false)
-  const capsule = new THREE.ExtrudeGeometry(cp, { depth: 0.04, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 5, curveSegments: 32 })
+  cp.moveTo(rB, rB)
+  cp.lineTo(rT, CAP.h - rT)
+  cp.absarc(0, CAP.h - rT, rT, 0, Math.PI, false)
+  cp.lineTo(-rB, rB)
+  cp.absarc(0, rB, rB, Math.PI, Math.PI * 2, false)
+  const capsule = new THREE.ExtrudeGeometry(cp, { depth: 0.05, bevelEnabled: true, bevelSize: 0.035, bevelThickness: 0.035, bevelSegments: 6, curveSegments: 40 })
 
   // traseira: tampa curva, aba de alavanca no topo, presilhas embaixo e os frisos perto da base (dos dois lados)
   const coverH = BAY.y1 + 0.02 - (BAY.y0 - 0.012)
@@ -237,10 +250,9 @@ function build() {
   return {
     shellFront: shell.front, shellBack: shell.back, base, baseSeam, capsule, cover, coverSeam, latch, clipL, clipR, rails, plate,
     ribs: mergeGeometries(fr),
-    pirFrame: frontPanel(PIR.hw + 0.014, PIR.y0 - 0.014, PIR.y1 + 0.014, 0.0015),
-    pirBack: frontPanel(PIR.hw, PIR.y0, PIR.y1, 0.004),
-    pirLens: frontPanel(PIR.hw, PIR.y0, PIR.y1, 0.012),
-    win: stadiumGeometry(mm(10), mm(16), 0.008, 0.003),
+    pirBack: frontPanel(PIR.hw, PIR.y0, PIR.y1, 0.003, PIR.bulge - 0.02),
+    pirLens: frontPanel(PIR.hw, PIR.y0, PIR.y1, 0.004, PIR.bulge),
+    win: stadiumGeometry(mm(5), mm(11), 0.006, 0.003), // janela oval vertical do LED (~5 × 11 mm)
     cell: new THREE.CylinderGeometry(CELL.r, CELL.r, CELL.len, 32),
     spring: (() => { const pts: THREE.Vector3[] = []; for (let i = 0; i <= 90; i++) { const t = i / 90; pts.push(new THREE.Vector3(Math.cos(t * Math.PI * 12) * 0.035, t * 0.2, Math.sin(t * Math.PI * 12) * 0.035)) } return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 140, 0.007, 5) })(),
   }
@@ -281,8 +293,8 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   // a cápsula é um plástico um pouco mais frio e brilhante que o corpo
   const capMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#d3d6df', roughness: 0.26, clearcoat: 0.6, clearcoatRoughness: 0.2 }), [])
   const mountMat = useMemo(() => { const m = M.grey.clone(); m.color.set('#9a9ea6'); return m }, [])
-  const lensBack = useMemo(() => new THREE.MeshStandardMaterial({ color: '#aeb2bb', roughness: 0.7 }), [])
-  const pirMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#c3c7d0', map: fresnelTexture(), bumpMap: fresnelTexture(), bumpScale: 0.6, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12, transparent: true, opacity: 0.88, envMapIntensity: 1.4 }), [])
+  const lensBack = useMemo(() => new THREE.MeshStandardMaterial({ color: '#d6d9df', roughness: 0.7 }), [])
+  const pirMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#e6e8ec', roughness: 0.36, clearcoat: 1, clearcoatRoughness: 0.12, transparent: true, opacity: 0.88, envMapIntensity: 1.4 }), [])
   const polMat = useMemo(() => new THREE.MeshBasicMaterial({ map: polaroidTexture(), toneMapped: false, side: THREE.DoubleSide }), [])
   const rulerMat = useMemo(() => fxBasic('#ffffff', 0.5), [])
   const bandMat = useMemo(() => fxBasic('#35d46a', 0.35), [])
@@ -323,7 +335,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
     // no aquecimento, os efeitos que só aparecem numa ação ficam visíveis uma vez, para compilar os shaders deles
     const warm = useShowroom.getState().warm
     polaroid.current.visible = warm || k > 0.001
-    polaroid.current.position.set(k * 1.05, LENS_Y + k * 0.05, CAP_F + 0.08 + k * 0.3)
+    polaroid.current.position.set(k * 1.05, LENS_Y + k * 0.05, HD + 0.12 + k * 0.3)
     polaroid.current.scale.setScalar(0.05 + k * 0.95)
     polaroid.current.rotation.set(0, -0.25 * k, (1 - k) * 1.2 - 0.08)
     // PIR: pessoa dispara, cachorro não
@@ -373,36 +385,44 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
               ))}
             </ClickablePart>
 
-            {/* cápsula da câmera, dentro do rebaixo */}
+            {/* cápsula da câmera, dentro do corte do capuz: uma peça só, inclinada (o topo sai mais que a base) */}
             <ClickablePart follow="camera">
-              <mesh geometry={g.capsule} material={capMat} position={[0, 0, CAP.z]} />
+              <group position={[0, CAP.bottom, CAP.z]} rotation={[CAP.tilt, 0, 0]}>
+                <mesh geometry={g.capsule} material={capMat} castShadow />
+              </group>
             </ClickablePart>
+            {/* lente: círculo preto pequeno (~7 mm) com aro escuro, no terço de cima */}
             <ClickablePart id="camera">
-              <mesh material={M.blackGloss} position={[0, LENS_Y, CAP_F + 0.001]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.058, 0.058, 0.012, 32]} /></mesh>
-              <mesh material={M.lens} position={[0, LENS_Y, CAP_F + 0.009]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.038, 0.038, 0.008, 32]} /></mesh>
-              {/* anéis internos da íris */}
-              {[0.012, 0.021, 0.029].map((r) => <mesh key={r} material={M.greyDark} position={[0, LENS_Y, CAP_F + 0.0135]}><torusGeometry args={[r, 0.002, 6, 32]} /></mesh>)}
+              <group position={[0, CAP.bottom, CAP.z]} rotation={[CAP.tilt, 0, 0]}>
+                <mesh material={M.blackGloss} position={[0, LENS_L, CAP_F + 0.001]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(4.6), mm(4.6), 0.012, 32]} /></mesh>
+                <mesh material={M.lens} position={[0, LENS_L, CAP_F + 0.008]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(3.5), mm(3.5), 0.008, 32]} /></mesh>
+                {[0.014, 0.024].map((r) => <mesh key={r} material={M.greyDark} position={[0, LENS_L, CAP_F + 0.0125]}><torusGeometry args={[r, 0.002, 6, 32]} /></mesh>)}
+              </group>
             </ClickablePart>
-            {/* janela oval vertical do LED (verde): o flash em cima, o LED de status embaixo */}
+            {/* janela oval vertical e estreita do LED, no meio da cápsula; o flash acende dentro dela */}
             <ClickablePart id="flash">
-              <mesh geometry={g.win} material={winMat} position={[0, LEDWIN_Y, CAP_F - 0.002]} />
-              <Led sample={(_, o) => { const p = flashPower(); o.color = '#fff6c8'; o.on = 0.08 + p * 3 }} baseColor="#e8d98a" position={[0, LEDWIN_Y + 0.04, CAP_F + 0.01]}>
-                <boxGeometry args={[0.032, 0.045, 0.004]} />
-              </Led>
+              <group position={[0, CAP.bottom, CAP.z]} rotation={[CAP.tilt, 0, 0]}>
+                <mesh geometry={g.win} material={winMat} position={[0, LEDWIN_L, CAP_F - 0.004]} />
+                <Led sample={(_, o) => { const p = flashPower(); o.color = '#fff6c8'; o.on = p * 3 }} baseColor="#123d22" position={[0, LEDWIN_L + mm(2.6), CAP_F + 0.004]}>
+                  <boxGeometry args={[0.03, 0.03, 0.003]} />
+                </Led>
+              </group>
             </ClickablePart>
+            {/* LED verde, na parte de baixo da janela */}
             <ClickablePart id="led">
-              <Led sample={(t, o) => {
-                const al = interactive ? alertV.current : 0
-                o.color = al > 0.5 ? '#ff2a2a' : '#27d455'
-                o.on = al > 0.5 ? 1 : t % 3 < 0.25 ? 0.9 : 0.14
-              }} position={[0, LEDWIN_Y - 0.045, CAP_F + 0.01]} rotation={[Math.PI / 2, 0, 0]}>
-                <cylinderGeometry args={[0.018, 0.018, 0.005, 16]} />
-              </Led>
+              <group position={[0, CAP.bottom, CAP.z]} rotation={[CAP.tilt, 0, 0]}>
+                <Led sample={(t, o) => {
+                  const al = interactive ? alertV.current : 0
+                  o.color = al > 0.5 ? '#ff2a2a' : '#27d455'
+                  o.on = al > 0.5 ? 1 : t % 3 < 0.25 ? 0.9 : 0.25
+                }} position={[0, LEDWIN_L - mm(2.6), CAP_F + 0.004]} rotation={[Math.PI / 2, 0, 0]}>
+                  <cylinderGeometry args={[0.016, 0.016, 0.004, 16]} />
+                </Led>
+              </group>
             </ClickablePart>
 
             {/* janela PIR: grande, quase quadrada, branco-leitosa, com Fresnel discreto; acompanha a curva da frente */}
             <ClickablePart id="pir">
-              <mesh geometry={g.pirFrame} material={M.partition} />
               <mesh geometry={g.pirBack} material={lensBack} />
               <mesh geometry={g.pirLens} material={pirMat} />
             </ClickablePart>
@@ -482,7 +502,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
 
       {interactive && (
         <>
-          <CameraFlash power={flashPower} position={[0, LEDWIN_Y + 0.04, CAP_F + 0.08]} />
+          <CameraFlash power={flashPower} position={[0, LEDWIN_Y + 0.04, HD + 0.1]} />
           <group ref={polaroid} visible={false}>
             <mesh material={polMat} userData={{ fx: true }} raycast={() => null}><planeGeometry args={[0.8, 0.8]} /></mesh>
           </group>
