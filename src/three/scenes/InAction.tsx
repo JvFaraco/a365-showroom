@@ -8,7 +8,7 @@ import { IA_STEPS } from '../../data/inAction'
 import { Placed } from './Kit'
 import { ModuloComando } from '../devices/ModuloComando'
 import { Fotossensor } from '../devices/Fotossensor'
-import { SensorMagnetico } from '../devices/SensorMagnetico'
+import { DOOR_TOP, HINGE_X, SensorMagnetico } from '../devices/SensorMagnetico'
 import { Sirene } from '../devices/Sirene'
 import { ControleRemoto } from '../devices/ControleRemoto'
 import { RadioPulse } from '../fx/RadioPulse'
@@ -22,7 +22,10 @@ const doorOpen = () => seg(T(), 3.2, 4.6)
 const flashP = () => bump(T(), 7.6, 7.7, 7.8, 8.3)
 const MOD: [number, number, number] = [-2.7, 1.25, -2.2]
 const MAG_S = 0.3
-const DOOR_X = 1.2 // lado da fechadura; a dobradiça fica a 3,05 × escala para a direita
+const DOOR_X = 1.2 // lado da fechadura
+const HINGE = DOOR_X + 3.05 * MAG_S // dobradiça, à direita
+// sensor no alto da folha: a dobradiça e o topo da folha do modelo coincidem com os desta porta
+const MAG_POS: [number, number, number] = [HINGE - HINGE_X * MAG_S, 2.3 - DOOR_TOP * MAG_S, -2.93]
 
 /** Em ação: corte de um cômodo low-poly com os aparelhos instalados e a sequência de um disparo. */
 export function InAction() {
@@ -50,7 +53,7 @@ export function InAction() {
     intruder.current.position.set(1.65 - seg(t, 4.6, 7.4) * 1.2, Math.abs(Math.sin(t * 6)) * 0.03 * (t < 7.4 ? 1 : 0), -3.4 + seg(t, 4.6, 7.4) * 2.4)
   })
 
-  const hinge = DOOR_X + 3.05 * MAG_S
+  const hinge = HINGE
   return (
     <>
       {/* cômodo em corte */}
@@ -78,7 +81,7 @@ export function InAction() {
         <Fotossensor flash={flashP} />
         <CameraFlash power={flashP} position={[0, 0.45, 0.5]} />
       </group>
-      <group position={[DOOR_X + 0.06, 1.9, -2.93]} scale={MAG_S} onClick={(e) => { e.stopPropagation(); useShowroom.getState().setDevice('magnetico') }}>
+      <group position={MAG_POS} scale={MAG_S} onClick={(e) => { e.stopPropagation(); useShowroom.getState().setDevice('magnetico') }}>
         <SensorMagnetico open={doorOpen} />
       </group>
       <group position={[-1.2, 2.7, -2.88]} scale={0.36} onClick={(e) => { e.stopPropagation(); useShowroom.getState().setDevice('sirene') }}>
@@ -90,7 +93,7 @@ export function InAction() {
       <Placed p={{ id: 'app', position: [3.0, 0.75, 2.4], scale: 0.62, rotation: [-0.15, -0.35, 0] }} />
 
       <RadioPulse from={[-2.6, 1.7, 2.3]} to={MOD} on={() => { const t = T(); return t > 0.6 && t < 2.6 }} />
-      <RadioPulse from={[DOOR_X, 2.2, -2.9]} to={MOD} color="#ff5050" on={() => { const t = T(); return t > 3.5 && t < 6 }} />
+      <RadioPulse from={[MAG_POS[0], 2.2, -2.9]} to={MOD} color="#ff5050" on={() => { const t = T(); return t > 3.5 && t < 6 }} />
       <RadioPulse from={[-3.5, 2.5, -2.5]} to={MOD} color="#ffffff" on={() => { const t = T(); return t > 7.8 && t < 9.6 }} />
       <RadioPulse from={MOD} to={[-1.2, 2.7, -2.8]} color="#ff5050" on={() => { const t = T(); return t > 9.6 && t < 11 }} />
       <RadioPulse from={MOD} to={[3.0, 1.9, 2.4]} color="#35d46a" on={() => { const t = T(); return t > 12.4 && t < 14.5 }} />
