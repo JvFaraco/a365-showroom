@@ -12,24 +12,24 @@ export type Placement = { id: DeviceId; position: Vec3; rotation?: Vec3; scale?:
 
 // "Foto do kit": placa, fotossensor, módulo, sensor magnético, sirene, controle e app.
 export const KIT_LAYOUT: Placement[] = [
-  { id: 'placa', position: [-3.25, 0, -0.7], rotation: [0, 0.22, 0] },
-  { id: 'fotossensor', position: [-1.75, 0, -0.3], rotation: [0, 0.12, 0] },
-  { id: 'modulo', position: [-0.35, 0, 0.9], rotation: [0, 0.5, 0] },
-  { id: 'magnetico', position: [0.3, 0, -0.6] },
-  { id: 'sirene', position: [1.45, 0, -0.3], rotation: [-0.12, -0.1, 0] },
-  { id: 'controle', position: [2.15, 0, 1.0], rotation: [-0.15, -0.2, 0] },
-  { id: 'app', position: [3.15, 0, 0], rotation: [-0.1, -0.3, 0] },
+  { id: 'placa', position: [-3.7, 0, -0.8], rotation: [0, 0.22, 0] },
+  { id: 'fotossensor', position: [-2.25, 0, -0.5], rotation: [0, 0.12, 0] },
+  { id: 'modulo', position: [-0.55, 0, 0.9], rotation: [0, 0.5, 0] },
+  { id: 'magnetico', position: [0.75, 0, -0.9] },
+  { id: 'sirene', position: [1.9, 0, -0.4], rotation: [-0.12, -0.1, 0] },
+  { id: 'controle', position: [2.55, 0, 1.2], rotation: [-0.15, -0.2, 0] },
+  { id: 'app', position: [3.6, 0, 0], rotation: [-0.1, -0.3, 0] },
 ]
 
 // Em retrato (celular) os 7 em linha ficam minúsculos: duas fileiras, os altos atrás e os baixos na frente.
 export const KIT_LAYOUT_PORTRAIT: Placement[] = [
-  { id: 'placa', position: [-1.85, 0, -1.1], rotation: [0, 0.18, 0] },
-  { id: 'fotossensor', position: [-0.4, 0, -1.1], rotation: [0, 0.1, 0] },
-  { id: 'modulo', position: [-0.95, 0, 1.0], rotation: [0, 0.5, 0] },
-  { id: 'magnetico', position: [0.3, 0, 1.0] },
-  { id: 'sirene', position: [0.72, 0, -1.1], rotation: [-0.12, -0.08, 0] },
-  { id: 'controle', position: [1.3, 0, 1.15], rotation: [-0.15, -0.2, 0] },
-  { id: 'app', position: [1.85, 0, -1.1], rotation: [-0.1, -0.22, 0] },
+  { id: 'placa', position: [-2.0, 0, -1.3], rotation: [0, 0.18, 0] },
+  { id: 'fotossensor', position: [-0.55, 0, -1.3], rotation: [0, 0.1, 0] },
+  { id: 'modulo', position: [-1.1, 0, 1.2], rotation: [0, 0.5, 0] },
+  { id: 'magnetico', position: [0.45, 0, 1.3] },
+  { id: 'sirene', position: [0.75, 0, -1.3], rotation: [-0.12, -0.08, 0] },
+  { id: 'controle', position: [1.55, 0, 1.5], rotation: [-0.15, -0.2, 0] },
+  { id: 'app', position: [2.05, 0, -1.3], rotation: [-0.1, -0.22, 0] },
 ]
 
 const easeOutBack = (x: number) => { const c = 1.70158; const t = Math.min(1, Math.max(0, x)) - 1; return 1 + (c + 1) * t * t * t + c * t * t }

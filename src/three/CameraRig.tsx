@@ -12,8 +12,8 @@ import { deviceBox, partBox, pedestalRadius } from './common/registry'
 type SceneCam = { from?: Vec3; position: Vec3; target: Vec3; portrait?: { from?: Vec3; position: Vec3; target: Vec3 } }
 const SCENE_CAM: Record<Exclude<Scene, 'showroom'>, SceneCam> = {
   // em retrato o kit fica em duas fileiras (ver KIT_LAYOUT_PORTRAIT) e a câmera olha um pouco de cima
-  intro: { from: [0, 2.6, 15], position: [0, 1.5, 9.2], target: [0, 0.85, 0], portrait: { from: [0, 7, 25], position: [0, 4.6, 19.6], target: [0, 0.7, 0] } },
-  outro: { from: [0, 4.5, 13], position: [0, 1.4, 9.2], target: [0, 0.9, 0], portrait: { from: [0, 8, 24], position: [0, 4.6, 19.6], target: [0, 0.7, 0] } },
+  intro: { from: [0, 2.6, 16], position: [0, 1.5, 10.2], target: [0, 0.8, 0], portrait: { from: [0, 7, 25], position: [0, 4.8, 21.5], target: [0, 0.7, 0] } },
+  outro: { from: [0, 4.5, 14], position: [0, 1.4, 10.2], target: [0, 0.85, 0], portrait: { from: [0, 8, 24], position: [0, 4.8, 21.5], target: [0, 0.7, 0] } },
   network: { position: [0, 3.8, 14.5], target: [0, 1.2, 0] },
   inaction: { position: [0.6, 3.4, 9.6], target: [0, 1.25, -0.6] },
 }

@@ -16,6 +16,8 @@ import { VoiceWaves } from '../fx/VoiceWaves'
 import { HoldRing } from '../fx/HoldRing'
 
 // ---------- medidas (Y para cima, frente em +Z) ----------
+// Ficha (1 unidade = 80 mm): planta quase redonda de 144 × 145 mm com a cauda; corpo com 38 mm de altura.
+const BOTTOM = -0.4, SQUASH = 0.6 // o corpo foi modelado mais alto; SQUASH leva a altura máxima a ~0,5 (≈ 40 mm)
 const RF = 0.9 // raio da face (disco plano)
 const YC = 0.25 // altura do centro da face
 const TILT = Math.atan(0.2) // a face cai para a frente: o corpo fica bem mais fundo atrás
@@ -248,6 +250,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
   return (
     <DeviceCtx.Provider value={{ deviceId: 'modulo', interactive }}>
       <group ref={root}>
+        {/* corpo na altura da ficha (38 mm; 41 com a cápsula do LED): tudo, menos a antena, é achatado em Y a partir do fundo */}
+        <group position={[0, BOTTOM * (1 - SQUASH), 0]} scale={[1, SQUASH, 1]}>
         {/* ================= tampa branca (cúpula em concha) ================= */}
         <group ref={lid}>
           <ClickablePart id="tampa">
@@ -299,8 +303,9 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         </group>
 
         {/* ================= antena tipo pá: conector rosqueado e articulação ================= */}
+        </group>
         <ClickablePart id="antena">
-          <group position={[0, -0.14, -0.8]}>
+          <group position={[0, BOTTOM + (-0.14 - BOTTOM) * SQUASH, -0.8]}>
             <mesh material={M.gold} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.04]}><cylinderGeometry args={[0.048, 0.048, 0.1, 20]} /></mesh>
             <group ref={antenna}>
               {[0, 1, 2, 3].map((i) => (
@@ -320,6 +325,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
             </group>
           </group>
         </ClickablePart>
+        <group position={[0, BOTTOM * (1 - SQUASH), 0]} scale={[1, SQUASH, 1]}>
 
         {/* ================= base cinza: copo liso + borda serrilhada ================= */}
         <ClickablePart id="base">
@@ -451,6 +457,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
             </group>
           </group>
         )}
+        </group>
       </group>
 
       {/* ================= efeitos das micro-animações ================= */}

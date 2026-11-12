@@ -55,7 +55,7 @@ export const DEVICES: Device[] = [
     inKit365S: true,
     home: { position: [1.6, 1.7, 3.6], target: [0, 0.1, 0] },
     bottom: -0.4,
-    kitScale: 0.75,
+    kitScale: 1.0, // 80 mm/un: tamanho real em relação ao fotossensor
     parts: [
       {
         id: 'antena',
