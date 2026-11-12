@@ -36,10 +36,28 @@ As micro-animações que abrem ou tiram algo (tampa do fotossensor, tampa do con
 ## Fluidez
 
 - Os 7 aparelhos do showroom ficam montados o tempo todo. Trocar de aparelho só muda `visible` e anima a posição.
-- Atrás da tela de carregamento há um aquecimento: tudo fica visível por alguns frames, o contorno do hover e a sombra de contato são exercitados e `gl.compile` fecha os shaders. Depois disso, nenhum clique, zoom, Raio-X ou micro-animação compila shader novo.
+- Atrás da tela de carregamento há um aquecimento fatiado: cada aparelho entra num quadro e tem os shaders compilados com `compileAsync`, começando pelo da tela inicial; no fim, tudo fica visível por alguns quadros para subir as texturas e exercitar o contorno do hover. Depois disso, nenhum clique, zoom, Raio-X ou micro-animação compila shader novo.
 - O que muda a cada frame (anel de 5 s, linha do tempo, etiqueta do hover) corre em refs e direto no DOM, fora do estado do React.
 - Qualidade adaptativa: quando o FPS cai, primeiro o DPR vai a 1; depois sai o AO; por último saem o reflexo do piso, a vinheta e o SMAA.
 - Sombra de contato assada uma vez por aparelho; AO em meia resolução; bloom só nos emissivos; sem DOF.
+
+## Carregamento
+
+- A tela de carregamento é HTML/CSS inline no `index.html`: aparece no primeiro quadro, antes de qualquer JS. O logo anima só com `transform`/`opacity` (não trava quando a thread principal está ocupada) e a barra mostra a etapa real: código, aparelhos, materiais, preparando. Ela sai em crossfade para a abertura já renderizada. Respeita `prefers-reduced-motion`.
+- O JS sai em pacotes: `three`, react-three (fiber/drei), pós-processamento, interface e o app. As cenas "Em ação" e "Encerramento" e o pós-processamento chegam por `import()` dinâmico; as duas cenas são buscadas em tempo ocioso logo depois da carga. O único pacote acima de 600 kB é o núcleo do `three` (675 kB, 171 kB em gzip), que na versão 0.169 é um arquivo só.
+- Fontes só nos subconjuntos `latin` e `latin-ext`.
+
+Para medir (carregamento, tarefas longas e quadros ao passar pelos 7 aparelhos, com CPU 1× e 4×):
+
+```bash
+npm run build && npm run preview
+```
+
+```bash
+node tools/perf.mjs http://localhost:4173/ --channel msedge
+```
+
+O script precisa do Playwright (`npm i -D playwright`). Sem `--channel`, usa o Chromium do Playwright.
 
 Parâmetros de URL:
 
@@ -91,4 +109,5 @@ A lista de partes de cada aparelho, com primitivas, proporções e materiais, es
 - Cor do filete lateral do controle: azul na arte oficial, amarelo na foto real. O demo usa o azul.
 - Disco central do controle: não é botão. A arte de marketing mostra o logo nele e o ícone do sistema mostra liso; o demo usa o logo em baixo-relevo discreto.
 - Sensor magnético: a foto de instalação mostra o corpo na folha da porta e o ímã no batente (o texto antigo dizia o contrário); confirmar no manual. A mesma foto tem um terceiro bloco branco, abaixo do corpo, que não foi modelado.
-- CAD ou scan do fabricante, para trocar os modelos procedurais por `.glb`.
+- Módulo: a ficha de medidas põe a antena a ~85% da largura e ~40% da profundidade (lateral direita); o modelo mantém a cauda e a antena atrás, como na foto oficial. A altura total segue a ficha (38 mm), mas a divisão entre base cinza (27 mm) e tampa é aproximada.
+- Sirene: o suporte de parede não tem medida na ficha; foi mantido o da rodada anterior.
