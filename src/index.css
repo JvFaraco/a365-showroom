@@ -40,6 +40,12 @@ canvas { touch-action: none; }
 .presenter .part-card { font-size: 1.15rem; }
 
 .pin-label { font-family: 'Encode Sans', sans-serif; white-space: nowrap; pointer-events: auto; cursor: pointer; }
+/* dica de uso: texto de mouse ou de toque, conforme o ponteiro */
+.hint-touch { display: none; }
+@media (pointer: coarse) { .hint-mouse { display: none; } .hint-touch { display: inline; } }
+/* lista nativa do seletor de cenas (celular) no tema escuro */
+.scene-select { color-scheme: dark; }
+.scene-select option { background: #0d1226; color: #fff; }
 .fx-tag { font-family: 'Poppins', sans-serif; white-space: nowrap; pointer-events: none; user-select: none; }
 
 @keyframes logo-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }

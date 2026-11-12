@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import * as THREE from 'three'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { useCursor } from '@react-three/drei'
 import { useState } from 'react'
 import { DEVICE_BY_ID, type DeviceId, type Vec3 } from '../../data/devices'
@@ -19,6 +19,17 @@ export const KIT_LAYOUT: Placement[] = [
   { id: 'sirene', position: [1.45, 0, -0.3], rotation: [-0.12, -0.1, 0] },
   { id: 'controle', position: [2.15, 0, 1.0], rotation: [-0.15, -0.2, 0] },
   { id: 'app', position: [3.15, 0, 0], rotation: [-0.1, -0.3, 0] },
+]
+
+// Em retrato (celular) os 7 em linha ficam minúsculos: duas fileiras, os altos atrás e os baixos na frente.
+export const KIT_LAYOUT_PORTRAIT: Placement[] = [
+  { id: 'placa', position: [-1.85, 0, -1.1], rotation: [0, 0.18, 0] },
+  { id: 'fotossensor', position: [-0.4, 0, -1.1], rotation: [0, 0.1, 0] },
+  { id: 'modulo', position: [-0.95, 0, 1.0], rotation: [0, 0.5, 0] },
+  { id: 'magnetico', position: [0.3, 0, 1.0] },
+  { id: 'sirene', position: [0.72, 0, -1.1], rotation: [-0.12, -0.08, 0] },
+  { id: 'controle', position: [1.3, 0, 1.15], rotation: [-0.15, -0.2, 0] },
+  { id: 'app', position: [1.85, 0, -1.1], rotation: [-0.1, -0.22, 0] },
 ]
 
 const easeOutBack = (x: number) => { const c = 1.70158; const t = Math.min(1, Math.max(0, x)) - 1; return 1 + (c + 1) * t * t * t + c * t * t }
@@ -46,6 +57,8 @@ export function Placed({ p, children }: { p: Placement; children?: React.ReactNo
 export function KitLineup({ mode }: { mode: 'enter' | 'gather' }) {
   const group = useRef<THREE.Group>(null!)
   const t0 = useRef(now())
+  const portrait = useThree((s) => s.size.width / s.size.height < 0.8)
+  const layout = portrait ? KIT_LAYOUT_PORTRAIT : KIT_LAYOUT
   useFrame(() => {
     const t = reducedMotion() ? 99 : now() - t0.current
     group.current.children.forEach((c, i) => {
@@ -55,7 +68,7 @@ export function KitLineup({ mode }: { mode: 'enter' | 'gather' }) {
         c.scale.setScalar(Math.max(0.001, k))
         c.rotation.y = (1 - k) * 1.6
       } else {
-        const p = KIT_LAYOUT[i].position
+        const p = layout[i].position
         c.position.set(p[0] * (1 - k) * 1.4, (1 - k) * 1.2, (1 - k) * 4)
         c.scale.setScalar(Math.max(0.001, 0.4 + 0.6 * k))
         c.rotation.y = (1 - k) * -1.2
@@ -64,7 +77,7 @@ export function KitLineup({ mode }: { mode: 'enter' | 'gather' }) {
   })
   return (
     <group ref={group}>
-      {KIT_LAYOUT.map((p) => <group key={p.id}><Placed p={p} /></group>)}
+      {layout.map((p) => <group key={p.id}><Placed p={p} /></group>)}
     </group>
   )
 }

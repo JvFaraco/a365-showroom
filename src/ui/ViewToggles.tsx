@@ -10,17 +10,19 @@ export function ViewToggles() {
   const device = useShowroom((s) => s.device)
   const st = useShowroom.getState
   const internal = hasInternal(DEVICE_BY_ID[device])
-  const items: { v: View; label: string; key: string; Icon: typeof Explode; disabled?: boolean }[] = [
+  // o Raio-X só aparece quando o aparelho tem alguma parte interna para mostrar
+  const all: { v: View; label: string; key: string; Icon: typeof Explode }[] = [
     { v: 'exploded', label: 'Explodir', key: 'E', Icon: Explode },
-    { v: 'xray', label: 'Raio-X', key: 'X', Icon: Xray, disabled: !internal },
+    { v: 'xray', label: 'Raio-X', key: 'X', Icon: Xray },
     { v: 'manual', label: 'Manual', key: 'M', Icon: Manual },
   ]
+  const items = all.filter((it) => it.v !== 'xray' || internal)
   return (
     <div role="toolbar" aria-label="Modos de vista" className="glass pointer-events-auto flex gap-1 rounded-full p-1">
-      {items.map(({ v, label, key, Icon, disabled }) => (
-        <button key={v} disabled={disabled} aria-pressed={view === v} title={disabled ? 'Este aparelho não tem partes internas' : `${label} (${key})`}
+      {items.map(({ v, label, key, Icon }) => (
+        <button key={v} aria-pressed={view === v} aria-label={label} title={`${label} (${key})`}
           onClick={() => { beep(); if (v === 'manual') st().selectPart(null); st().toggleView(v) }}
-          className={`btn !border-transparent !px-3 ${view === v ? 'btn-on' : '!bg-transparent'} ${disabled ? 'opacity-35' : ''}`}>
+          className={`btn !border-transparent !px-3 ${view === v ? 'btn-on' : '!bg-transparent'}`}>
           <Icon size={16} /><span className="hidden lg:inline">{label}</span>
         </button>
       ))}

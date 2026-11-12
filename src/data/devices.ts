@@ -29,6 +29,7 @@ export type Part = {
   internal?: boolean // só clicável explodido / raio-X
   action?: ActionId // micro-animação do "Ver em ação"
   explode?: Vec3 // deslocamento da parte na vista explodida (0..1)
+  pin?: Vec3 // Modo Manual: desloca o pino a partir do centro da parte (para não cair em cima de outro)
 }
 
 export type DeviceId = 'modulo' | 'fotossensor' | 'magnetico' | 'sirene' | 'controle' | 'placa' | 'app'

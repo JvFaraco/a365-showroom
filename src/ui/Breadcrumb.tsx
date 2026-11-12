@@ -17,10 +17,10 @@ export function Breadcrumb() {
       )}
       <div className="glass min-w-0 truncate rounded-xl px-3 py-1">
         <div className="truncate font-title text-[1.05em] font-semibold leading-tight">
-          <button className={part ? 'text-white/60 hover:text-white' : 'text-white'} onClick={() => useShowroom.getState().selectPart(null)}>{d.name}</button>
+          <button className={part ? 'text-white/85 underline-offset-4 hover:text-white hover:underline' : 'text-white'} onClick={() => useShowroom.getState().selectPart(null)}>{d.name}</button>
           {part && <><span className="mx-1.5 text-accent">›</span><span className="text-white">{part.name}</span></>}
         </div>
-        {!part && <div className="truncate text-[0.8em] text-white/60">{d.tagline}</div>}
+        {!part && <div className="truncate text-[0.8em] text-white/75">{d.tagline}</div>}
       </div>
     </nav>
   )
