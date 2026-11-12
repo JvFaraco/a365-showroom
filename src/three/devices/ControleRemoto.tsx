@@ -27,7 +27,9 @@ const CMD: ActionId[] = ['btn-desarmar', 'btn-armar', 'btn-parcial']
 const MINI: [number, number, number] = [2.5, 0.75, 0]
 const cmdTime = () => { for (const c of CMD) { const t = actionTime(c); if (t >= 0) return t } return -1 }
 
-const R = 0.87, TAIL_Y = -1.08, TAIL_R = 0.27
+const THICK = 0.86 // mais fino que antes: de perfil, a espessura fica em ~1/6 do diâmetro
+// corpo redondo com cauda CURTA (só o furo da argola, colado ao corpo): altura total ≈ 1,2× a largura
+const R = 0.87, TAIL_Y = -0.9, TAIL_R = 0.21
 const TAN = Math.asin((R - TAIL_R) / TAIL_Y) // ângulo das tangentes entre o círculo e a ponta
 
 /** Contorno em gota: um círculo com a ponta embaixo, num só bloco. `grow` engorda o contorno. */
@@ -38,7 +40,7 @@ function teardrop(grow = 0) {
   s.closePath()
   return s
 }
-const ringHole = () => { const h = new THREE.Path(); h.absarc(0, TAIL_Y - 0.02, 0.15, 0, Math.PI * 2, true); return h }
+const ringHole = () => { const h = new THREE.Path(); h.absarc(0, TAIL_Y - 0.01, 0.1, 0, Math.PI * 2, true); return h }
 
 type Geo = ReturnType<typeof build>
 let cache: Geo | null = null
@@ -60,9 +62,10 @@ function build() {
   return {
     front, back, fillet, cover,
     sector: ringSectorGeometry(0.34, 0.69, -38 * D2R, 38 * D2R, 0.018, 0.022),
-    center: smoothLatheZ([[0.3, 0.165], [0.295, 0.19], [0.27, 0.212], [0.2, 0.222], [0.001, 0.224]], 64, 24),
+    // disco central fixo: baixo, sem contorno de tecla
+    center: smoothLatheZ([[0.31, 0.168], [0.306, 0.182], [0.285, 0.19], [0.001, 0.192]], 96, 24),
     coin: smoothLatheZ([[0.001, -0.14], [0.39, -0.14], [0.415, -0.135], [0.42, -0.12], [0.42, -0.09], [0.41, -0.08], [0.001, -0.08]], 64, 32),
-    slit: stadiumGeometry(0.22, 0.045, 0.01, 0.003),
+    slit: stadiumGeometry(0.17, 0.04, 0.01, 0.003),
     aerial: wire([[0.5, 0.42, -0.045], [0.63, 0.2, -0.04], [0.66, -0.1, -0.04], [0.56, -0.36, -0.04]], 0.012),
     rib: wire([[-0.42, 0.25, 0], [-0.45, -0.1, 0], [-0.3, -0.42, 0], [0, -0.52, 0], [0.3, -0.42, 0], [0.45, -0.1, 0], [0.42, 0.25, 0]], 0.014),
   }
@@ -70,12 +73,14 @@ function build() {
 const G = () => (cache ??= build())
 
 /**
- * Controle remoto: corpo em gota num só bloco (círculo + ponta com o furo da argola), preto
- * soft-touch com filete azul, 4 botões em cruz e botão central. Atrás, a tampa redonda de topo reto
+ * Controle remoto: corpo redondo com uma cauda curta para o furo da argola, preto/grafite brilhante
+ * com filete azul, 4 botões em cunha (em X) em volta de um disco central fixo, que não é botão. Atrás, a tampa redonda de topo reto
  * fecha a cavidade com a placa verde, o suporte e a bateria CR2032. Frente em +Z.
  */
 export function ControleRemoto({ interactive = false, pressed }: DeviceProps & { pressed?: () => string | null }) {
   const g = G()
+  // corpo preto/grafite brilhante, como na arte oficial
+  const bodyMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#1d1f24', roughness: 0.34, clearcoat: 0.7, clearcoatRoughness: 0.25 }), [])
   const coinMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#dfe2e8', roughness: 0.32, metalness: 0.6 }), [])
   const coverMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#22242a', roughness: 0.7 }), [])
   const icons = useMemo(() => BUTTONS.map((b) => new THREE.MeshBasicMaterial({ map: iconTexture(b.icon), transparent: true, toneMapped: false })), [])
@@ -135,10 +140,10 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
 
   return (
     <DeviceCtx.Provider value={{ deviceId: 'controle', interactive }}>
-      <group ref={root} position={[0, 0.1, 0]}>
+      <group ref={root} position={[0, 0.1, 0]} scale={[1, 1, THICK]}>
         <ClickablePart id="corpo">
-          <mesh geometry={g.front} material={M.black} castShadow />
-          <mesh geometry={g.back} material={M.black} castShadow />
+          <mesh geometry={g.front} material={bodyMat} castShadow />
+          <mesh geometry={g.back} material={bodyMat} castShadow />
           <mesh geometry={g.fillet} material={M.blueGlow} />
           {/* linha de partição em volta do painel de botões */}
           <mesh material={M.groove} position={[0, 0, 0.1705]}><ringGeometry args={[0.725, 0.74, 96]} /></mesh>
@@ -146,17 +151,17 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
         <ClickablePart id="argola">
           {/* furo da argola, na ponta do mesmo bloco, com a borda chanfrada */}
           {[0.172, -0.172].map((z) => (
-            <mesh key={z} material={M.blackGloss} position={[0, TAIL_Y - 0.02, z]} scale={[1, 1, 0.4]}><torusGeometry args={[0.158, 0.03, 10, 48]} /></mesh>
+            <mesh key={z} material={M.blackGloss} position={[0, TAIL_Y - 0.01, z]} scale={[1, 1, 0.4]}><torusGeometry args={[0.108, 0.022, 12, 64]} /></mesh>
           ))}
         </ClickablePart>
         <ClickablePart id="led">
           <mesh geometry={g.slit} material={M.blackGloss} position={[0, 0.79, 0.158]} rotation={[-0.5, 0, 0]} />
-          <Led sample={(t, o) => { o.color = '#ff3030'; o.on = tx() ? (t % 0.24 < 0.12 ? 1 : 0.1) : 0.03 }} position={[0, 0.794, 0.168]} rotation={[-0.5, 0, 0]}>
-            <boxGeometry args={[0.16, 0.022, 0.004]} />
+          <Led sample={(t, o) => { o.color = '#3d7bff'; o.on = tx() ? (t % 0.24 < 0.12 ? 1 : 0.1) : 0.05 }} position={[0, 0.794, 0.168]} rotation={[-0.5, 0, 0]}>
+            <boxGeometry args={[0.12, 0.02, 0.004]} />
           </Led>
         </ClickablePart>
 
-        {/* 4 botões em cruz, levemente abaulados, com os ícones brancos embutidos */}
+        {/* 4 botões em cunha, em X: ✱ em cima, cadeado aberto à esquerda, fechado à direita, casa embaixo */}
         {BUTTONS.map((b, i) => (
           <ClickablePart key={b.id} id={b.id}>
             <group ref={(gr) => { btnRefs.current[i] = gr }}
@@ -169,9 +174,11 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
             {interactive && b.action === 'panico' && <HoldRing radius={0.2} position={[0, 0.52, 0.24]} />}
           </ClickablePart>
         ))}
-        <ClickablePart id="btn-central">
-          <mesh geometry={g.center} material={M.black} />
-          <LogoGroove r={0.15} position={[0, 0, 0.2245]} material={M.logoGrooveDark} />
+        {/* centro: disco escuro FIXO (não afunda, não tem contorno de tecla), com o logo em baixo-relevo bem discreto.
+            TODO(usuário): confirmar o logo no disco (a arte de marketing mostra; o ícone do sistema mostra liso). */}
+        <ClickablePart follow="corpo">
+          <mesh geometry={g.center} material={bodyMat} />
+          <LogoGroove r={0.14} position={[0, 0, 0.1925]} material={M.logoGrooveDark} />
         </ClickablePart>
 
         {/* tampa traseira: circular de topo reto, duas abas em cima e uma embaixo, entalhe e símbolo em relevo */}

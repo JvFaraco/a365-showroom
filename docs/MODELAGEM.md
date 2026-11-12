@@ -71,7 +71,7 @@ A traseira também tem os furos quadrados e os ganchos em "L" do encaixe, e a et
 | part.id | Como é modelada |
 |---|---|
 | `btn-panico`, `btn-desarmar`, `btn-armar`, `btn-parcial` | Setores de anel extrudados, em cruz, com o ícone em textura. |
-| `btn-central` | Cilindro com o logo em relevo. |
+| centro (sem `id`) | Disco fixo, modelado com o corpo; não é botão. Logo em baixo-relevo discreto (a confirmar). |
 | `led` | Fenda no topo. |
 | `corpo` | Um só bloco em gota (extrusão com chanfro), preto soft-touch, com o filete azul em volta. Atrás, o aro grosso com a cavidade da bateria. |
 | `argola` | O furo na ponta do bloco, com a borda chanfrada. |

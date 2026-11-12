@@ -438,7 +438,7 @@ export const DEVICES: Device[] = [
     tagline: 'O alarme no seu chaveiro.',
     inKit365S: true,
     home: { position: [1.2, 0.5, 4.0], target: [0, -0.05, 0] },
-    bottom: -1.3,
+    bottom: -1.1,
     kitScale: 0.28,
     parts: [
       {
@@ -478,14 +478,8 @@ export const DEVICES: Device[] = [
         action: 'btn-parcial',
         explode: [0, 0, 0.6],
       },
-      {
-        id: 'btn-central',
-        name: 'Botão central',
-        what: 'Logo Orsegups.',
-        facts: [],
-        camera: { position: [0.4, 0.35, 1.7], target: [0, 0.1, 0.22] },
-        explode: [0, 0, 0.75],
-      },
+      // O centro do controle NÃO é botão: é um disco fixo, modelado junto com o corpo.
+      // TODO(usuário): confirmar se o disco leva o logo (arte de marketing) ou é liso (ícone do sistema).
       {
         id: 'led',
         name: 'LED',
@@ -506,7 +500,7 @@ export const DEVICES: Device[] = [
         name: 'Argola',
         what: 'Para levar no chaveiro.',
         facts: [],
-        camera: { position: [0.6, -1.0, 2.0], target: [0, -1.0, 0] },
+        camera: { position: [0.6, -0.8, 2.0], target: [0, -0.8, 0] },
       },
       {
         id: 'tampa',
