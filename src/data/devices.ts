@@ -274,7 +274,7 @@ export const DEVICES: Device[] = [
       {
         id: 'pilhas',
         name: 'Pilhas',
-        what: '3 pilhas AAA.',
+        what: '3 pilhas AA.',
         facts: ['Duram até 2 anos, conforme o uso'],
         camera: { position: [-1.3, 0.1, -2.0], target: [0, -0.3, -0.08] },
         internal: true,

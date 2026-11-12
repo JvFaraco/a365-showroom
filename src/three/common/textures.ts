@@ -213,7 +213,7 @@ export const fresnelTexture = () =>
     for (let col = 0; col < 3; col++) for (let row = 0; row < 3; row++) {
       const cx = 43 + col * 85, cy = 43 + row * 85
       ctx.save(); ctx.beginPath(); ctx.rect(col * 85.3, row * 85.3, 85.3, 85.3); ctx.clip()
-      for (let r = 8; r < 80; r += 8) { ctx.strokeStyle = `rgba(150,158,172,${0.26 - r / 420})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke() }
+      for (let r = 8; r < 80; r += 8) { ctx.strokeStyle = `rgba(140,150,166,${0.42 - r / 300})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke() }
       ctx.restore()
     }
     ctx.strokeStyle = 'rgba(140,148,164,.28)'; ctx.lineWidth = 1.5

@@ -34,11 +34,11 @@ Vista explodida, de cima para baixo: cúpula; placa (com o cartão do chip um po
 | `flash` | Janela escura com o emissor branco. |
 | `led` | Ponto emissivo abaixo do flash. |
 | `pir` | Janela fosca levemente curva, com anéis de Fresnel sutis, no capuz trapezoidal que desce até a base. |
-| `base` | `RoundedBox` cinza-escuro. |
+| `base` | `RoundedBox` cinza-claro, como no aparelho real. |
 | `suporte` | Esfera do pivô, braço curto e placa de parede com parafusos. |
-| `tampa-traseira` | Ocupa quase toda a traseira, com linha de partição, entalhe no topo e abas embaixo. |
-| `pilhas` (i) | 3 pilhas AAA na vertical, com polaridades alternadas, num berço com contatos metálicos; pino do anti-sabotagem ao lado. |
-| `fixacao` (i) | Placa cinza com 4 furos e 2 parafusos de trava. |
+| `tampa-traseira` | Cobre a metade de cima da traseira (o compartimento das pilhas): trava no topo, duas abas embaixo, nervuras e etiqueta lisa por dentro. |
+| `pilhas` (i) | 3 pilhas AA na vertical, com polaridades alternadas, num berço preto com mola e contato; pino do anti-sabotagem ao lado. Sem marca. |
+| `fixacao` (i) | Peça cinza-clara na metade de baixo da traseira: trapézio com canal em cunha e parafuso de trava. O suporte articulado prende nela. |
 
 ## Sensor Magnético (frente em +Z)
 
@@ -47,8 +47,8 @@ Vista explodida, de cima para baixo: cúpula; placa (com o cartão do chip um po
 | `corpo` | Barra alta em `RoundedBox` de chanfro macio, na proporção ~94 × 31 × 23, com linha de partição da tampa, marca de alinhamento e logo em sulco fino. |
 | `ima` | Barra mais fina e curta, paralela e colada ao corpo. |
 | `led` | Fenda escura com LED emissivo. |
-| `choque` (i) | Placa verde com disco piezo dourado e chip. |
-| `bateria` (i) | Cilindro preto com rótulo laranja. |
+| `choque` (i) | Placa verde comprida e estreita: chip do sensor, chave de anti-sabotagem, borne de 2 parafusos, etiqueta lisa e antena em mola de cobre na ponta. |
+| `bateria` (i) | Bateria cilíndrica presa por duas presilhas metálicas. |
 
 ## Sirene (raio 1, face em +Z)
 
@@ -60,9 +60,9 @@ A traseira é uma placa branca plana, sem tampa extra: é o suporte que cobre es
 | `led` | Fenda na borda de baixo da face, virada para o chão. |
 | `suporte` | Prato de parede: aro em `LatheGeometry`, fundo extrudado com furo grande e recortes, canal vertical, abas da baioneta e parafusos. |
 | `tamper` (i) | Alavanca de gatilho numa guia em U, na traseira. O suporte a mantém pressionada; ela salta quando a sirene sai do suporte. |
-| `elemento-sonoro` (i) | Círculo em relevo com anéis concêntricos na traseira, e a câmara cilíndrica por dentro. |
+| `elemento-sonoro` (i) | Por dentro, pastilha branca redonda com furo no centro (`LatheGeometry`), ligada à placa por dois fios brancos; na traseira, o círculo em relevo com anéis concêntricos. |
 | `bateria` (i) | Cilindro preto deitado, com etiqueta laranja, num nicho no alto da traseira, preso por uma trava. |
-| `placa` (i) | Plaquinha verde ao lado da bateria, com conector branco de 2 fios (vermelho e preto). |
+| `placa` (i) | Placa verde em cunha por dentro, com chips, pontos de teste e antena de fio preto; o trecho com o conector branco de 2 fios aparece na traseira, ao lado da bateria. |
 
 A traseira também tem os furos quadrados e os ganchos em "L" do encaixe, e a etiqueta como um retângulo liso.
 
@@ -76,7 +76,7 @@ A traseira também tem os furos quadrados e os ganchos em "L" do encaixe, e a et
 | `corpo` | Um só bloco em gota (extrusão com chanfro), preto soft-touch, com o filete azul em volta. Atrás, o aro grosso com a cavidade da bateria. |
 | `argola` | O furo na ponta do bloco, com a borda chanfrada. |
 | `tampa` | Circular de topo reto, duas abas em cima e uma embaixo, entalhe, nervura em U e etiqueta lisa por dentro. |
-| `bateria` (i) | CR2032 prateada com o "+" gravado, no suporte preto com a lâmina de contato dourada, sobre a placa verde. |
+| `bateria` (i) | CR2032 prateada com o "+" gravado, no suporte preto com a lâmina de contato dourada, sobre a placa verde. Do outro lado da placa, sob os botões: 4 chaves em domo dourado, o chip no centro, o LED e a antena de fio amarelo. |
 
 ## Placa de aviso (1,5 × 2,0)
 
