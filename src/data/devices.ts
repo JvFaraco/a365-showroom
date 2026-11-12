@@ -208,7 +208,7 @@ export const DEVICES: Device[] = [
     inKit365S: true,
     home: { position: [1.5, 0.5, 4.0], target: [0, 0, -0.1] },
     bottom: -1.03,
-    kitScale: 1.0,
+    kitScale: 1.0, // 79 mm/un (referência)
     parts: [
       {
         id: 'camera',
@@ -498,8 +498,8 @@ export const DEVICES: Device[] = [
         what: 'Pisca a cada comando enviado.',
         facts: [],
         camera: { position: [0.2, 1.45, 1.5], target: [0, 0.86, 0.13] },
-      },
         explode: [0, 0, 0.5],
+      },
       {
         id: 'corpo',
         name: 'Corpo e filete azul',
@@ -507,8 +507,8 @@ export const DEVICES: Device[] = [
         facts: ['Alcance de até 30 m', 'Sem barreiras'],
         camera: { position: [2.4, 0.5, 1.5], target: [0.85, 0.1, 0] },
         action: 'alcance',
-      },
         explode: [0, 0, 0.5],
+      },
       {
         id: 'argola',
         name: 'Argola',
