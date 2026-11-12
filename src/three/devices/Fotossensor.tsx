@@ -40,7 +40,7 @@ const PIR = { y0: -0.6, y1: -0.165, hw: 0.31 } // janela PIR, quase quadrada, no
 const LOGO_Y = -0.735
 const Y_FOOT = -1.28 // os pés do suporte de parede passam ~10% da altura para baixo do corpo
 const HINGE: [number, number, number] = [0, Y_FOOT, -(HD + 0.04)] // eixo horizontal no pé do suporte: é ali que o sensor inclina
-const FAN_Y = -1.1
+const FAN_Y = -1.3 // altura do chão da cena do PIR (o pé do suporte)
 const personX = (t: number) => -3.4 + seg(t, 2.5, 6.5) * 6.8
 const dogX = (t: number) => -3.4 + seg(t, 8, 12) * 6.8
 const PERSON_Z = 2.5
@@ -108,15 +108,15 @@ function shellGeometry() {
   for (let i = 1; i < F; i++) col(Math.PI / 2, 1 - (2 * i) / F, false)
   for (let i = 0; i <= A; i++) col(Math.PI / 2 + (i / A) * (Math.PI / 2), -1, false)
   frontSide = false
-  // canto esquerdo de trás, até a parede do compartimento
-  const nL = Math.round((A * (Math.PI / 2 - phiBay)) / (Math.PI / 2))
-  for (let i = 0; i <= nL; i++) col(Math.PI + (i / nL) * (Math.PI / 2 - phiBay), -1, false)
+  // canto esquerdo de trás, até a parede do compartimento (x = −BAY.hw fica em φ = π + phiBay)
+  const nL = Math.max(2, Math.round((A * phiBay) / (Math.PI / 2)))
+  for (let i = 0; i <= nL; i++) col(Math.PI + (i / nL) * phiBay, -1, false)
   // dentro do compartimento (as paredes nascem das amostras duplicadas)
-  const nB = A - nL
-  for (let i = 0; i <= nB; i++) col(Math.PI * 1.5 - phiBay + (i / nB) * phiBay, -1, true)
+  const nB = Math.max(2, A - nL), span = Math.PI / 2 - phiBay
+  for (let i = 0; i <= nB; i++) col(Math.PI + phiBay + (i / nB) * span, -1, true)
   for (let i = 1; i < K; i++) col(Math.PI * 1.5, -1 + (2 * i) / K, true)
-  for (let i = 0; i <= nB; i++) col(Math.PI * 1.5 + (i / nB) * phiBay, 1, true)
-  for (let i = 0; i <= nL; i++) col(Math.PI * 1.5 + phiBay + (i / nL) * (Math.PI / 2 - phiBay), 1, false)
+  for (let i = 0; i <= nB; i++) col(Math.PI * 1.5 + (i / nB) * span, 1, true)
+  for (let i = 0; i <= nL; i++) col(Math.PI * 2 - phiBay + (i / nL) * phiBay, 1, false)
 
   type Row = { y: number; inset: number; bay: boolean; flat?: boolean }
   const rows: Row[] = []
@@ -213,6 +213,12 @@ function build() {
   const plate = new THREE.ExtrudeGeometry(pl, { depth: 0.014, bevelEnabled: true, bevelSize: 0.004, bevelThickness: 0.004, bevelSegments: 2 })
   // faixa de frisos verticais finos nas laterais, perto da base
   const fr: THREE.BufferGeometry[] = []
+  // trecho reto de cada lateral (entre o canto de trás e o da frente)
+  for (const sx of [-1, 1]) for (let i = 1; i <= 7; i++) {
+    const b = new THREE.BoxGeometry(0.006, 0.13, 0.005)
+    b.translate(sx * (HW + 0.001), -0.72, -(HD - RB) + (i / 8) * (HD - RB + HD - RC))
+    fr.push(b)
+  }
   for (const sx of [-1, 1]) for (let i = 0; i <= 26; i++) {
     const phi = -0.9 + (i / 26) * 1.45 // de ~52° atrás até ~31° na frente, em volta de cada lateral
     const front = phi >= 0, r = (front ? RC : RB) + 0.001
