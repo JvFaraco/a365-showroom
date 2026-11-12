@@ -64,8 +64,11 @@ function build() {
   const bs = teardrop(); bs.holes.push(ringHole())
   const cav = new THREE.Path(); cav.absarc(0, 0, 0.61, 0, Math.PI * 2, true); bs.holes.push(cav)
   const back = new THREE.ExtrudeGeometry(bs, { depth: 0.12, ...bevel }); back.translate(0, 0, -0.14)
-  const fl = teardrop(0.042); fl.holes.push(ringHole())
-  const fillet = new THREE.ExtrudeGeometry(fl, { depth: 0.036, bevelEnabled: true, bevelSize: 0.006, bevelThickness: 0.006, bevelSegments: 2, curveSegments: 48 }); fillet.translate(0, 0, -0.018)
+  // filete azul: anel fino (~1,5 mm) no meio da espessura, quase rente às cascas
+  const fl = teardrop(0.014)
+  // é um anel de verdade (não um disco): na vista explodida aparece fino, só o contorno
+  fl.holes.push(new THREE.Path(teardrop(-0.05).getPoints(120).reverse()))
+  const fillet = new THREE.ExtrudeGeometry(fl, { depth: 0.03, bevelEnabled: true, bevelSize: 0.004, bevelThickness: 0.004, bevelSegments: 2, curveSegments: 64 }); fillet.translate(0, 0, -0.015)
   // tampa: circular com o topo levemente reto
   const cs = new THREE.Shape()
   const ca = Math.asin(0.6 / 0.69)
