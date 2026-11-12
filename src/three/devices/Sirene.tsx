@@ -14,7 +14,11 @@ import { beep } from '../../ui/audio'
 
 const LED_A = (-62 * Math.PI) / 180 // posição angular do LED na borda (embaixo, à direita)
 const LIFT = 1.9 // quanto a sirene sobe para sair do suporte
-const BACK = -0.277 // face traseira da sirene (a que encosta no suporte)
+// Ficha (1 unidade = 64 mm): cúpula de 128 mm de diâmetro; 60 mm de projeção da parede: a cúpula (~36)
+// por cima de uma base traseira (~32), com sobreposição.
+const DOME_BACK = -0.26 // borda de trás da cúpula
+const BACK = 0.3 - 60 / 64 // face traseira da base (a que encosta no suporte)
+const SUP_DZ = BACK + 0.277 // o suporte de parede acompanha a face traseira
 
 /** Fundo do suporte: disco com furo grande deslocado e dois recortes triangulares. */
 function supportFloor() {
@@ -51,14 +55,16 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
     return g
   }, [])
   const floor = useMemo(supportFloor, [])
-  const slit = useMemo(() => stadiumGeometry(0.1, 0.034, 0.008, 0.003), [])
+  // base traseira: anel um pouco menor que a cúpula, que entra por baixo dela e vai até a face de trás
+  const baseWall = useMemo(() => smoothLatheZ([[0.975, DOME_BACK + 0.12], [0.975, BACK + 0.1], [0.965, BACK + 0.03], [0.94, BACK]], 128, 24), [])
+  const slit = useMemo(() => stadiumGeometry(15 / 64, 8 / 64, 0.008, 0.003), []) // guia de luz do LED: ~8 × 15 mm
   // tampa do tamper: disco em degraus (anéis concêntricos) com o miolo abaulado, virado para trás
   const tamperCap = useMemo(() => smoothLatheZ([[0.31, 0.0], [0.305, -0.03], [0.28, -0.04], [0.225, -0.042], [0.21, -0.07], [0.13, -0.075], [0.1, -0.1], [0.04, -0.115], [0.001, -0.118]], 64, 48), [])
   const tail = useMemo(() => {
     const sh = new THREE.Shape()
     // cauda pequena, embaixo (a sirene vai na parede com a cauda e o LED para o chão)
     sh.moveTo(0.34, -0.86); sh.quadraticCurveTo(0.2, -1.0, 0.15, -1.08); sh.quadraticCurveTo(0, -1.13, -0.15, -1.08); sh.quadraticCurveTo(-0.2, -1.0, -0.34, -0.86); sh.closePath()
-    return new THREE.ExtrudeGeometry(sh, { depth: 0.16, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 4, curveSegments: 16 })
+    return new THREE.ExtrudeGeometry(sh, { depth: 0.34, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 4, curveSegments: 16 })
   }, [])
   const piezo = useMemo(() => smoothLatheZ([[0.04, 0.06], [0.2, 0.06], [0.225, 0.05], [0.23, 0.03], [0.23, -0.04], [0.22, -0.05], [0.001, -0.05]], 48, 24), [])
   const board = useMemo(() => {
@@ -118,25 +124,25 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
             <mesh material={M.partition} position={[0, 0, 0.2985]} scale={[1, 1, 0.3]}><torusGeometry args={[0.715, 0.006, 6, 128]} /></mesh>
             <mesh material={M.partition} position={[0, 0, -0.235]}><torusGeometry args={[0.997, 0.006, 6, 128]} /></mesh>
             <LogoGroove r={0.3} position={[0, 0.02, 0.3005]} />
-            {/* a cauda da cúpula: pequena, embaixo, atrás */}
-            <mesh geometry={tail} material={M.white} position={[0, 0, -0.29]} />
           </group>
         </ClickablePart>
         {/* LED pequeno no chanfro da frente, do lado de baixo (fica voltado para o chão): azul; vermelho ao tocar */}
         <ClickablePart id="led">
           <group rotation={[0, 0, LED_A + Math.PI / 2]}>
             <group position={[0, -0.868, 0.238]} rotation={[0.72, 0, 0]}>
-              <mesh geometry={slit} material={M.blackGloss} />
+              <mesh geometry={slit} material={M.frosted} />
               <Led sample={(t, o) => { const on = isOn(); o.color = on ? '#ff2a2a' : '#3d7bff'; o.on = on ? (t % 0.3 < 0.15 ? 1 : 0.05) : 0.14 }} position={[0, 0, 0.008]}>
-                <boxGeometry args={[0.07, 0.018, 0.004]} />
+                <boxGeometry args={[0.12, 0.05, 0.004]} />
               </Led>
             </group>
           </group>
         </ClickablePart>
 
-        {/* tampa traseira: fica presa ao corpo; tem os rasgos do encaixe e os ganchos */}
-        <ClickablePart internal>
-          <mesh material={M.white} position={[0, 0, -0.25]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.96, 0.96, 0.05, 64]} /></mesh>
+        {/* base traseira, com a cauda pequena embaixo: fecha a sirene por trás; tem os rasgos do encaixe e os ganchos */}
+        <ClickablePart follow="corpo" explode={[0, 0, -0.5]}>
+          <mesh geometry={baseWall} material={whiteDS} castShadow />
+          <mesh geometry={tail} material={M.white} position={[0, 0, BACK + 0.04]} />
+          <mesh material={M.white} position={[0, 0, BACK + 0.027]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.94, 0.94, 0.05, 64]} /></mesh>
           <mesh material={M.grey} position={[-0.03, 0.45, BACK]}><boxGeometry args={[0.98, 0.44, 0.006]} /></mesh>
           <mesh material={M.white} position={[-0.03, 0.7, BACK - 0.03]}><boxGeometry args={[0.2, 0.08, 0.06]} /></mesh>
           <mesh material={M.white} position={[0.05, 0.2, BACK - 0.03]}><boxGeometry args={[0.16, 0.06, 0.06]} /></mesh>
@@ -201,7 +207,7 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
 
       {/* suporte de parede: prato com furo grande, canal vertical, recortes e travas do encaixe */}
       <ClickablePart id="suporte">
-        <group>
+        <group position={[0, 0, SUP_DZ]}>
           <mesh geometry={rim} material={whiteDS} castShadow />
           <mesh geometry={floor} material={whiteDS} position={[0, 0, -0.63]} />
           <mesh material={M.whiteRelief} position={[-0.42, -0.02, -0.54]}><boxGeometry args={[0.22, 0.95, 0.14]} /></mesh>
