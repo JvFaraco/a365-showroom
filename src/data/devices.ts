@@ -315,8 +315,8 @@ export const DEVICES: Device[] = [
     tagline: 'Percebe antes de alguém entrar.',
     inKit365S: false,
     home: { position: [1.0, 0.9, 4.0], target: [0, 0, 0] },
-    bottom: -0.62,
-    kitScale: 0.5,
+    bottom: -0.52,
+    kitScale: 0.72, // real 0,63 × 1,15 de leitura
     parts: [
       {
         id: 'corpo',
@@ -325,25 +325,25 @@ export const DEVICES: Device[] = [
         what: 'Detecta a abertura de portas e janelas. Na instalação de referência, fica na folha da porta.',
         facts: ['Transmite por radiofrequência', 'Tem anti-sabotagem'],
         tip: 'Não instale em portas de ferro nem em estruturas metálicas.',
-        camera: { position: [0.6, 0.2, 2.8], target: [0, -0.23, 0.21] },
-        explode: [0, 0, 0.75],
+        camera: { position: [0.6, 0.2, 2.8], target: [0, -0.19, 0.3] },
+        explode: [0, 0, 0.6],
       },
       {
         id: 'ima',
         name: 'Ímã',
         what: 'Fica paralelo ao corpo, alinhado no comprimento. Na instalação de referência, vai no batente.',
         facts: ['Distância máxima entre as duas peças: 1 cm'],
-        camera: { position: [0.5, 1.1, 2.6], target: [0, 0.31, 0.05] },
+        camera: { position: [0.5, 1.0, 2.6], target: [0, 0.32, 0] },
         action: 'ima',
-        explode: [0, 0.5, 0],
+        explode: [0, 0.45, 0],
       },
       {
         id: 'led',
         name: 'LED',
         what: 'Pisca ao detectar.',
         facts: [],
-        camera: { position: [-0.9, 0.1, 1.6], target: [-0.66, -0.23, 0.21] },
-        explode: [0, 0, 0.75],
+        camera: { position: [-0.6, 0.1, 1.6], target: [-0.31, -0.19, 0.32] },
+        explode: [0, 0, 0.6],
       },
       {
         id: 'choque',
