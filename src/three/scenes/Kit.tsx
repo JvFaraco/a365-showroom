@@ -7,6 +7,7 @@ import { DEVICES, DEVICE_BY_ID, type DeviceId, type Vec3 } from '../../data/devi
 import { now, useShowroom } from '../../store/showroomStore'
 import { DEVICE_COMPONENTS } from '../devices'
 import { reducedMotion } from '../common/util'
+import { compiledDevices } from '../common/registry'
 
 export type Placement = { id: DeviceId; position: Vec3; rotation?: Vec3; scale?: number; key?: string }
 
@@ -42,7 +43,7 @@ export function Placed({ p, children }: { p: Placement; children?: React.ReactNo
   const [hover, setHover] = useState(false)
   useCursor(hover)
   return (
-    <group position={[p.position[0], p.position[1] - d.bottom * s, p.position[2]]} rotation={p.rotation} scale={s}
+    <group name={`kit:${p.id}`} position={[p.position[0], p.position[1] - d.bottom * s, p.position[2]]} rotation={p.rotation} scale={s}
       onPointerOver={(e) => { e.stopPropagation(); setHover(true) }} onPointerOut={() => setHover(false)}
       onClick={(e) => { if (e.delta > 6) return; e.stopPropagation(); useShowroom.getState().setDevice(p.id) }}>
       {children ?? <C />}
@@ -66,6 +67,7 @@ export function KitLineup({ mode }: { mode: 'enter' | 'gather' }) {
     if (!useShowroom.getState().ready) t0.current = now()
     const t = reducedMotion() ? 99 : now() - t0.current
     group.current.children.forEach((c, i) => {
+      c.visible = compiledDevices.has(layout[i].id) // na carga, só aparece depois de compilado
       const k = easeOutBack((t - 0.4 - i * (mode === 'enter' ? 0.38 : 0.12)) / 0.9)
       if (mode === 'enter') {
         c.position.y = (1 - k) * 2.2

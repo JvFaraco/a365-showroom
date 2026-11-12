@@ -2,6 +2,10 @@
 type Boot = { set: (p: number, label?: string) => void; done: () => void }
 const w = (typeof window !== 'undefined' ? window : {}) as { __boot?: Boot }
 export const boot: Boot = {
-  set: (p, label) => w.__boot?.set(Math.min(1, Math.max(0, p)), label),
+  set: (p, label) => {
+    // cada etapa vira uma marca de desempenho (aparece no painel Performance e no tools/perf.mjs)
+    if (label && typeof performance !== 'undefined') performance.mark(`boot: ${label}`)
+    w.__boot?.set(Math.min(1, Math.max(0, p)), label)
+  },
   done: () => w.__boot?.done(),
 }

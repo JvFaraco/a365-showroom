@@ -8,7 +8,7 @@ import { DEVICE_COMPONENTS } from '../devices'
 import { ManualPins, PartCallout } from '../parts/PartCallout'
 import { explodeAmt, reducedMotion } from '../common/util'
 import { fxBasic } from '../common/materials'
-import { deviceRoots, partCenter, warmBounds } from '../common/registry'
+import { compiledDevices, deviceRoots, partCenter, warmBounds } from '../common/registry'
 import { boot } from '../../boot'
 
 const easeOut = (x: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3)
@@ -90,7 +90,7 @@ export function ShowroomDevices() {
     for (const d of DEVICES) {
       const g = slots.current[d.id]
       if (!g) continue
-      if (s.warm) { g.visible = true; g.position.set(0, 0, 0); g.rotation.y = 0; g.scale.setScalar(1); continue }
+      if (s.warm) { g.visible = compiledDevices.has(d.id); g.position.set(0, 0, 0); g.rotation.y = 0; g.scale.setScalar(1); continue }
       if (d.id === cur) {
         const k = easeOut(t / 0.95)
         g.visible = on
@@ -145,22 +145,28 @@ export function Boot() {
     ;(async () => {
       for (let i = st().mounted; i < n; i++) {
         if (dead) return
-        boot.set(0.2 + (0.6 * i) / n, `Aparelhos: ${DEVICES[i].short} (${i + 1} de ${n})`)
+        const id = DEVICES[i].id
+        boot.set(0.2 + (0.7 * i) / n, `Aparelhos: ${DEVICES[i].short} (${i + 1} de ${n})`)
         st().set({ mounted: i + 1 })
-        await frame(); await frame() // o React monta o aparelho e o primeiro quadro com ele é desenhado
-        const root = deviceRoots[DEVICES[i].id]
-        if (root && !dead) { try { await gl.compileAsync(root, camera, scene) } catch { /* segue: o render compila */ } }
+        await frame() // o React monta o aparelho (no showroom e no kit da abertura)
+        // shaders deste aparelho, nas duas instâncias; cada material é preparado uma vez só, aqui
+        // enquanto compila, o aparelho fica invisível: o render não toca num programa ainda não pronto
+        for (const root of [deviceRoots[id], scene.getObjectByName(`kit:${id}`)]) {
+          if (!root || dead) continue
+          try { await gl.compileAsync(root, camera, scene) } catch { /* segue: o render compila */ }
+        }
+        compiledDevices.add(id)
       }
-      boot.set(0.85, 'Materiais')
-      for (let k = 0; k < 600 && !postFx.ready && !dead; k++) await frame()
-      if (dead) return
-      try { await gl.compileAsync(scene, camera) } catch { /* idem */ }
-      boot.set(0.95, 'Preparando')
-      for (let k = 0; k < 3; k++) await frame()
+      boot.set(0.92, 'Materiais')
+      // o pós-processamento chega num pacote à parte: espera só um instante por ele, sem segurar a carga
+      for (let k = 0; k < 20 && !postFx.ready && !dead; k++) await frame()
+      boot.set(0.97, 'Preparando')
+      // dois quadros com tudo visível e selecionado: sobem as texturas e fecha o contorno do hover
+      await frame(); await frame()
       if (dead) return
       warmBounds()
       st().set({ warm: false })
-      await frame(); await frame()
+      await frame()
       if (dead) return
       st().set({ ready: true })
       boot.set(1)

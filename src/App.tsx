@@ -1,4 +1,4 @@
-import { Suspense, lazy, useRef, useState, type ComponentType } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState, type ComponentType } from 'react'
 import { MotionConfig } from 'framer-motion'
 import { Canvas } from '@react-three/fiber'
 import { AdaptiveDpr, PerformanceMonitor } from '@react-three/drei'
@@ -19,6 +19,19 @@ const FORCE_HQ = Q.includes('hq')
 const DEBUG = import.meta.env.DEV && Q.includes('debug')
 const Perf = DEBUG ? lazy(() => import('r3f-perf').then((m) => ({ default: m.Perf }))) : null
 const MAX_DPR = typeof window !== 'undefined' ? Math.min(2, window.devicePixelRatio || 1) : 1
+
+/** `?debug=1`: quantos programas de shader existem (cada combinação de flags de material é um a mais). */
+function ProgramCount() {
+  const el = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const t = setInterval(() => {
+      const gl = (window as unknown as { __gl?: { info: { programs: unknown[] | null } } }).__gl
+      if (el.current) el.current.textContent = `programas de shader: ${gl?.info.programs?.length ?? '…'}`
+    }, 500)
+    return () => clearInterval(t)
+  }, [])
+  return <div ref={el} className="pointer-events-none fixed bottom-1 left-2 z-50 font-mono text-xs text-white/80" />
+}
 
 // Divisão de código: o pós-processamento e as cenas "Em ação" e "Encerramento" saem do pacote inicial.
 // O import é dinâmico e quem avisa a chegada é o store (atualização síncrona). Não usamos React.lazy aqui:
@@ -82,6 +95,9 @@ export default function App() {
           eventSource={container} eventPrefix="client"
           dpr={dpr} camera={{ fov: 32, near: 0.05, far: 120, position: [0, 2.6, 15] }}
           gl={{ antialias: false, powerPreference: 'high-performance' }}
+          // em produção, o three não confere erro de shader: essa conferência (getProgramParameter/getShaderInfoLog)
+          // obriga a esperar cada compilação e anula o compileAsync. Em `npm run dev` continua ligada.
+          onCreated={({ gl }) => { gl.debug.checkShaderErrors = import.meta.env.DEV }}
           aria-label="Showroom 3D dos equipamentos do Alarme 365"
         >
           <Suspense fallback={null}>
@@ -103,6 +119,7 @@ export default function App() {
       {/* a camada 2D respeita prefers-reduced-motion também nas animações do framer-motion */}
       <MotionConfig reducedMotion="user">{REF_ON ? <RefOverlay /> : <UI />}</MotionConfig>
       <PresenterMode />
+      {DEBUG && <ProgramCount />}
     </main>
   )
 }
