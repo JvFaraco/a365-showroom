@@ -44,6 +44,14 @@ export const REFS: Ref[] = [
   { id: 'placa-b', label: 'Placa: controle', device: 'controle', file: 'placa-b.jpg', position: [0, 0, 5.6], target: [0, 0, 0], fov: 37, roll: 0, view: 'exploded', note: 'placa redonda do controle com a antena de fio' },
   { id: 'placa-c', label: 'Placa: sirene', device: 'sirene', file: 'placa-c.jpg', position: [0, 0.4, -5.2], target: [0, 0, 0], fov: 33, roll: 0, view: 'exploded', note: 'placa da sirene com o elemento sonoro' },
   { id: 'kit', label: 'Kit', device: 'modulo', file: 'kit.jpg', position: [0, 1.2, 8.4], target: [0, 0.85, 0], fov: 35, roll: 0, scene: 'intro', note: 'foto oficial do kit (cena de abertura)' },
+  // fotos de instalação do sensor magnético (alto da porta: ímã no batente, corpo na folha)
+  { id: 'magnetico-porta-1', label: 'Magnético: porta 1', device: 'magnetico', file: 'magnetico-instalado-porta-1.jpg', position: [-0.6, -0.5, 5.2], target: [0.3, -0.25, 0], fov: 32, roll: 0, action: 'ima', note: 'o terceiro bloco branco da foto não é modelado (a confirmar)' },
+  { id: 'magnetico-porta-2', label: 'Magnético: porta 2', device: 'magnetico', file: 'magnetico-instalado-porta-2.jpg', position: [-2.6, -1.6, 4.2], target: [0.2, -0.1, 0], fov: 32, roll: -0.25, action: 'ima', note: 'o terceiro bloco branco da foto não é modelado (a confirmar)' },
+  // ícones do sistema (silhueta e proporção): ficam só em ref/, nunca no repo nem em textura
+  { id: 'icone-central', label: 'Ícone: módulo', device: 'modulo', file: 'icones/device-central.png', position: [0, 7.2, 1.2], target: [0, 0, -0.1], fov: 24, roll: 0 },
+  { id: 'icone-magnetico', label: 'Ícone: magnético', device: 'magnetico', file: 'icones/device-magnetic-sensor.png', position: [2.8, 3.4, 4.2], target: [0, 0, 0], fov: 28, roll: -0.9 },
+  { id: 'icone-sirene', label: 'Ícone: sirene', device: 'sirene', file: 'icones/device-siren.png', position: [0.4, -2.6, 5.6], target: [0, 0, 0], fov: 26, roll: 0 },
+  { id: 'icone-controle', label: 'Ícone: controle', device: 'controle', file: 'icones/device-remote-control.png', position: [0, 0, 6.6], target: [0, 0, 0], fov: 26, roll: 0 },
   { id: 'app', label: 'App', device: 'app', file: 'app.jpg', position: [0, 0.02, 4.95], target: [0, 0.02, 0], fov: 25, roll: 0 },
 ]
 

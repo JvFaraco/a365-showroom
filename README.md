@@ -25,9 +25,11 @@ Stack: Vite, React 18, TypeScript, three.js com @react-three/fiber, drei e postp
 | Explodir, Raio-X, Manual, Tour | botões no topo | `E`, `X`, `M`, `T` |
 | Modo apresentação (tela cheia, textos maiores) | botão no canto | `P` |
 
+A câmera só gira quando alguém arrasta: não há giro automático.
+
 No modo apresentação, `→` (ou o clicker, que envia PageDown) segue para o próximo aparelho quando as partes acabam. Sem ele, as setas dão a volta nas partes do mesmo aparelho.
 
-As micro-animações que abrem ou tiram algo (tampa do fotossensor, tampa do controle, bateria da sirene, sirene fora do suporte) ficam abertas até o botão de desfazer do card ("Fechar", "Recolocar", "Encaixar"), que volta pelo mesmo caminho.
+As micro-animações que abrem ou tiram algo (tampa do fotossensor, tampa do controle, bateria da sirene, sirene fora do suporte) ficam abertas até o botão de desfazer do card ("Fechar", "Recolocar"), que volta pelo mesmo caminho. A sirene não gira para encaixar: desce de cima para baixo no suporte e trava com um clique.
 
 ## Fluidez
 
@@ -47,7 +49,9 @@ Parâmetros de URL:
 
 ## Comparar com a foto (`?ref=1`)
 
-Coloque as fotos de referência em `ref/` na raiz do projeto: `modulo.jpg`, `sirene.jpg`, `fotossensor.jpg`, `controle.jpg`, `placa.jpg`, `app.jpg` (as oficiais) e `modulo-topo-led-azul.jpg` (o módulo visto de cima). A pasta `ref/` fica fora do git e fora do build. Com `npm run dev`, abra `/?ref=1`: a foto aparece por cima do canvas com um slider de opacidade, e a câmera trava no ângulo da foto. `&r=modulo-topo` escolhe a foto e `&cam=px,py,pz,tx,ty,tz,fov,roll` afina o ângulo sem recompilar. Os ângulos ficam em `src/dev/RefMode.tsx`.
+Coloque as fotos de referência em `ref/` na raiz do projeto: `modulo.jpg`, `sirene.jpg`, `fotossensor.jpg`, `controle.jpg`, `placa.jpg`, `app.jpg` (as oficiais) e `modulo-topo-led-azul.jpg` (o módulo visto de cima). A pasta `ref/` fica fora do git e fora do build. Com `npm run dev`, abra `/?ref=1`: a foto aparece por cima do canvas com um slider de opacidade, e a câmera trava no ângulo da foto. `&r=modulo-topo` escolhe a foto e `&cam=px,py,pz,tx,ty,tz,fov,roll` afina o ângulo sem recompilar. Os ângulos ficam em `src/dev/RefMode.tsx`, uma entrada por foto (fotos reais na mão, fotos de instalação, ícones do sistema); a entrada também pode pôr o modelo no estado da foto (vista explodida, tampa aberta).
+
+**Nada de `ref/` vai para o repositório**, que é público: as fotos mostram pessoas e a casa de um cliente, e os ícones são de um sistema de terceiros (também não viram textura). Confira com `git status` antes de cada commit.
 
 ## Onde fica cada coisa
 
@@ -67,6 +71,10 @@ src/
 
 Todo o conteúdo dos cards vem de `src/data/devices.ts`. Para mudar um texto ou o enquadramento de uma parte, edite só esse arquivo.
 
+## Aparência
+
+Render de produto, não desenho: plástico branco levemente quente com variação sutil de rugosidade, cinza fosco, metais, vidro escuro na lente. As texturas (micro-relevo, ruído de rugosidade, lente PIR, placas) são geradas em canvas uma vez, no carregamento. O ambiente de estúdio também é gerado no carregamento (softboxes em `Lightformer`), vai dentro do build e funciona sem internet. Pós: AO leve, bloom só nos LEDs acesos, contorno fino só no hover, ACES. O pedestal é um disco neutro e fosco, com o raio proporcional ao aparelho.
+
 ## Trocar os modelos procedurais por `.glb`
 
 Cada aparelho é um componente em `src/three/devices/`, e cada parte clicável é um `<ClickablePart id="...">` com o mesmo `id` que está em `devices.ts`. Para usar um `.glb`, carregue o arquivo no componente do aparelho e envolva cada nó nomeado com o `<ClickablePart>` de mesmo `id`. Hover, zoom, card, Raio-X e vista explodida continuam funcionando sem outras mudanças.
@@ -79,3 +87,6 @@ A lista de partes de cada aparelho, com primitivas, proporções e materiais, es
 
 - Destino do QR Code do verso da placa. O que aparece no demo é ilustrativo e não codifica nada.
 - Cor do filete lateral do controle: azul na arte oficial, amarelo na foto real. O demo usa o azul.
+- Disco central do controle: não é botão. A arte de marketing mostra o logo nele e o ícone do sistema mostra liso; o demo usa o logo em baixo-relevo discreto.
+- Sensor magnético: a foto de instalação mostra o corpo na folha da porta e o ímã no batente (o texto antigo dizia o contrário); confirmar no manual. A mesma foto tem um terceiro bloco branco, abaixo do corpo, que não foi modelado.
+- CAD ou scan do fabricante, para trocar os modelos procedurais por `.glb`.
