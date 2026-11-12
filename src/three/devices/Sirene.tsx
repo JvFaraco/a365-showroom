@@ -18,6 +18,9 @@ const LIFT = 1.9 // quanto a sirene sobe para sair do suporte
 // por cima de uma base traseira (~32), com sobreposição.
 const DOME_BACK = -0.26 // borda de trás da cúpula
 const BACK = 0.3 - 60 / 64 // face traseira da base (a que encosta no suporte)
+const DOME_H = 36 / 64, DOME_P = 2.5
+/** Altura da cúpula no raio r (0 = centro, 1 = borda). */
+const domeZ = (r: number) => 0.3 - DOME_H * (1 - Math.pow(Math.max(0, 1 - Math.pow(Math.min(1, r), DOME_P)), 1 / DOME_P))
 const SUP_DZ = BACK + 0.277 // o suporte de parede acompanha a face traseira
 
 /** Fundo do suporte: disco com furo grande deslocado e dois recortes triangulares. */
@@ -42,8 +45,12 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
   const batt = useRef<THREE.Group>(null!)
   const plugRef = useRef<THREE.Group>(null!)
   const lever = useRef<THREE.Group>(null!)
-  // face plana, chanfro largo e macio até a lateral, e a lateral descendo com leve conicidade
-  const dome = useMemo(() => smoothLatheZ([[1.0, -0.25], [0.995, -0.18], [0.975, -0.02], [0.95, 0.1], [0.905, 0.2], [0.83, 0.265], [0.74, 0.296], [0.7, 0.3], [0.5, 0.3], [0.25, 0.3], [0.001, 0.3]], 128, 80), [])
+  // cúpula: perfil curvo do centro até a borda (superelipse), 36 mm de altura sobre 64 mm de raio
+  const dome = useMemo(() => {
+    const pts: [number, number][] = []
+    for (let i = 0; i <= 40; i++) { const r = Math.max(0.001, 1 - i / 40); pts.push([r, domeZ(r)]) }
+    return smoothLatheZ(pts, 128, 96)
+  }, [])
   // aro do suporte: aberto em cima, que é por onde a sirene desce para encaixar
   const rim = useMemo(() => {
     const prof: [number, number][] = [[0.9, -0.63], [0.86, -0.45], [0.82, -0.29]], N = 72, a0 = (150 * Math.PI) / 180, a1 = (390 * Math.PI) / 180
@@ -121,15 +128,14 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
           <group ref={shell}>
             <mesh geometry={dome} material={M.white} castShadow />
             {/* linha de partição entre a face e o corpo, e o mesmo símbolo do módulo em sulcos finos */}
-            <mesh material={M.partition} position={[0, 0, 0.2985]} scale={[1, 1, 0.3]}><torusGeometry args={[0.715, 0.006, 6, 128]} /></mesh>
             <mesh material={M.partition} position={[0, 0, -0.235]}><torusGeometry args={[0.997, 0.006, 6, 128]} /></mesh>
-            <LogoGroove r={0.3} position={[0, 0.02, 0.3005]} />
+            <LogoGroove r={0.26} position={[0, 0.02, 0.3008]} />
           </group>
         </ClickablePart>
         {/* LED pequeno no chanfro da frente, do lado de baixo (fica voltado para o chão): azul; vermelho ao tocar */}
         <ClickablePart id="led">
           <group rotation={[0, 0, LED_A + Math.PI / 2]}>
-            <group position={[0, -0.868, 0.238]} rotation={[0.72, 0, 0]}>
+            <group position={[0, -0.86, domeZ(0.86) + 0.004]} rotation={[0.74, 0, 0]}>
               <mesh geometry={slit} material={M.frosted} />
               <Led sample={(t, o) => { const on = isOn(); o.color = on ? '#ff2a2a' : '#3d7bff'; o.on = on ? (t % 0.3 < 0.15 ? 1 : 0.05) : 0.14 }} position={[0, 0, 0.008]}>
                 <boxGeometry args={[0.12, 0.05, 0.004]} />
