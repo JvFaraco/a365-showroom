@@ -16,7 +16,6 @@ import { beep } from './audio'
 
 const SCENES: { id: Scene; label: string }[] = [
   { id: 'showroom', label: 'Showroom' },
-  { id: 'network', label: 'Sistema conectado' },
   { id: 'inaction', label: 'Em ação' },
   { id: 'outro', label: 'Encerramento' },
 ]
@@ -190,17 +189,6 @@ function OutroUI() {
   )
 }
 
-function NetworkUI() {
-  return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-5 z-20 flex justify-center px-4">
-      <div className="glass max-w-2xl rounded-2xl px-5 py-3 text-center text-[0.9em] text-white/85">
-        <b className="font-title text-white">Sistema conectado.</b> Sensores, sirene e controle falam com o Módulo por radiofrequência. O Módulo fala com a nuvem por três vias: <b>Chip 4G, Wi-Fi e Ethernet</b>. Da nuvem, o aviso chega ao aplicativo e à Central.
-        <span className="mt-1 block text-[0.85em] text-white/55">Clique num aparelho para abri-lo no showroom.</span>
-      </div>
-    </div>
-  )
-}
-
 function InActionUI() {
   const cur = useShowroom((s) => s.iaStep)
   const playing = useShowroom((s) => s.iaPlaying)
@@ -249,7 +237,6 @@ export function UI() {
       {scene === 'showroom' && <ShowroomUI />}
       {scene === 'intro' && <IntroUI />}
       {scene === 'outro' && <OutroUI />}
-      {scene === 'network' && <NetworkUI />}
       {scene === 'inaction' && <InActionUI />}
     </>
   )

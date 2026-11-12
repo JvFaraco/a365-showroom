@@ -3,7 +3,7 @@ import { DEVICES, DEVICE_BY_ID, getPart, hasInternal, type ActionId, type Device
 import { ARM_TO_LED, type LedStateId } from '../data/ledStates'
 import { ACTIONS } from '../data/actions'
 
-export type Scene = 'intro' | 'showroom' | 'network' | 'inaction' | 'outro'
+export type Scene = 'intro' | 'showroom' | 'inaction' | 'outro'
 export type View = 'normal' | 'exploded' | 'xray' | 'manual'
 export type ArmState = 'disarmed' | 'armed' | 'partial'
 

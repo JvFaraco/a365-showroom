@@ -9,7 +9,6 @@ import { CameraRig } from './three/CameraRig'
 import { Stage } from './three/Stage'
 import { Intro } from './three/scenes/Intro'
 import { Showroom, ShowroomDevices, Warmup } from './three/scenes/Showroom'
-import { Network } from './three/scenes/Network'
 import { InAction } from './three/scenes/InAction'
 import { Outro } from './three/scenes/Outro'
 import { Loader, UI } from './ui/Overlays'
@@ -29,7 +28,6 @@ function Scenes() {
   switch (scene) {
     case 'intro': return <Intro />
     case 'showroom': return <Showroom />
-    case 'network': return <Network />
     case 'inaction': return <InAction />
     case 'outro': return <Outro />
   }

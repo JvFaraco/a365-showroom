@@ -15,6 +15,8 @@ Stack: Vite, React 18, TypeScript, three.js com @react-three/fiber, drei e postp
 
 ## Como usar
 
+O demo tem três cenas, nesta ordem: **Showroom → Em ação → Encerramento** (mais a abertura). A cena "Sistema conectado" foi arquivada em [`arquivado/`](arquivado/README.md), fora do build.
+
 | Ação | Mouse / toque | Teclado |
 |---|---|---|
 | Girar, aproximar | arrastar, roda ou pinça | |
@@ -64,7 +66,7 @@ src/
     devices/  um componente por aparelho
     parts/    ClickablePart.tsx (hover, contorno, clique, esmaecer, explodir), PartCallout.tsx
     fx/       DetectionFan, SoundWaves, RadioPulse, CameraFlash, CommLinks, MagneticField, VoiceWaves, HoldRing
-    scenes/   Intro, Showroom, Network, InAction, Outro
+    scenes/   Intro, Showroom, InAction, Outro
     common/   materiais, texturas em canvas, logo, LED, formas
   ui/       PartCard, PartList, Breadcrumb, DeviceDock, ViewToggles, PresenterMode, AppScreen
 ```
