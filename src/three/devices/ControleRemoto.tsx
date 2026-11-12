@@ -63,6 +63,7 @@ function build() {
     center: smoothLatheZ([[0.3, 0.165], [0.295, 0.19], [0.27, 0.212], [0.2, 0.222], [0.001, 0.224]], 64, 24),
     coin: smoothLatheZ([[0.001, -0.14], [0.39, -0.14], [0.415, -0.135], [0.42, -0.12], [0.42, -0.09], [0.41, -0.08], [0.001, -0.08]], 64, 32),
     slit: stadiumGeometry(0.22, 0.045, 0.01, 0.003),
+    aerial: wire([[0.5, 0.42, -0.045], [0.63, 0.2, -0.04], [0.66, -0.1, -0.04], [0.56, -0.36, -0.04]], 0.012),
     rib: wire([[-0.42, 0.25, 0], [-0.45, -0.1, 0], [-0.3, -0.42, 0], [0, -0.52, 0], [0.3, -0.42, 0], [0.45, -0.1, 0], [0.42, 0.25, 0]], 0.014),
   }
 }
@@ -195,6 +196,17 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
         {/* por dentro: placa verde, suporte preto da bateria com a lâmina de contato dourada e o bloco do encaixe */}
         <ClickablePart internal>
           <mesh material={M.pcb} position={[0, 0, -0.06]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.69, 0.69, 0.02, 64]} /></mesh>
+          {/* frente da placa, sob os botões: 4 chaves em domo dourado, o chip no centro, o LED e a antena de fio amarelo */}
+          {BUTTONS.map((b) => (
+            <group key={b.id} position={[Math.cos(b.angle * D2R) * 0.47, Math.sin(b.angle * D2R) * 0.47, -0.047]} rotation={[0, 0, Math.PI / 4]}>
+              <mesh material={M.chip}><boxGeometry args={[0.17, 0.17, 0.006]} /></mesh>
+              <mesh material={M.gold} position={[0, 0, 0.004]} scale={[1, 1, 0.3]}><sphereGeometry args={[0.062, 20, 12]} /></mesh>
+            </group>
+          ))}
+          <mesh material={M.chip} position={[0, 0, -0.043]}><boxGeometry args={[0.2, 0.2, 0.014]} /></mesh>
+          <mesh material={M.white} position={[0.3, 0.56, -0.045]}><boxGeometry args={[0.05, 0.03, 0.01]} /></mesh>
+          {[0, 1, 2, 3, 4].map((i) => <mesh key={i} material={M.gold} position={[-0.14 + i * 0.07, -0.6, -0.048]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.018, 0.018, 0.004, 10]} /></mesh>)}
+          <mesh geometry={g.aerial} material={M.yellow} />
           <mesh material={M.black} position={[0, -0.05, -0.1]}><torusGeometry args={[0.455, 0.035, 8, 48, Math.PI * 1.45]} /></mesh>
           <mesh material={M.gold} position={[0.12, 0.3, -0.148]}><boxGeometry args={[0.2, 0.26, 0.008]} /></mesh>
           <mesh material={M.gold} position={[0.12, 0.44, -0.12]}><boxGeometry args={[0.24, 0.05, 0.06]} /></mesh>

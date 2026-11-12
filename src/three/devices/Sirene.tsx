@@ -6,7 +6,7 @@ import { ClickablePart } from '../parts/ClickablePart'
 import { M, fxBasic } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
-import { latheZ, smoothLatheZ, stadiumGeometry } from '../common/shapes'
+import { latheZ, smoothLatheZ, stadiumGeometry, wire } from '../common/shapes'
 import { DeviceCtx, bump, clamp01, explodeAmt, seg, useActionPhase, type DeviceProps } from '../common/util'
 import { actionTau, actionTime, useShowroom } from '../../store/showroomStore'
 import { SoundWaves } from '../fx/SoundWaves'
@@ -40,6 +40,15 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
   const rim = useMemo(() => latheZ([[0.9, -0.63], [0.86, -0.45], [0.82, -0.29]]), [])
   const floor = useMemo(supportFloor, [])
   const slit = useMemo(() => stadiumGeometry(0.12, 0.04, 0.008, 0.003), [])
+  const piezo = useMemo(() => smoothLatheZ([[0.04, 0.06], [0.2, 0.06], [0.225, 0.05], [0.23, 0.03], [0.23, -0.04], [0.22, -0.05], [0.001, -0.05]], 48, 24), [])
+  const board = useMemo(() => {
+    const sh = new THREE.Shape()
+    sh.moveTo(-0.72, 0.22); sh.lineTo(-0.24, 0.22); sh.lineTo(-0.24, 0.1); sh.lineTo(-0.14, 0.1); sh.lineTo(-0.14, -0.42); sh.lineTo(-0.5, -0.42); sh.lineTo(-0.74, -0.05); sh.closePath()
+    return new THREE.ExtrudeGeometry(sh, { depth: 0.018, bevelEnabled: false })
+  }, [])
+  const antenna = useMemo(() => wire([[-0.7, 0.2, -0.175], [-0.72, 0.4, -0.12], [-0.55, 0.62, -0.06], [-0.2, 0.72, -0.02], [0.2, 0.68, 0.0]], 0.01), [])
+  const piezoWireA = useMemo(() => wire([[0.0, -0.44, -0.09], [-0.12, -0.5, -0.13], [-0.25, -0.46, -0.17], [-0.3, -0.38, -0.178]], 0.009), [])
+  const piezoWireB = useMemo(() => wire([[0.02, -0.4, -0.09], [-0.1, -0.44, -0.13], [-0.2, -0.42, -0.17], [-0.24, -0.36, -0.178]], 0.009), [])
   const whiteDS = useMemo(() => { const m = M.white.clone(); m.side = THREE.DoubleSide; return m }, [])
   const ringMat = useMemo(() => fxBasic('#8fb4ff', 0), [])
   const sparkMat = useMemo(() => fxBasic('#fff3b0', 0), [])
@@ -127,7 +136,9 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
 
         <ClickablePart id="elemento-sonoro">
           <group position={[0.2, -0.42, 0]}>
-            <mesh material={M.whiteRelief} position={[0, 0, -0.1]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.3, 0.3, 0.3, 40]} /></mesh>
+            {/* por dentro: o elemento sonoro é uma pastilha branca redonda com um furo no centro */}
+            <mesh geometry={piezo} material={M.white} position={[0, 0, -0.06]} />
+            <mesh material={M.hole} position={[0, 0, 0.0005]}><circleGeometry args={[0.04, 20]} /></mesh>
             {[0, 1, 2].map((i) => (
               <mesh key={i} material={M.grey} position={[0, 0, BACK - 0.004]} rotation={[0, 0, i * 2.1 + 0.3]}><torusGeometry args={[0.37, 0.014, 8, 24, 1.7]} /></mesh>
             ))}
@@ -146,6 +157,14 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
         </ClickablePart>
         <ClickablePart id="placa">
           <mesh material={M.pcb} position={[-0.43, 0.06, BACK - 0.008]}><boxGeometry args={[0.2, 0.34, 0.016]} /></mesh>
+          {/* a placa inteira fica por dentro: contorno em cunha, chips, antena de fio preto e os dois fios brancos do elemento sonoro */}
+          <mesh geometry={board} material={M.pcb} position={[0, 0, -0.2]} />
+          <mesh material={M.chip} position={[-0.45, -0.12, -0.165]}><boxGeometry args={[0.14, 0.14, 0.02]} /></mesh>
+          <mesh material={M.chip} position={[-0.3, -0.26, -0.168]}><boxGeometry args={[0.09, 0.09, 0.016]} /></mesh>
+          {[0, 1, 2, 3, 4, 5].map((i) => <mesh key={i} material={M.gold} position={[-0.16, 0.0 - i * 0.045, -0.172]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.012, 0.012, 0.006, 8]} /></mesh>)}
+          <mesh geometry={antenna} material={M.chip} />
+          <mesh geometry={piezoWireA} material={M.white} />
+          <mesh geometry={piezoWireB} material={M.white} />
           <mesh material={M.chip} position={[-0.43, 0.02, BACK - 0.024]}><boxGeometry args={[0.07, 0.07, 0.016]} /></mesh>
           <group ref={plugRef}>
             <mesh material={M.white} position={[-0.43, 0.19, BACK - 0.03]}><boxGeometry args={[0.09, 0.06, 0.04]} /></mesh>

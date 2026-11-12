@@ -29,6 +29,13 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
   const slit = useMemo(() => stadiumGeometry(0.17, 0.04, 0.01, 0.003), [])
   const doorMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#6b5a4a', roughness: 0.8 }), [])
   const wallMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2a3145', roughness: 0.9 }), [])
+  // antena em mola de cobre
+  const spring = useMemo(() => {
+    const pts: THREE.Vector3[] = []
+    for (let i = 0; i <= 120; i++) { const t = i / 120; pts.push(new THREE.Vector3(Math.cos(t * Math.PI * 14) * 0.045, t * 0.16, Math.sin(t * Math.PI * 14) * 0.045)) }
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 180, 0.009, 5)
+  }, [])
+  const copper = useMemo(() => new THREE.MeshStandardMaterial({ color: '#b87333', roughness: 0.35, metalness: 0.9 }), [])
   const sceneOn = useActionPhase(['ima', 'choque']) >= 0
   const knock = useShowroom((s) => (interactive ? s.knock : null))
 
@@ -64,16 +71,28 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
           <boxGeometry args={[0.12, 0.018, 0.004]} />
         </Led>
       </ClickablePart>
+      {/* placa comprida e estreita: sensor de choque, chave de anti-sabotagem, borne de 2 parafusos,
+          etiqueta lisa e a antena em mola de cobre numa ponta */}
       <ClickablePart id="choque">
-        <mesh material={M.pcb} position={[-0.2, 0.28, -0.1]}><boxGeometry args={[0.4, 0.52, 0.025]} /></mesh>
-        <mesh material={M.gold} position={[-0.2, 0.36, -0.06]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.11, 0.11, 0.03, 24]} /></mesh>
-        <mesh material={M.metal} position={[-0.2, 0.36, -0.04]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.06, 0.06, 0.02, 20]} /></mesh>
-        <mesh material={M.chip} position={[-0.2, 0.13, -0.075]}><boxGeometry args={[0.16, 0.12, 0.03]} /></mesh>
+        <mesh material={M.pcb} position={[-0.23, 0, -0.1]}><boxGeometry args={[0.4, 1.62, 0.022]} /></mesh>
+        <mesh material={M.chip} position={[-0.23, 0.3, -0.08]}><boxGeometry args={[0.13, 0.13, 0.02]} /></mesh>
+        <mesh material={M.metal} position={[-0.12, 0.5, -0.082]}><boxGeometry args={[0.07, 0.05, 0.016]} /></mesh>
+        <mesh material={M.chip} position={[-0.36, 0.68, -0.07]}><boxGeometry args={[0.07, 0.09, 0.04]} /></mesh>
+        <mesh material={M.white} position={[-0.23, -0.02, -0.1115]} rotation={[0, Math.PI, 0]}><planeGeometry args={[0.3, 0.3]} /></mesh>
+        <mesh material={M.chip} position={[-0.3, -0.72, -0.065]}><boxGeometry args={[0.16, 0.13, 0.07]} /></mesh>
+        {[-0.335, -0.265].map((x) => <mesh key={x} material={M.metal} position={[x, -0.72, -0.028]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.022, 0.022, 0.008, 10]} /></mesh>)}
+        <mesh geometry={spring} material={copper} position={[-0.23, 0.82, -0.08]} />
       </ClickablePart>
+      {/* bateria cilíndrica presa por duas presilhas metálicas */}
       <ClickablePart id="bateria">
-        <mesh material={M.chip} position={[-0.2, -0.38, -0.01]}><cylinderGeometry args={[0.12, 0.12, 0.52, 24]} /></mesh>
-        <mesh material={M.orange} position={[-0.2, -0.42, -0.01]}><cylinderGeometry args={[0.122, 0.122, 0.26, 24]} /></mesh>
-        <mesh material={M.metal} position={[-0.2, -0.1, -0.01]}><cylinderGeometry args={[0.04, 0.04, 0.05, 12]} /></mesh>
+        <mesh material={M.cell} position={[-0.23, -0.02, -0.005]}><capsuleGeometry args={[0.095, 0.62, 4, 24]} /></mesh>
+        <mesh material={M.metal} position={[-0.23, 0.42, -0.005]}><cylinderGeometry args={[0.035, 0.035, 0.03, 12]} /></mesh>
+        {[0.46, -0.46].map((y) => (
+          <group key={y} position={[-0.23, y, -0.03]}>
+            <mesh material={M.metal}><boxGeometry args={[0.26, 0.02, 0.2]} /></mesh>
+            <mesh material={M.metal} position={[0, y > 0 ? -0.08 : 0.08, -0.06]}><boxGeometry args={[0.26, 0.16, 0.012]} /></mesh>
+          </group>
+        ))}
       </ClickablePart>
 
       {/* ímã: preso à folha da porta, gira com ela */}

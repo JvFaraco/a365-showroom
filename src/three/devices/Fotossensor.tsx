@@ -13,9 +13,10 @@ import { actionTau, actionTime, useShowroom } from '../../store/showroomStore'
 import { DetectionFan, LowPolyDog, LowPolyPerson } from '../fx/DetectionFan'
 import { CameraFlash } from '../fx/CameraFlash'
 
-const PY = 0.66 // altura do pivô do suporte (acima da tampa das pilhas)
+const PY = -0.5 // altura do pivô do suporte: preso à peça de fixação, na metade de baixo da traseira
 const PIVOT: [number, number, number] = [0, PY, -0.42]
-const CELL_X = [-0.118, 0, 0.118]
+const CELL_X = [-0.15, 0, 0.15]
+const BAY_Y = 0.38 // centro do compartimento das pilhas (metade de cima da traseira)
 const FAN_Y = -0.93
 const personX = (t: number) => -3.4 + seg(t, 2.5, 6.5) * 6.8
 const dogX = (t: number) => -3.4 + seg(t, 8, 12) * 6.8
@@ -42,7 +43,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   const ruler = useRef<THREE.Group>(null!)
   const alertV = useRef(0)
   const oval = useMemo(() => stadiumGeometry(0.36, 0.76, 0.062, 0.028), [])
-  const ovalSeam = useMemo(() => stadiumRingGeometry(0.44, 0.84, 0.014, 0.004, 0), [])
+  const ovalSeam = useMemo(() => stadiumRingGeometry(0.5, 0.9, 0.01, 0.004, 0), [])
   const win = useMemo(() => stadiumGeometry(0.085, 0.21, 0.012, 0.004), [])
   // corpo: seção quase elíptica extrudada na vertical, com topo plano e ombros arredondados
   const body = useMemo(() => { const g = roundedRectGeometry(0.68, 0.38, 0.14, 1.66, 0.06); g.rotateX(-Math.PI / 2); return g }, [])
@@ -53,8 +54,24 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
     sh.moveTo(-0.24, 0.32); sh.lineTo(0.24, 0.32); sh.lineTo(0.33, 0.06); sh.lineTo(0.35, -0.6); sh.lineTo(-0.35, -0.6); sh.lineTo(-0.33, 0.06); sh.closePath()
     return new THREE.ExtrudeGeometry(sh, { depth: 0.045, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 4 })
   }, [])
+  const topSeam = useMemo(() => { const g = roundedRectGeometry(0.802, 0.502, 0.2, 0.008, 0); g.rotateX(-Math.PI / 2); return g }, [])
+  // peça de fixação: trapézio (mais largo em cima) com o canal em cunha por onde o suporte desliza
+  const mount = useMemo(() => {
+    const sh = new THREE.Shape()
+    sh.moveTo(-0.27, 0.36); sh.lineTo(0.27, 0.36); sh.lineTo(0.27, -0.2); sh.lineTo(0.2, -0.4); sh.lineTo(-0.2, -0.4); sh.lineTo(-0.27, -0.2); sh.closePath()
+    const g = new THREE.ExtrudeGeometry(sh, { depth: 0.05, bevelEnabled: true, bevelSize: 0.012, bevelThickness: 0.012, bevelSegments: 3 })
+    g.rotateY(Math.PI); return g
+  }, [])
+  const mountSlot = useMemo(() => {
+    const sh = new THREE.Shape()
+    sh.moveTo(-0.09, 0.3); sh.lineTo(0.09, 0.3); sh.lineTo(0.03, -0.34); sh.lineTo(-0.03, -0.34); sh.closePath()
+    const hole = new THREE.Path(); hole.moveTo(-0.075, 0.285); hole.lineTo(-0.02, -0.325); hole.lineTo(0.02, -0.325); hole.lineTo(0.075, 0.285); hole.closePath(); sh.holes.push(hole)
+    const g = new THREE.ShapeGeometry(sh); g.rotateY(Math.PI); return g
+  }, [])
+  const mountMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#c3c7ce', roughness: 0.6 }), [])
+  const ovalRecess = useMemo(() => stadiumGeometry(0.5, 0.9, 0.004, 0), [])
   const winMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#0c2416', roughness: 0.12, clearcoat: 1 }), [])
-  const baseMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#5b5f69', roughness: 0.6 }), [])
+  const baseMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#b4b8c0', roughness: 0.6 }), [])
   const lensBack = useMemo(() => new THREE.MeshStandardMaterial({ color: '#c9cdd5', roughness: 0.7 }), [])
   const pirMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#e9ecf1', map: fresnelTexture(), roughness: 0.14, clearcoat: 1, clearcoatRoughness: 0.08, transparent: true, opacity: 0.78, envMapIntensity: 1.4 }), [])
   const polMat = useMemo(() => new THREE.MeshBasicMaterial({ map: polaroidTexture(), toneMapped: false, side: THREE.DoubleSide }), [])
@@ -85,7 +102,8 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
     // "clic" ao fechar: a tampa assenta com um leve pulso
     const clic = tt >= 0 && tt < 1.5 ? bump(tt, 1.2, 1.35, 1.4, 1.5) * 0.015 : 0
     cover.current.rotation.x = -(tt < 0 ? 0 : seg(tt, 1.5, 2.0)) * 0.44
-    cover.current.position.set(0, -off * 0.15, -off * 0.75 + clic)
+    // sai para trás e para o lado, deixando o compartimento à vista
+    cover.current.position.set(off * 0.62, -off * 0.1, -off * 0.45 + clic)
     pin.current.position.z = -0.262 - (tt < 0 ? 0 : seg(tt, 2.6, 2.8)) * 0.04
     for (let i = 0; i < 3; i++) {
       const c = cellRefs.current[i]
@@ -124,24 +142,30 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
               <mesh geometry={body} material={M.white} position={[0, 0.06, 0]} castShadow />
               <mesh geometry={hood} material={M.white} position={[0, -0.14, 0.21]} />
               <LogoGroove r={0.075} position={[0, -0.58, 0.2862]} />
-              {/* linhas de partição: entre o corpo e a base, e em volta da tampa das pilhas */}
+              {/* linhas de partição: no topo, entre o corpo e a base, e em volta da tampa das pilhas */}
+              <mesh geometry={topSeam} material={M.partition} position={[0, 0.86, 0]} />
               <RoundedBox args={[0.77, 0.014, 0.475]} radius={0.006} smoothness={2} position={[0, -0.782, 0]} material={M.partition} />
-              <RoundedBox args={[0.71, 1.3, 0.012]} radius={0.006} smoothness={2} position={[0, -0.2, -0.2475]} material={M.partition} />
-              {/* berço das pilhas: fundo, divisórias e contatos metálicos (molas) nas pontas */}
-              <mesh material={M.greyDark} position={[0, -0.2, -0.2545]} rotation={[0, Math.PI, 0]}><planeGeometry args={[0.66, 1.24]} /></mesh>
-              {[-0.059, 0.059].map((x) => <mesh key={x} material={M.whiteRelief} position={[x, -0.25, -0.265]}><boxGeometry args={[0.012, 0.5, 0.03]} /></mesh>)}
+              <RoundedBox args={[0.6, 1.0, 0.012]} radius={0.006} smoothness={2} position={[0, BAY_Y, -0.2475]} material={M.partition} />
+              {/* compartimento: berço preto, com mola numa ponta e contato na outra (polaridades alternadas) */}
+              <mesh material={M.chip} position={[0, BAY_Y, -0.2545]} rotation={[0, Math.PI, 0]}><planeGeometry args={[0.52, 0.7]} /></mesh>
+              {[-0.075, 0.075].map((x) => <mesh key={x} material={M.chip} position={[x, BAY_Y, -0.27]}><boxGeometry args={[0.012, 0.6, 0.04]} /></mesh>)}
               {CELL_X.map((x, i) => (
                 <group key={x}>
-                  <mesh material={M.metal} position={[x, -0.25 + (i % 2 ? 0.245 : -0.245), -0.262]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.028, 0.006, 6, 16]} /></mesh>
-                  <mesh material={M.metal} position={[x, -0.25 + (i % 2 ? -0.24 : 0.24), -0.262]}><boxGeometry args={[0.06, 0.01, 0.05]} /></mesh>
+                  <mesh material={M.metal} position={[x, BAY_Y + (i % 2 ? 0.275 : -0.275), -0.27]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.04, 0.007, 6, 16]} /></mesh>
+                  <mesh material={M.metal} position={[x, BAY_Y + (i % 2 ? -0.27 : 0.27), -0.27]}><boxGeometry args={[0.08, 0.01, 0.06]} /></mesh>
                 </group>
               ))}
+              {/* estrias de pega nas laterais, embaixo */}
+              {[-1, 1].flatMap((sx) => [0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+                <mesh key={`${sx}${i}`} material={M.partition} position={[sx * 0.4, -0.72 + i * 0.03, -0.06]}><boxGeometry args={[0.004, 0.008, 0.22]} /></mesh>
+              )))}
             </ClickablePart>
 
             {/* módulo oval em relevo: câmera + janela do flash/LED */}
             <ClickablePart follow="camera">
               <mesh geometry={oval} material={M.white} position={[0, 0.47, 0.245]} />
-              <mesh geometry={ovalSeam} material={M.partition} position={[0, 0.47, 0.2495]} />
+              <mesh geometry={ovalRecess} material={M.whiteRelief} position={[0, 0.47, 0.2495]} />
+              <mesh geometry={ovalSeam} material={M.partition} position={[0, 0.47, 0.2505]} />
             </ClickablePart>
             <ClickablePart id="camera">
               <mesh material={M.blackGloss} position={[0, 0.66, 0.335]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.062, 0.062, 0.03, 32]} /></mesh>
@@ -168,10 +192,10 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
             {/* lente Fresnel do PIR */}
             <ClickablePart id="pir">
               {/* moldura fina e fundo claro; a lente é uma janela fosca levemente curva, à frente do capuz */}
-              <RoundedBox args={[0.53, 0.4, 0.008]} radius={0.004} smoothness={2} position={[0, -0.1, 0.2852]} material={M.partition} />
-              <RoundedBox args={[0.5, 0.37, 0.008]} radius={0.004} smoothness={2} position={[0, -0.1, 0.287]} material={lensBack} />
-              <mesh material={pirMat} position={[0, -0.1, -0.8836]}>
-                <cylinderGeometry args={[1.2, 1.2, 0.37, 40, 1, true, -0.21, 0.42]} />
+              <RoundedBox args={[0.55, 0.45, 0.008]} radius={0.004} smoothness={2} position={[0, -0.11, 0.2852]} material={M.partition} />
+              <RoundedBox args={[0.52, 0.42, 0.008]} radius={0.004} smoothness={2} position={[0, -0.11, 0.287]} material={lensBack} />
+              <mesh material={pirMat} position={[0, -0.11, -0.8836]}>
+                <cylinderGeometry args={[1.2, 1.2, 0.42, 40, 1, true, -0.218, 0.436]} />
               </mesh>
             </ClickablePart>
 
@@ -179,46 +203,48 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
               <RoundedBox args={[0.77, 0.18, 0.475]} radius={0.085} smoothness={6} position={[0, -0.88, 0]} material={baseMat} castShadow />
             </ClickablePart>
 
-            {/* tampa traseira: ocupa quase toda a traseira; entalhe no topo (alavanca) e abas que prendem embaixo */}
+            {/* tampa das pilhas: cobre a metade de cima da traseira; trava no topo (alavanca) e duas abas embaixo */}
             <ClickablePart id="tampa-traseira">
-              <group position={[0, -0.84, -0.285]}>
+              <group position={[0, BAY_Y - 0.48, -0.285]}>
                 <group ref={cover}>
-                  <RoundedBox args={[0.7, 1.28, 0.07]} radius={0.03} smoothness={4} position={[0, 0.64, 0]} material={M.white} castShadow />
-                  <mesh material={M.hole} position={[0, 1.255, -0.03]}><boxGeometry args={[0.16, 0.04, 0.02]} /></mesh>
-                  {[-0.2, 0.2].map((x) => <mesh key={x} material={M.whiteRelief} position={[x, 0.0, 0.02]}><boxGeometry args={[0.1, 0.05, 0.03]} /></mesh>)}
+                  <RoundedBox args={[0.58, 0.96, 0.07]} radius={0.03} smoothness={4} position={[0, 0.48, 0]} material={M.white} castShadow />
+                  <RoundedBox args={[0.12, 0.07, 0.05]} radius={0.012} smoothness={2} position={[0, 0.97, 0.005]} material={M.white} />
+                  <mesh material={M.hole} position={[0, 0.94, -0.036]}><boxGeometry args={[0.07, 0.02, 0.004]} /></mesh>
+                  {[-0.2, 0.2].map((x) => <RoundedBox key={x} args={[0.08, 0.05, 0.03]} radius={0.008} smoothness={2} position={[x, -0.015, 0.02]} material={M.white} />)}
+                  {/* por dentro: duas nervuras e a etiqueta lisa */}
+                  {[0.3, 0.62].map((y) => <mesh key={y} material={M.whiteRelief} position={[0, y, 0.04]}><boxGeometry args={[0.36, 0.03, 0.03]} /></mesh>)}
+                  <mesh material={M.white} position={[0, 0.46, 0.0355]}><planeGeometry args={[0.2, 0.12]} /></mesh>
                 </group>
               </group>
             </ClickablePart>
-            {/* 3 pilhas AAA lado a lado, na vertical, com as polaridades alternadas */}
+            {/* 3 pilhas lado a lado, na vertical, com as polaridades alternadas (sem marca) */}
             <ClickablePart id="pilhas">
               {CELL_X.map((x, i) => (
                 <group key={x} ref={(gr) => { cellRefs.current[i] = gr }}>
-                  <group position={[x, -0.25, -0.257]} rotation={[0, 0, i % 2 ? Math.PI : 0]}>
-                    <mesh material={M.cell}><capsuleGeometry args={[0.05, 0.36, 4, 20]} /></mesh>
-                    <mesh material={M.metal} position={[0, 0.222, 0]}><cylinderGeometry args={[0.019, 0.019, 0.03, 12]} /></mesh>
-                    <mesh material={M.metal} position={[0, -0.226, 0]}><cylinderGeometry args={[0.034, 0.034, 0.008, 12]} /></mesh>
-                    <mesh material={M.partition} position={[0, 0.16, 0]}><cylinderGeometry args={[0.051, 0.051, 0.012, 20]} /></mesh>
+                  <group position={[x, BAY_Y, -0.262]} rotation={[0, 0, i % 2 ? Math.PI : 0]}>
+                    <mesh material={M.cell}><capsuleGeometry args={[0.07, 0.36, 4, 24]} /></mesh>
+                    <mesh material={M.metal} position={[0, 0.262, 0]}><cylinderGeometry args={[0.026, 0.026, 0.03, 12]} /></mesh>
+                    <mesh material={M.metal} position={[0, -0.255, 0]}><cylinderGeometry args={[0.05, 0.05, 0.008, 16]} /></mesh>
+                    <mesh material={M.partition} position={[0, 0.17, 0]}><cylinderGeometry args={[0.0712, 0.0712, 0.012, 24]} /></mesh>
                   </group>
                 </group>
               ))}
             </ClickablePart>
             {/* pino do anti-sabotagem, ao lado do berço: a tampa o mantém pressionado */}
             <ClickablePart follow="tampa-traseira" internal>
-              <mesh ref={pin} material={M.grey} position={[0.27, 0.22, -0.262]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.025, 0.025, 0.05, 12]} /></mesh>
+              <mesh ref={pin} material={M.grey} position={[0.275, BAY_Y + 0.1, -0.262]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.02, 0.02, 0.05, 12]} /></mesh>
             </ClickablePart>
             {interactive && arrowPhase === 0 && (
-              <Html position={[0, 0.5, -0.36]} center style={{ pointerEvents: 'none' }}>
-                <div className="fx-tag -translate-y-7 text-center text-xs font-semibold text-accent">entalhe<div className="text-xl leading-none">▼</div></div>
+              <Html position={[0, BAY_Y + 0.52, -0.36]} center style={{ pointerEvents: 'none' }}>
+                <div className="fx-tag -translate-y-7 text-center text-xs font-semibold text-accent">trava<div className="text-xl leading-none">▼</div></div>
               </Html>
             )}
+            {/* peça de fixação: peça cinza-clara na metade de baixo da traseira, com canal em cunha e parafuso de trava */}
             <ClickablePart id="fixacao">
-              <RoundedBox args={[0.46, 0.34, 0.03]} radius={0.012} smoothness={3} position={[0, PY, -0.3]} material={M.grey} />
-              {[[-0.16, 0.1], [0.16, 0.1], [-0.16, -0.1], [0.16, -0.1]].map(([x, y], i) => (
-                <mesh key={i} material={M.hole} position={[x, PY + y, -0.316]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.025, 0.025, 0.004, 12]} /></mesh>
-              ))}
-              {[-0.2, 0.2].map((x) => (
-                <mesh key={x} material={M.metal} position={[x, PY, -0.322]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.03, 0.03, 0.02, 6]} /></mesh>
-              ))}
+              <mesh geometry={mount} material={mountMat} position={[0, PY, -0.25]} />
+              <mesh geometry={mountSlot} material={M.partition} position={[0, PY, -0.332]} />
+              <mesh material={M.metal} position={[-0.12, PY - 0.2, -0.335]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.03, 0.03, 0.02, 12]} /></mesh>
+              <mesh material={M.metal} position={[0.33, PY - 0.3, -0.18]} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[0.022, 0.022, 0.03, 10]} /></mesh>
             </ClickablePart>
           </group>
         </group>
@@ -229,7 +255,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
         <mesh material={M.white} position={PIVOT}><sphereGeometry args={[0.1, 24, 16]} /></mesh>
         <mesh material={M.white} position={[0, PY, -0.58]} rotation={[Math.PI / 2, 0, 0]}><capsuleGeometry args={[0.058, 0.2, 6, 20]} /></mesh>
         <mesh material={M.partition} position={PIVOT} rotation={[0, 0, 0]}><torusGeometry args={[0.101, 0.004, 6, 32]} /></mesh>
-        <RoundedBox args={[0.42, 0.52, 0.05]} radius={0.022} smoothness={4} position={[0, PY, -0.75]} material={M.white} castShadow />
+        <RoundedBox args={[0.42, 0.46, 0.05]} radius={0.022} smoothness={4} position={[0, PY, -0.75]} material={M.white} castShadow />
         {[0.2, -0.2].map((y) => (
           <mesh key={y} material={M.metal} position={[0, PY + y * 0.85, -0.722]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.03, 0.03, 0.01, 12]} /></mesh>
         ))}
