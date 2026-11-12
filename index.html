@@ -6,8 +6,51 @@
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#05070f" />
     <title>Alarme 365 · Showroom 3D</title>
+    <!-- Tela de carregamento: HTML e CSS inline, aparece no primeiro quadro, antes de qualquer JS.
+         As animações usam só transform e opacity (rodam no compositor, não travam com a thread principal). -->
+    <style>
+      html, body { height: 100%; margin: 0; background: #05070f; }
+      #boot { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: #05070f; color: #fff;
+        font-family: Poppins, system-ui, -apple-system, "Segoe UI", sans-serif; transition: opacity 0.45s cubic-bezier(0.2, 0, 0, 1); }
+      #boot.out { opacity: 0; pointer-events: none; }
+      #boot .col { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+      #boot svg { animation: boot-pulse 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite; will-change: transform, opacity; }
+      #boot .t { font-size: 14px; letter-spacing: 0.3em; color: rgba(255, 255, 255, 0.8); }
+      #boot .bar { width: 220px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+      #boot .bar i { display: block; height: 100%; background: #F9E000; transform-origin: left; transform: scaleX(0.04); transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1); }
+      #boot .s { font-size: 12px; color: rgba(255, 255, 255, 0.6); min-height: 1.2em; }
+      @keyframes boot-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.93); opacity: 0.72; } }
+      @media (prefers-reduced-motion: reduce) { #boot svg { animation: none; } #boot, #boot .bar i { transition: none; } }
+    </style>
   </head>
   <body>
+    <div id="boot" role="status" aria-label="Carregando">
+      <div class="col">
+        <svg width="112" height="112" viewBox="-60 -60 120 120" aria-hidden="true">
+          <mask id="boot-cut"><rect x="-60" y="-60" width="120" height="120" fill="#fff" /><path d="M -44 4 A 50 50 0 0 1 56 6 A 54 54 0 0 0 -44 4 Z" fill="#000" transform="rotate(-8)" /></mask>
+          <circle r="40" fill="none" stroke="#F9E000" stroke-width="20" mask="url(#boot-cut)" />
+        </svg>
+        <div class="t">ALARME 365</div>
+        <div class="bar" aria-hidden="true"><i></i></div>
+        <div class="s" aria-live="polite">Carregando o código</div>
+      </div>
+    </div>
+    <script>
+      // progresso real por etapa (código, aparelhos, materiais, preparando); o app chama set() e done()
+      window.__boot = {
+        set: function (p, label) {
+          var bar = document.querySelector('#boot .bar i'), s = document.querySelector('#boot .s')
+          if (bar) bar.style.transform = 'scaleX(' + p + ')'
+          if (s && label) s.textContent = label
+        },
+        done: function () {
+          var el = document.getElementById('boot')
+          if (!el) return
+          el.classList.add('out') // crossfade direto para a abertura, que já está renderizada por baixo
+          setTimeout(function () { el.remove() }, 500)
+        },
+      }
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

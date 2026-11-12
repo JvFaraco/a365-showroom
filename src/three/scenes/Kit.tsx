@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useCursor } from '@react-three/drei'
 import { useState } from 'react'
-import { DEVICE_BY_ID, type DeviceId, type Vec3 } from '../../data/devices'
+import { DEVICES, DEVICE_BY_ID, type DeviceId, type Vec3 } from '../../data/devices'
 import { now, useShowroom } from '../../store/showroomStore'
 import { DEVICE_COMPONENTS } from '../devices'
 import { reducedMotion } from '../common/util'
@@ -57,9 +57,13 @@ export function Placed({ p, children }: { p: Placement; children?: React.ReactNo
 export function KitLineup({ mode }: { mode: 'enter' | 'gather' }) {
   const group = useRef<THREE.Group>(null!)
   const t0 = useRef(now())
+  // os aparelhos do kit entram na cena junto com a carga fatiada (um por quadro)
+  const mounted = useShowroom((st) => st.mounted)
   const portrait = useThree((s) => s.size.width / s.size.height < 0.8)
   const layout = portrait ? KIT_LAYOUT_PORTRAIT : KIT_LAYOUT
   useFrame(() => {
+    // a animação de entrada só começa quando a tela de carregamento sai
+    if (!useShowroom.getState().ready) t0.current = now()
     const t = reducedMotion() ? 99 : now() - t0.current
     group.current.children.forEach((c, i) => {
       const k = easeOutBack((t - 0.4 - i * (mode === 'enter' ? 0.38 : 0.12)) / 0.9)
@@ -77,7 +81,7 @@ export function KitLineup({ mode }: { mode: 'enter' | 'gather' }) {
   })
   return (
     <group ref={group}>
-      {layout.map((p) => <group key={p.id}><Placed p={p} /></group>)}
+      {layout.map((p) => <group key={p.id}>{DEVICES.findIndex((d) => d.id === p.id) < mounted && <Placed p={p} />}</group>)}
     </group>
   )
 }

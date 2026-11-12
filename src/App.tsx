@@ -1,17 +1,14 @@
-import { Suspense, lazy, useRef, useState } from 'react'
+import { Suspense, lazy, useRef, useState, type ComponentType } from 'react'
 import { MotionConfig } from 'framer-motion'
 import { Canvas } from '@react-three/fiber'
 import { AdaptiveDpr, PerformanceMonitor } from '@react-three/drei'
-import { Bloom, EffectComposer, N8AO, Outline, SMAA, Selection, ToneMapping, Vignette } from '@react-three/postprocessing'
-import { KernelSize, ToneMappingMode } from 'postprocessing'
+import { Selection } from '@react-three/postprocessing'
 import { useShowroom } from './store/showroomStore'
 import { CameraRig } from './three/CameraRig'
 import { Stage } from './three/Stage'
 import { Intro } from './three/scenes/Intro'
-import { Showroom, ShowroomDevices, Warmup } from './three/scenes/Showroom'
-import { InAction } from './three/scenes/InAction'
-import { Outro } from './three/scenes/Outro'
-import { Loader, UI } from './ui/Overlays'
+import { Boot, Showroom, ShowroomDevices } from './three/scenes/Showroom'
+import { UI } from './ui/Overlays'
 import { PresenterMode } from './ui/PresenterMode'
 import { REF_ON, RefCamera, RefOverlay } from './dev/RefMode'
 
@@ -23,37 +20,48 @@ const DEBUG = import.meta.env.DEV && Q.includes('debug')
 const Perf = DEBUG ? lazy(() => import('r3f-perf').then((m) => ({ default: m.Perf }))) : null
 const MAX_DPR = typeof window !== 'undefined' ? Math.min(2, window.devicePixelRatio || 1) : 1
 
+// Divisão de código: o pós-processamento e as cenas "Em ação" e "Encerramento" saem do pacote inicial.
+// O import é dinâmico e quem avisa a chegada é o store (atualização síncrona). Não usamos React.lazy aqui:
+// dentro do Canvas, com os quadros pesados da carga, o Suspense não retomava a renderização.
+type ChunkName = 'PostFX' | 'InAction' | 'Outro'
+const chunkCache: Partial<Record<ChunkName, ComponentType>> = {}
+const pending: Partial<Record<ChunkName, Promise<void>>> = {}
+const LOADERS: Record<ChunkName, () => Promise<ComponentType>> = {
+  PostFX: () => import('./three/PostFX').then((m) => m.default),
+  InAction: () => import('./three/scenes/InAction').then((m) => m.InAction),
+  Outro: () => import('./three/scenes/Outro').then((m) => m.Outro),
+}
+const loadChunk = (name: ChunkName) => (pending[name] ??= LOADERS[name]().then((C) => {
+  chunkCache[name] = C
+  useShowroom.setState((s) => ({ chunks: s.chunks + 1 }))
+}))
+if (typeof window !== 'undefined') {
+  // o pós-processamento começa a baixar junto com o resto; as duas cenas, em tempo ocioso depois da carga
+  void loadChunk('PostFX')
+  const un = useShowroom.subscribe((s) => {
+    if (!s.ready) return
+    un()
+    const idle = (window as unknown as { requestIdleCallback?: (f: () => void) => void }).requestIdleCallback ?? ((f: () => void) => setTimeout(f, 800))
+    idle(() => { void loadChunk('InAction'); void loadChunk('Outro') })
+  })
+}
+/** Mostra o componente de um pacote assim que ele chega (e pede o pacote, se ninguém pediu ainda). */
+function Chunk({ name }: { name: ChunkName }) {
+  useShowroom((s) => s.chunks)
+  const C = chunkCache[name]
+  if (!C) void loadChunk(name)
+  return C ? <C /> : null
+}
+
 function Scenes() {
   const scene = useShowroom((s) => s.scene)
   switch (scene) {
     case 'intro': return <Intro />
     case 'showroom': return <Showroom />
-    case 'inaction': return <InAction />
-    case 'outro': return <Outro />
+    // cenas carregadas à parte: o código chega em segundo plano logo depois da carga
+    case 'inaction': return <Chunk name="InAction" />
+    case 'outro': return <Chunk name="Outro" />
   }
-}
-
-/**
- * Pós-processamento: AO em meia resolução (sulcos e aletas), bloom só nos emissivos (LEDs, flash,
- * anel de 5 s), contorno do hover, vinheta leve, ACES e SMAA. Sem DOF. Encolhe conforme `quality`.
- */
-function PostFX() {
-  const quality = useShowroom((s) => s.quality)
-  const ao = <N8AO halfRes quality="performance" aoRadius={0.22} distanceFalloff={0.6} intensity={1.7} color="#05070f" />
-  const bloom = <Bloom mipmapBlur luminanceThreshold={1.2} luminanceSmoothing={0.12} intensity={0.85} radius={0.7} />
-  const outline = <Outline blur kernelSize={KernelSize.VERY_SMALL} edgeStrength={1.7} visibleEdgeColor={0x8fb0ff} hiddenEdgeColor={0x24409c} xRay={false} />
-  const tone = <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-  if (quality >= 3) return <EffectComposer key="q3" multisampling={0} autoClear={false}>{bloom}{outline}{tone}</EffectComposer>
-  if (quality === 2) return (
-    <EffectComposer key="q2" multisampling={0} autoClear={false}>
-      {bloom}{outline}<Vignette eskil={false} offset={0.25} darkness={0.7} />{tone}<SMAA />
-    </EffectComposer>
-  )
-  return (
-    <EffectComposer key="q0" multisampling={0} autoClear={false}>
-      {ao}{bloom}{outline}<Vignette eskil={false} offset={0.25} darkness={0.7} />{tone}<SMAA />
-    </EffectComposer>
-  )
 }
 
 export default function App() {
@@ -83,8 +91,8 @@ export default function App() {
               <ShowroomDevices />
               <Scenes />
               {REF_ON ? <RefCamera /> : <CameraRig />}
-              <PostFX />
-              <Warmup />
+              <Chunk name="PostFX" />
+              <Boot />
             </Selection>
             {Perf && <Perf position="bottom-right" />}
           </Suspense>
@@ -95,7 +103,6 @@ export default function App() {
       {/* a camada 2D respeita prefers-reduced-motion também nas animações do framer-motion */}
       <MotionConfig reducedMotion="user">{REF_ON ? <RefOverlay /> : <UI />}</MotionConfig>
       <PresenterMode />
-      <Loader />
     </main>
   )
 }

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useProgress } from '@react-three/drei'
 import { IA_DURATION, IA_STEPS } from '../data/inAction'
 import { DEVICE_BY_ID, SLOGAN, getPart } from '../data/devices'
 import { actionTau, ia, useShowroom, type Scene } from '../store/showroomStore'
@@ -19,26 +18,6 @@ const SCENES: { id: Scene; label: string }[] = [
   { id: 'inaction', label: 'Em ação' },
   { id: 'outro', label: 'Encerramento' },
 ]
-
-/** Carregamento: o logo é desenhado com o traço animado enquanto a cena prepara. */
-export function Loader() {
-  const { active } = useProgress()
-  const ready = useShowroom((s) => s.ready)
-  const [minDone, setMinDone] = useState(false)
-  useEffect(() => { const t = setTimeout(() => setMinDone(true), 1700); return () => clearTimeout(t) }, [])
-  return (
-    <AnimatePresence>
-      {(active || !minDone || !ready) && (
-        <motion.div exit={{ opacity: 0 }} transition={{ duration: 0.6 }} className="fixed inset-0 z-50 grid place-items-center bg-ink" role="status" aria-label="Carregando">
-          <div className="flex flex-col items-center gap-4">
-            <OrsegupsLogo size={120} draw />
-            <div className="font-title text-sm tracking-[0.3em] text-white/70">ALARME 365</div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
-}
 
 function TopBar() {
   const scene = useShowroom((s) => s.scene)
