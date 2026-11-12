@@ -205,19 +205,21 @@ export const placaVersoTexture = () =>
   })
 
 // ---------- detalhes de superfície ----------
-/** Anéis da lente Fresnel do PIR. */
+/** Lente Fresnel do PIR: faixas horizontais suaves com facetas verticais bem discretas, como na arte oficial. */
 export const fresnelTexture = () =>
   memo('fresnel', () => {
     const [c, ctx] = canvas(256, 256)
-    ctx.fillStyle = '#f3f5f9'; ctx.fillRect(0, 0, 256, 256)
-    for (let col = 0; col < 3; col++) for (let row = 0; row < 3; row++) {
-      const cx = 43 + col * 85, cy = 43 + row * 85
-      ctx.save(); ctx.beginPath(); ctx.rect(col * 85.3, row * 85.3, 85.3, 85.3); ctx.clip()
-      for (let r = 8; r < 80; r += 8) { ctx.strokeStyle = `rgba(140,150,166,${0.42 - r / 300})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke() }
-      ctx.restore()
+    ctx.fillStyle = '#dfe2e8'; ctx.fillRect(0, 0, 256, 256)
+    // 4 faixas: cada uma clareia de cima para baixo e termina num vinco
+    const rows = [0, 58, 122, 190, 256]
+    for (let i = 0; i < 4; i++) {
+      const g = ctx.createLinearGradient(0, rows[i], 0, rows[i + 1])
+      g.addColorStop(0, 'rgba(120,128,142,.34)'); g.addColorStop(0.18, 'rgba(160,168,180,.12)'); g.addColorStop(1, 'rgba(255,255,255,.22)')
+      ctx.fillStyle = g; ctx.fillRect(0, rows[i], 256, rows[i + 1] - rows[i])
     }
-    ctx.strokeStyle = 'rgba(140,148,164,.28)'; ctx.lineWidth = 1.5
-    for (let i = 1; i < 3; i++) { ctx.beginPath(); ctx.moveTo(i * 85.3, 0); ctx.lineTo(i * 85.3, 256); ctx.moveTo(0, i * 85.3); ctx.lineTo(256, i * 85.3); ctx.stroke() }
+    // facetas verticais, quase invisíveis
+    ctx.strokeStyle = 'rgba(120,128,142,.10)'; ctx.lineWidth = 1
+    for (let x = 16; x < 256; x += 16) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 256); ctx.stroke() }
     return tex(c)
   })
 
@@ -290,4 +292,29 @@ export const pcbTexture = () =>
     ctx.fillStyle = 'rgba(235,245,238,.75)'
     for (let i = 0; i < 70; i++) { const x = rnd() * 500, y = rnd() * 500; for (let k = 0; k < 2 + rnd() * 4; k++) ctx.fillRect(x + k * 4, y, 2.5, 1.2 + rnd() * 2.5) }
     return tex(c)
+  })
+
+/** Variação sutil de rugosidade do plástico injetado (canal verde multiplica a `roughness`). Gerada uma vez. */
+export const roughnessNoiseTexture = () =>
+  memo('rough-noise', () => {
+    const N = 128
+    const [c, ctx] = canvas(N, N)
+    const img = ctx.createImageData(N, N)
+    let seed = 31
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
+    // ruído em duas escalas: manchas largas (brilho irregular do molde) + grão fino
+    const coarse = Array.from({ length: 17 * 17 }, rnd)
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const fx = (x / N) * 16, fy = (y / N) * 16, ix = Math.floor(fx), iy = Math.floor(fy), tx = fx - ix, ty = fy - iy
+      const g = (i: number, j: number) => coarse[(j % 16) * 17 + (i % 16)]
+      const low = (g(ix, iy) * (1 - tx) + g(ix + 1, iy) * tx) * (1 - ty) + (g(ix, iy + 1) * (1 - tx) + g(ix + 1, iy + 1) * tx) * ty
+      const v = Math.round(255 * (0.84 + 0.11 * low + 0.05 * rnd()))
+      img.data.set([v, v, v, 255], (y * N + x) * 4)
+    }
+    ctx.putImageData(img, 0, 0)
+    const t = tex(c)
+    t.wrapS = t.wrapT = THREE.RepeatWrapping
+    t.repeat.set(3, 3)
+    t.colorSpace = THREE.NoColorSpace
+    return t
   })

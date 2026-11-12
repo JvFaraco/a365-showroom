@@ -43,7 +43,7 @@ function PostFX() {
   const quality = useShowroom((s) => s.quality)
   const ao = <N8AO halfRes quality="performance" aoRadius={0.22} distanceFalloff={0.6} intensity={1.7} color="#05070f" />
   const bloom = <Bloom mipmapBlur luminanceThreshold={1.2} luminanceSmoothing={0.12} intensity={0.85} radius={0.7} />
-  const outline = <Outline blur kernelSize={KernelSize.VERY_SMALL} edgeStrength={3.2} visibleEdgeColor={0x6f9bff} hiddenEdgeColor={0x24409c} xRay={false} />
+  const outline = <Outline blur kernelSize={KernelSize.VERY_SMALL} edgeStrength={1.7} visibleEdgeColor={0x8fb0ff} hiddenEdgeColor={0x24409c} xRay={false} />
   const tone = <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
   if (quality >= 3) return <EffectComposer key="q3" multisampling={0} autoClear={false}>{bloom}{outline}{tone}</EffectComposer>
   if (quality === 2) return (
