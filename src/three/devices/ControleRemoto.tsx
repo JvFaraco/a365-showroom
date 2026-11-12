@@ -29,18 +29,28 @@ const cmdTime = () => { for (const c of CMD) { const t = actionTime(c); if (t >=
 
 const THICK = 0.86 // mais fino que antes: de perfil, a espessura fica em ~1/6 do diâmetro
 // corpo redondo com cauda CURTA (só o furo da argola, colado ao corpo): altura total ≈ 1,2× a largura
-const R = 0.87, TAIL_Y = -0.9, TAIL_R = 0.21
-const TAN = Math.asin((R - TAIL_R) / TAIL_Y) // ângulo das tangentes entre o círculo e a ponta
+const R = 0.87, TAIL_Y = -0.97, TAIL_R = 0.2, FILLET = 0.12
 
-/** Contorno em gota: um círculo com a ponta embaixo, num só bloco. `grow` engorda o contorno. */
+/**
+ * Contorno do corpo: um círculo com uma aba curta embaixo (o olhal da argola), ligada por duas concordâncias
+ * côncavas. É um bloco só. `grow` engorda o contorno (usado no filete azul).
+ */
 function teardrop(grow = 0) {
+  const R0 = R + grow, r = TAIL_R + grow, f = FILLET - grow
+  // centro da concordância: tangente por fora ao círculo do corpo e ao da aba
+  const cy = ((R0 + f) ** 2 - (r + f) ** 2 + TAIL_Y * TAIL_Y) / (2 * TAIL_Y)
+  const cx = Math.sqrt((R0 + f) ** 2 - cy * cy)
+  const a0 = Math.atan2(cy, cx) // onde o corpo encontra a concordância (lado direito)
+  const a1 = Math.atan2(cy - TAIL_Y, cx) // onde a aba encontra a concordância (lado direito)
   const s = new THREE.Shape()
-  s.absarc(0, 0, R + grow, TAN, Math.PI - TAN, false)
-  s.absarc(0, TAIL_Y, TAIL_R + grow, Math.PI - TAN, Math.PI * 2 + TAN, false)
+  s.absarc(0, 0, R0, a0, Math.PI - a0, false)
+  s.absarc(-cx, cy, f, -a0, -a1, true)
+  s.absarc(0, TAIL_Y, r, Math.PI - a1, Math.PI * 2 + a1, false)
+  s.absarc(cx, cy, f, Math.PI + a1, Math.PI + a0, true)
   s.closePath()
   return s
 }
-const ringHole = () => { const h = new THREE.Path(); h.absarc(0, TAIL_Y - 0.01, 0.1, 0, Math.PI * 2, true); return h }
+const ringHole = () => { const h = new THREE.Path(); h.absarc(0, TAIL_Y, 0.115, 0, Math.PI * 2, true); return h }
 
 type Geo = ReturnType<typeof build>
 let cache: Geo | null = null
@@ -151,7 +161,7 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
         <ClickablePart id="argola">
           {/* furo da argola, na ponta do mesmo bloco, com a borda chanfrada */}
           {[0.172, -0.172].map((z) => (
-            <mesh key={z} material={M.blackGloss} position={[0, TAIL_Y - 0.01, z]} scale={[1, 1, 0.4]}><torusGeometry args={[0.108, 0.022, 12, 64]} /></mesh>
+            <mesh key={z} material={M.blackGloss} position={[0, TAIL_Y, z]} scale={[1, 1, 0.4]}><torusGeometry args={[0.122, 0.022, 12, 64]} /></mesh>
           ))}
         </ClickablePart>
         <ClickablePart id="led">

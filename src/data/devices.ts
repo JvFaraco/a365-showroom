@@ -439,7 +439,7 @@ export const DEVICES: Device[] = [
     tagline: 'O alarme no seu chaveiro.',
     inKit365S: true,
     home: { position: [1.2, 0.5, 4.0], target: [0, -0.05, 0] },
-    bottom: -1.1,
+    bottom: -1.15,
     kitScale: 0.28,
     parts: [
       {
@@ -501,7 +501,7 @@ export const DEVICES: Device[] = [
         name: 'Argola',
         what: 'Para levar no chaveiro.',
         facts: [],
-        camera: { position: [0.6, -0.8, 2.0], target: [0, -0.8, 0] },
+        camera: { position: [0.6, -0.87, 2.0], target: [0, -0.87, 0] },
       },
       {
         id: 'tampa',
