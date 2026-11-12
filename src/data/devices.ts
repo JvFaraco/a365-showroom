@@ -120,7 +120,7 @@ export const DEVICES: Device[] = [
       {
         id: 'fonte',
         name: 'Entrada da fonte',
-        what: 'Alimentação na tomada, no bolsão do fundo.',
+        what: 'Alimentação na tomada. Fica no meio do bolsão do fundo, e o conector entra pela lateral.',
         facts: [],
         camera: { position: [-0.9, -1.9, -1.9], target: [-0.22, -0.4, -0.5] },
         action: 'cabos',

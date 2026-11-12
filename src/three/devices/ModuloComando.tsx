@@ -115,7 +115,7 @@ function build() {
     batA: wire([[0.6, PCB_Y + 0.03, -0.02], [0.7, PCB_Y + 0.03, 0.1], [0.74, PCB_Y - 0.04, 0.22]], 0.008),
     batB: wire([[0.6, PCB_Y + 0.03, -0.06], [0.72, PCB_Y + 0.03, 0.06], [0.76, PCB_Y - 0.04, 0.18]], 0.008),
     netCable: wire([[0, 0, 0], [0, -0.05, -0.25], [0, -0.02, -0.7], [0.1, 0.02, -1.4]], 0.035),
-    powCable: wire([[0, -0.06, 0], [0, -0.08, -0.3], [-0.05, -0.03, -0.75], [-0.15, 0.02, -1.4]], 0.028),
+    powCable: wire([[0, 0, 0], [-0.12, -0.02, 0], [-0.3, -0.05, -0.12], [-0.42, -0.04, -0.5], [-0.5, 0.02, -1.1]], 0.026),
     plugCable: wire([[0, 0, 0], [0.5, -0.02, -0.1], [1.3, -0.02, 0.2], [2.4, -0.02, 0.1]], 0.03),
   }
 }
@@ -187,7 +187,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
       // grade de furos do alto-falante, no fundo do bolsão (virada para baixo)
       let n = 0
       for (let i = 0; i < 9; i++) for (let j = 0; j < 4; j++) {
-        o.position.set(-0.36 + i * 0.09, -0.3995, -0.7 + j * 0.085); o.rotation.set(Math.PI / 2, 0, 0); o.scale.setScalar(1.25)
+        // grade do alto-falante: furos redondos no lado do bolsão mais perto da cauda
+        o.position.set(-0.36 + i * 0.09, -0.4012, -0.735 + j * 0.05); o.rotation.set(Math.PI / 2, 0, 0); o.scale.setScalar(1.05)
         o.updateMatrix(); holes.current.setMatrixAt(n++, o.matrix)
       }
       n = 0
@@ -215,13 +216,14 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
     // tomada sai ("sem energia")
     const tb = actionTime('bateria-modulo')
     plug.current.visible = tb >= 0
-    plug.current.position.x = -0.22 + (tb < 0 ? 0 : seg(tb, 0.6, 1.8)) * 0.7
+    plug.current.position.x = -0.2 - (tb < 0 ? 0 : seg(tb, 0.6, 1.8)) * 0.7
     // cabos de rede e de energia entram no bolsão e encaixam
     const tc = actionTime('cabos')
     cables.current.visible = tc >= 0
     if (tc >= 0) {
       netRef.current.position.z = -(1 - seg(tc, 0.3, 1.3)) * 0.9 - bump(tc, 1.25, 1.4, 1.45, 1.6) * 0.03
-      powRef.current.position.z = -(1 - seg(tc, 1.7, 2.7)) * 0.9 - bump(tc, 2.65, 2.8, 2.85, 3.0) * 0.03
+      // o plugue da fonte chega pela lateral e encaixa no meio do bolsão
+      powRef.current.position.x = -0.16 - (1 - seg(tc, 1.7, 2.7)) * 0.9 - bump(tc, 2.65, 2.8, 2.85, 3.0) * 0.03
       cables.current.position.z = -seg(tc, 4.6, 5.4) * 1.1
     }
     // abrir: vira de cabeça para baixo, desvira e a cúpula se solta e sobe, mostrando a placa
@@ -344,14 +346,18 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
           <instancedMesh ref={holes} args={[g.hole, M.hole, 36]} />
         </ClickablePart>
         <ClickablePart id="ethernet">
-          <RoundedBox args={[0.24, 0.07, 0.24]} radius={0.015} smoothness={2} position={[0.2, -0.43, -0.5]} material={M.metal} />
-          <mesh material={M.hole} position={[0.2, -0.44, -0.6]}><boxGeometry args={[0.18, 0.045, 0.06]} /></mesh>
-          <mesh material={M.gold} position={[0.2, -0.428, -0.605]}><boxGeometry args={[0.13, 0.008, 0.05]} /></mesh>
+          {/* RJ45 na parede do bolsão do lado do centro; o cabo chega pelo lado da cauda */}
+          <RoundedBox args={[0.24, 0.07, 0.2]} radius={0.015} smoothness={2} position={[0.24, -0.43, -0.455]} material={M.metal} />
+          <mesh material={M.hole} position={[0.24, -0.44, -0.54]}><boxGeometry args={[0.18, 0.045, 0.04]} /></mesh>
+          <mesh material={M.gold} position={[0.24, -0.428, -0.548]}><boxGeometry args={[0.13, 0.008, 0.03]} /></mesh>
         </ClickablePart>
         <ClickablePart id="fonte">
-          <RoundedBox args={[0.17, 0.08, 0.2]} radius={0.02} smoothness={2} position={[-0.22, -0.435, -0.5]} material={M.chip} />
-          <mesh material={M.hole} position={[-0.22, -0.44, -0.602]}><circleGeometry args={[0.035, 16]} /></mesh>
-          <mesh material={M.gold} position={[-0.22, -0.44, -0.6]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.01, 0.01, 0.03, 8]} /></mesh>
+          {/* entrada da fonte no meio do bolsão; o conector entra pela lateral (−X), não pela traseira */}
+          <group position={[-0.06, -0.435, -0.5]} rotation={[0, Math.PI / 2, 0]}>
+            <RoundedBox args={[0.15, 0.08, 0.18]} radius={0.02} smoothness={2} material={M.chip} />
+            <mesh material={M.hole} position={[0, -0.004, -0.0905]} rotation={[0, Math.PI, 0]}><circleGeometry args={[0.032, 16]} /></mesh>
+            <mesh material={M.gold} position={[0, -0.004, -0.085]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.009, 0.009, 0.03, 8]} /></mesh>
+          </group>
         </ClickablePart>
 
         {/* ================= interior ================= */}
@@ -435,13 +441,13 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         {/* cabos que entram no bolsão: plugue de energia em L e cabo de rede */}
         {interactive && (
           <group ref={cables} visible={false}>
-            <group ref={netRef} position={[0.2, -0.44, -0.62]}>
+            <group ref={netRef} position={[0.24, -0.44, -0.56]}>
               <RoundedBox args={[0.16, 0.1, 0.22]} radius={0.02} smoothness={2} position={[0, -0.01, -0.1]} material={M.wireBlue} userData={{ fx: true }} />
               <mesh geometry={g.netCable} material={M.wireBlue} position={[0, -0.01, -0.2]} userData={{ fx: true }} raycast={() => null} />
             </group>
-            <group ref={powRef} position={[-0.22, -0.44, -0.62]}>
-              <RoundedBox args={[0.11, 0.2, 0.12]} radius={0.03} smoothness={2} position={[0, -0.06, -0.05]} material={M.chip} userData={{ fx: true }} />
-              <mesh geometry={g.powCable} material={M.chip} position={[0, -0.1, -0.08]} userData={{ fx: true }} raycast={() => null} />
+            <group ref={powRef} position={[-0.16, -0.44, -0.5]}>
+              <RoundedBox args={[0.2, 0.1, 0.11]} radius={0.03} smoothness={2} position={[-0.08, -0.004, 0]} material={M.chip} userData={{ fx: true }} />
+              <mesh geometry={g.powCable} material={M.chip} position={[-0.16, -0.004, 0]} userData={{ fx: true }} raycast={() => null} />
             </group>
           </group>
         )}
@@ -472,7 +478,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
               </div>
             </Html>
           )}
-          <group ref={plug} position={[-0.22, -0.46, -0.6]} visible={false}>
+          <group ref={plug} position={[-0.2, -0.44, -0.5]} rotation={[0, Math.PI, 0]} visible={false}>
             <mesh geometry={g.plugCable} material={cableMat} userData={{ fx: true }} raycast={() => null} />
             <mesh material={M.chip} rotation={[0, 0, Math.PI / 2]} userData={{ fx: true }} raycast={() => null}><capsuleGeometry args={[0.05, 0.1, 4, 12]} /></mesh>
           </group>
