@@ -361,7 +361,7 @@ export const DEVICES: Device[] = [
     tagline: 'Até 110 dB de alerta.',
     inKit365S: true,
     home: { position: [1.5, 0.5, 3.7], target: [0, 0, 0] },
-    bottom: -1.02,
+    bottom: -1.15,
     kitScale: 0.72,
     parts: [
       {
@@ -378,13 +378,13 @@ export const DEVICES: Device[] = [
         what: 'Indica o status.',
         facts: [],
         tip: 'Instale com o LED voltado para o chão.',
-        camera: { position: [0.35, -0.75, 1.7], target: [0, -0.55, 0.31] },
+        camera: { position: [0.9, -1.4, 1.6], target: [0.4, -0.76, 0.24] },
         explode: [0, 0, 0.35],
       },
       {
         id: 'suporte',
         name: 'Suporte de parede',
-        what: 'É parafusado na parede. A sirene encaixa e gira para travar.',
+        what: 'É parafusado na parede. A sirene desce de cima para baixo no suporte e trava com um clique.',
         facts: [],
         tip: 'Instale em local visível e de difícil acesso, longe de sol direto e umidade.',
         camera: { position: [1.9, 0.7, -2.7], target: [0, 0, -0.5] },
@@ -394,10 +394,10 @@ export const DEVICES: Device[] = [
       {
         id: 'tamper',
         name: 'Anti-sabotagem (tamper)',
-        what: 'Botão de gatilho (alavanca) na traseira da sirene, que o suporte mantém pressionado.',
+        what: 'Botão circular no centro da traseira da sirene, que o suporte mantém pressionado.',
         facts: ['Ao se desprender do suporte, o tamper é acionado', 'O sistema é informado de que a sirene está aberta'],
         tip: 'Com a sirene aberta, não é possível armar.',
-        camera: { position: [-1.3, -1.0, -2.4], target: [-0.34, -0.64, -0.3] },
+        camera: { position: [-0.6, -0.8, -2.6], target: [0.2, -0.42, -0.3] },
         internal: true,
         action: 'tamper',
       },
