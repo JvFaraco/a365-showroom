@@ -449,8 +449,8 @@ export const DEVICES: Device[] = [
     tagline: 'O alarme no seu chaveiro.',
     inKit365S: true,
     home: { position: [1.2, 0.5, 4.0], target: [0, -0.05, 0] },
-    bottom: -1.15,
-    kitScale: 0.28,
+    bottom: -1.08,
+    kitScale: 0.49, // real 0,33 × 1,5 de leitura
     parts: [
       {
         id: 'btn-panico',
@@ -459,7 +459,7 @@ export const DEVICES: Device[] = [
         facts: ['Segure por 5 segundos em caso de emergência'],
         camera: { position: [0.3, 1.0, 2.0], target: [0, 0.58, 0.2] },
         action: 'panico',
-        explode: [0, 0, 0.6],
+        explode: [0, 0, 0.9],
       },
       {
         id: 'btn-desarmar',
@@ -468,7 +468,7 @@ export const DEVICES: Device[] = [
         facts: [],
         camera: { position: [-0.9, 0.3, 2.0], target: [-0.48, 0.1, 0.2] },
         action: 'btn-desarmar',
-        explode: [0, 0, 0.6],
+        explode: [0, 0, 0.9],
       },
       {
         id: 'btn-armar',
@@ -477,7 +477,7 @@ export const DEVICES: Device[] = [
         facts: ['Todos os sensores ficam ativos'],
         camera: { position: [0.9, 0.3, 2.0], target: [0.48, 0.1, 0.2] },
         action: 'btn-armar',
-        explode: [0, 0, 0.6],
+        explode: [0, 0, 0.9],
       },
       {
         id: 'btn-parcial',
@@ -487,7 +487,7 @@ export const DEVICES: Device[] = [
         tip: 'Funciona se o arme parcial estiver configurado.',
         camera: { position: [0.3, -0.7, 2.0], target: [0, -0.38, 0.2] },
         action: 'btn-parcial',
-        explode: [0, 0, 0.6],
+        explode: [0, 0, 0.9],
       },
       // O centro do controle NÃO é botão: é um disco fixo, modelado junto com o corpo.
       // TODO(usuário): confirmar se o disco leva o logo (arte de marketing) ou é liso (ícone do sistema).
@@ -498,6 +498,7 @@ export const DEVICES: Device[] = [
         facts: [],
         camera: { position: [0.2, 1.45, 1.5], target: [0, 0.86, 0.13] },
       },
+        explode: [0, 0, 0.5],
       {
         id: 'corpo',
         name: 'Corpo e filete azul',
@@ -506,21 +507,23 @@ export const DEVICES: Device[] = [
         camera: { position: [2.4, 0.5, 1.5], target: [0.85, 0.1, 0] },
         action: 'alcance',
       },
+        explode: [0, 0, 0.5],
       {
         id: 'argola',
         name: 'Argola',
         what: 'Para levar no chaveiro.',
         facts: [],
-        camera: { position: [0.6, -0.87, 2.0], target: [0, -0.87, 0] },
+        camera: { position: [0.6, -0.8, 2.0], target: [0, -0.8, 0] },
+        explode: [0, 0, -0.6],
       },
       {
         id: 'tampa',
         name: 'Tampa traseira',
-        what: 'Tampa redonda de topo reto. Abre por alavanca, pelo entalhe no topo.',
+        what: 'Tampa redonda, quase rente à face de trás. Abre por alavanca, pelo entalhe no topo.',
         facts: [],
         camera: { position: [0.9, 0.5, -2.5], target: [0, 0.1, -0.18] },
         action: 'tampa-controle',
-        explode: [0, 0, -1.1],
+        explode: [0, 0, -1.0],
       },
       {
         id: 'bateria',
@@ -529,7 +532,7 @@ export const DEVICES: Device[] = [
         facts: ['Modelo CR2032', 'Dura até 2 anos, conforme o uso'],
         camera: { position: [0.7, 0.4, -2.3], target: [0, 0.05, -0.1] },
         internal: true,
-        explode: [0, 0, -0.7],
+        explode: [0, 0, -0.3],
       },
     ],
   },
