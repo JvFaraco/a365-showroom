@@ -12,6 +12,7 @@ import { actionTau, actionTime, useShowroom } from '../../store/showroomStore'
 import { SoundWaves } from '../fx/SoundWaves'
 import { beep } from '../../ui/audio'
 
+const TAMPER: [number, number] = [-0.5, 0.0] // micro-chave do anti-sabotagem (à direita, vista por trás)
 const LED_A = -Math.PI / 2 // LED na borda da cúpula, centralizado embaixo (às 6 horas): fica voltado para o chão
 const LIFT = 1.9 // quanto a sirene sobe para sair do suporte
 // Ficha (1 unidade = 64 mm): cúpula de 128 mm de diâmetro; 60 mm de projeção da parede: a cúpula (~36)
@@ -115,7 +116,8 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
     batt.current.position.set(0, out * 0.1, -out * 0.55)
     // tamper: pressionado pelo suporte; solta quando a sirene se desprende dele
     const free = clamp01(Math.max(away * 5, explodeAmt.v * 4))
-    lever.current.position.z = -free * 0.045
+    // o botão da micro-chave: apertado pelo suporte; solto, sobe ~1 mm
+    lever.current.position.z = -free * 0.016
   })
 
   return (
@@ -157,15 +159,31 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
           <mesh material={M.whiteRelief} position={[0.67, -0.18, BACK - 0.02]}><boxGeometry args={[0.1, 0.03, 0.04]} /></mesh>
         </ClickablePart>
 
-        {/* tamper: botão circular no centro da traseira (anéis concêntricos); salta quando a sirene sai do suporte */}
-        <ClickablePart id="tamper">
+        {/* encaixe moldado no centro-baixo da traseira: disco levemente elevado, um anel e arcos em volta. É plástico
+            fixo, que centraliza a sirene no suporte de parede (NÃO é o tamper) */}
+        <ClickablePart id="encaixe-suporte">
           <group position={[0.2, -0.42, 0]}>
             {[0, 1, 2].map((i) => (
-              <mesh key={i} material={M.grey} position={[0, 0, BACK - 0.004]} rotation={[0, 0, i * 2.1 + 0.3]}><torusGeometry args={[0.37, 0.014, 8, 24, 1.7]} /></mesh>
+              <mesh key={i} material={M.white} position={[0, 0, BACK - 0.004]} rotation={[0, 0, i * 2.1 + 0.3]}><torusGeometry args={[0.37, 0.014, 8, 24, 1.7]} /></mesh>
             ))}
-            <group ref={lever}>
-              <mesh geometry={tamperCap} material={M.white} position={[0, 0, BACK]} scale={[1, 1, 0.6]} />
-            </group>
+            <mesh geometry={tamperCap} material={M.white} position={[0, 0, BACK]} scale={[1, 1, 0.6]} />
+          </group>
+        </ClickablePart>
+        {/* anti-sabotagem (tamper): micro-chave preta (~6 × 6 mm, com o botão no meio) numa plaquinha verde (~15 × 20 mm),
+            à direita da traseira, logo abaixo do conector branco da bateria; aparece por um recorte retangular.
+            O suporte de parede tem um ressalto que mantém o botão apertado; fora do suporte, o botão sobe ~1 mm */}
+        <ClickablePart id="tamper">
+          <mesh material={M.hole} position={[TAMPER[0], TAMPER[1] + 0.05, BACK - 0.001]} rotation={[0, Math.PI, 0]}><planeGeometry args={[0.3, 0.46]} /></mesh>
+          <mesh material={M.pcb} position={[TAMPER[0], TAMPER[1] + 0.04, BACK - 0.008]}><boxGeometry args={[15 / 64, 20 / 64, 0.014]} /></mesh>
+          <mesh material={M.chip} position={[TAMPER[0], TAMPER[1], BACK - 0.03]}><boxGeometry args={[6 / 64, 6 / 64, 0.035]} /></mesh>
+          <group ref={lever}>
+            <mesh material={M.greyDark} position={[TAMPER[0], TAMPER[1], BACK - 0.052]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.02, 0.02, 0.016, 12]} /></mesh>
+          </group>
+          {/* conector branco da bateria, no topo da plaquinha, com os fios vermelho e preto */}
+          <group ref={plugRef}>
+            <mesh material={M.white} position={[TAMPER[0], TAMPER[1] + 0.15, BACK - 0.03]}><boxGeometry args={[0.09, 0.06, 0.04]} /></mesh>
+            <mesh material={M.red} position={[TAMPER[0] - 0.02, TAMPER[1] + 0.28, BACK - 0.04]}><cylinderGeometry args={[0.01, 0.01, 0.24, 6]} /></mesh>
+            <mesh material={M.black} position={[TAMPER[0] + 0.02, TAMPER[1] + 0.28, BACK - 0.04]}><cylinderGeometry args={[0.01, 0.01, 0.24, 6]} /></mesh>
           </group>
         </ClickablePart>
 
@@ -185,7 +203,6 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
           </group>
         </ClickablePart>
         <ClickablePart id="placa">
-          <mesh material={M.pcb} position={[-0.43, 0.06, BACK - 0.008]}><boxGeometry args={[0.2, 0.34, 0.016]} /></mesh>
           {/* a placa inteira fica por dentro: contorno em cunha, chips, antena de fio preto e os dois fios brancos do elemento sonoro */}
           <mesh geometry={board} material={M.pcb} position={[0, 0, -0.2]} />
           <mesh material={M.chip} position={[-0.45, -0.12, -0.165]}><boxGeometry args={[0.14, 0.14, 0.02]} /></mesh>
@@ -194,17 +211,11 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
           <mesh geometry={antenna} material={M.chip} />
           <mesh geometry={piezoWireA} material={M.white} />
           <mesh geometry={piezoWireB} material={M.white} />
-          <mesh material={M.chip} position={[-0.43, 0.02, BACK - 0.024]}><boxGeometry args={[0.07, 0.07, 0.016]} /></mesh>
-          <group ref={plugRef}>
-            <mesh material={M.white} position={[-0.43, 0.19, BACK - 0.03]}><boxGeometry args={[0.09, 0.06, 0.04]} /></mesh>
-            <mesh material={M.red} position={[-0.485, 0.31, BACK - 0.04]}><cylinderGeometry args={[0.01, 0.01, 0.24, 6]} /></mesh>
-            <mesh material={M.black} position={[-0.505, 0.31, BACK - 0.04]}><cylinderGeometry args={[0.01, 0.01, 0.24, 6]} /></mesh>
-          </group>
         </ClickablePart>
 
         <SoundWaves level={level} position={[0, 0, 0.36]} count={5} maxRadius={1.9} />
         <mesh material={ringMat} position={[0, 0, -0.2]} userData={{ fx: true }} raycast={() => null}><torusGeometry args={[1.02, 0.022, 8, 96]} /></mesh>
-        <mesh material={sparkMat} position={[-0.43, 0.19, BACK - 0.12]} userData={{ fx: true }} raycast={() => null}><sphereGeometry args={[0.05, 12, 8]} /></mesh>
+        <mesh material={sparkMat} position={[TAMPER[0], TAMPER[1] + 0.15, BACK - 0.12]} userData={{ fx: true }} raycast={() => null}><sphereGeometry args={[0.05, 12, 8]} /></mesh>
       </group>
 
       {/* suporte de parede: prato com furo grande, canal vertical, recortes e travas do encaixe */}
@@ -212,6 +223,8 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
         <group position={[0, 0, SUP_DZ]} scale={[0.86, 0.86, SUP_S]}>
           <mesh geometry={rim} material={whiteDS} castShadow />
           <mesh geometry={floor} material={whiteDS} position={[0, 0, -0.63]} />
+          {/* ressalto que mantém o botão da micro-chave apertado */}
+          <mesh material={M.whiteRelief} position={[TAMPER[0] / 0.86, TAMPER[1] / 0.86, -0.46]}><boxGeometry args={[0.1, 0.1, 0.34]} /></mesh>
           <mesh material={M.whiteRelief} position={[-0.42, -0.02, -0.54]}><boxGeometry args={[0.22, 0.95, 0.14]} /></mesh>
           {[[0.62, 0.36], [-0.62, 0.36], [0.2, -0.7], [-0.2, 0.36]].map(([x, y], i) => (
             <mesh key={i} material={M.whiteRelief} position={[x, y, -0.55]}><boxGeometry args={[0.05, 0.1, 0.12]} /></mesh>
