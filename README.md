@@ -61,6 +61,8 @@ node tools/perf.mjs http://localhost:4173/ --channel msedge
 
 O script precisa do Playwright (`npm i -D playwright`). Sem `--channel`, usa o Chromium do Playwright.
 
+Outros dois scripts ajudam a conferir mudanças sem GPU: `node tools/count.mjs <url>` dá os programas de shader e os triângulos de cada aparelho, e `node tools/render.mjs <porta> <ref-id> <saída>` tira o print de um aparelho no ângulo de uma foto de referência. As regras de trabalho do projeto ficam em [`CLAUDE.md`](CLAUDE.md).
+
 Parâmetros de URL:
 
 | Parâmetro | Efeito |
