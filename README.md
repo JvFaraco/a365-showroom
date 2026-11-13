@@ -43,6 +43,8 @@ As micro-animações que abrem ou tiram algo (tampa do fotossensor, tampa do con
 
 ## Carregamento
 
+- Primeira imagem antes do 3D: uma foto estática da abertura (`public/poster.webp` e `poster-m.webp`, geradas do próprio app por `node tools/poster.mjs`) aparece por trás da tela de carregamento, com o título e o botão já no lugar. Se a pessoa clicar no botão antes de o 3D chegar, o showroom abre assim que puder. Rode o `poster.mjs` de novo (e faça outro build) quando os modelos ou a disposição da abertura mudarem.
+- O canvas não desenha nada antes de os shaders ficarem prontos (`frameloop="never"` durante a carga): usar um programa ainda em compilação obriga a esperar por ele.
 - A tela de carregamento é HTML/CSS inline no `index.html`: aparece no primeiro quadro, antes de qualquer JS. O logo anima só com `transform`/`opacity` (não trava quando a thread principal está ocupada) e a barra mostra a etapa real: código, aparelhos, materiais, preparando. Ela sai em crossfade para a abertura já renderizada. Respeita `prefers-reduced-motion`.
 - O JS sai em pacotes: `three`, react-three (fiber/drei), pós-processamento, interface e o app. As cenas "Em ação" e "Encerramento" e o pós-processamento chegam por `import()` dinâmico; as duas cenas são buscadas em tempo ocioso logo depois da carga. O único pacote acima de 600 kB é o núcleo do `three` (675 kB, 171 kB em gzip), que na versão 0.169 é um arquivo só.
 - Fontes só nos subconjuntos `latin` e `latin-ext`.
@@ -64,7 +66,7 @@ Parâmetros de URL:
 | Parâmetro | Efeito |
 |---|---|
 | `?hq` | mantém reflexo e pós-processamento completos mesmo que o FPS caia |
-| `?debug=1` | só em `npm run dev`: FPS, draw calls e triângulos (`r3f-perf`) |
+| `?debug=1` | número de programas de shader e aviso (com trace) de chamadas ao WebGL que esperam a compilação; em `npm run dev`, também FPS, draw calls e triângulos (`r3f-perf`) |
 | `?ref=1` | só em `npm run dev`: modo de comparação com a foto (veja abaixo) |
 
 ## Comparar com a foto (`?ref=1`)

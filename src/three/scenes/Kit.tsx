@@ -63,8 +63,9 @@ export function KitLineup({ mode }: { mode: 'enter' | 'gather' }) {
   const portrait = useThree((s) => s.size.width / s.size.height < 0.8)
   const layout = portrait ? KIT_LAYOUT_PORTRAIT : KIT_LAYOUT
   useFrame(() => {
-    // a animação de entrada só começa quando a tela de carregamento sai
-    if (!useShowroom.getState().ready) t0.current = now()
+    // logo depois da carga o kit já está no lugar, igual à imagem de abertura (o crossfade não dá salto);
+    // a entrada animada fica para quando a pessoa volta à abertura
+    if (!useShowroom.getState().ready) t0.current = now() - 100
     const t = reducedMotion() ? 99 : now() - t0.current
     group.current.children.forEach((c, i) => {
       c.visible = compiledDevices.has(layout[i].id) // na carga, só aparece depois de compilado

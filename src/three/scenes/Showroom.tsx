@@ -9,7 +9,7 @@ import { ManualPins, PartCallout } from '../parts/PartCallout'
 import { explodeAmt, reducedMotion } from '../common/util'
 import { fxBasic } from '../common/materials'
 import { compiledDevices, deviceRoots, partCenter, warmBounds } from '../common/registry'
-import { boot } from '../../boot'
+import { boot, bootWantsShowroom } from '../../boot'
 
 const easeOut = (x: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3)
 const UP = new THREE.Vector3(0, 1, 0)
@@ -179,6 +179,8 @@ export function Boot() {
       await frame()
       if (dead) return
       st().set({ ready: true })
+      // se a pessoa já clicou no botão da imagem de abertura, entra direto no showroom
+      if (bootWantsShowroom()) st().setScene('showroom')
       boot.set(1)
       boot.done()
     })()

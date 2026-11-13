@@ -140,14 +140,19 @@ function ShowroomUI() {
   )
 }
 
+// na primeira vez (logo depois da carga) o título e o botão já estão no lugar, iguais aos da imagem de abertura;
+// a entrada animada fica para quando a pessoa volta à abertura
+let introSeen = false
 function IntroUI() {
+  const first = !introSeen
+  useEffect(() => { introSeen = true }, [])
   return (
     <div className="pointer-events-none fixed inset-0 z-20 flex flex-col items-center justify-between py-[9vh] text-center">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.6, duration: 0.9 }}>
+      <motion.div initial={first ? false : { opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.6, duration: 0.9 }}>
         <h1 className="font-title text-[clamp(2.6rem,8vw,6rem)] font-bold leading-none tracking-tight text-white drop-shadow-[0_4px_30px_rgba(61,102,224,.7)]">Alarme <span className="text-accent">365</span></h1>
         <p className="mt-3 font-title text-[clamp(1rem,2.4vw,1.7rem)] text-white/85">{SLOGAN}</p>
       </motion.div>
-      <motion.button initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 3.6, duration: 0.6 }}
+      <motion.button initial={first ? false : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 3.6, duration: 0.6 }}
         className="btn btn-primary pointer-events-auto !px-8 !py-3.5 text-[1.05em] shadow-xl shadow-yellow-500/20" onClick={() => { beep(); useShowroom.getState().setScene('showroom') }}>
         Conhecer os equipamentos
       </motion.button>
