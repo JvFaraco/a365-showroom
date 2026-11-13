@@ -3,6 +3,9 @@ import { Bloom, EffectComposer, N8AO, Outline, SMAA, ToneMapping, Vignette } fro
 import { KernelSize, ToneMappingMode } from 'postprocessing'
 import { useShowroom } from '../store/showroomStore'
 import { postFx } from './scenes/Showroom'
+import { bindOutline } from './common/outline'
+
+const NO_SELECTION: never[] = []
 
 /**
  * Pós-processamento: AO em meia resolução (sulcos e aletas), bloom só nos emissivos (LEDs, flash,
@@ -13,7 +16,9 @@ export default function PostFX() {
   useEffect(() => { postFx.ready = true }, [])
   const ao = <N8AO halfRes quality="performance" aoRadius={0.22} distanceFalloff={0.6} intensity={1.7} color="#05070f" />
   const bloom = <Bloom mipmapBlur luminanceThreshold={1.2} luminanceSmoothing={0.12} intensity={0.85} radius={0.7} />
-  const outline = <Outline blur kernelSize={KernelSize.VERY_SMALL} edgeStrength={1.7} visibleEdgeColor={0x8fb0ff} hiddenEdgeColor={0x24409c} xRay={false} />
+  // a seleção do contorno é controlada direto no efeito (common/outline.ts); a lista vazia e estável evita que o
+  // <Outline> zere a seleção a cada render
+  const outline = <Outline ref={bindOutline} selection={NO_SELECTION} blur kernelSize={KernelSize.VERY_SMALL} edgeStrength={1.7} visibleEdgeColor={0x8fb0ff} hiddenEdgeColor={0x24409c} xRay={false} />
   const tone = <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
   if (quality >= 3) return <EffectComposer key="q3" multisampling={0} autoClear={false}>{bloom}{outline}{tone}</EffectComposer>
   if (quality === 2) return (

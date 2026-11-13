@@ -1,8 +1,6 @@
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
-import { useCursor } from '@react-three/drei'
-import { Select } from '@react-three/postprocessing'
 import { easing } from 'maath'
 import { ACTIONS } from '../../data/actions'
 import { getPart } from '../../data/devices'
@@ -10,6 +8,7 @@ import { useShowroom } from '../../store/showroomStore'
 import { explodeAmt, useDeviceCtx } from '../common/util'
 import { registerPart } from '../common/registry'
 import { brandPatch } from '../common/materials'
+import { clearOutline, meshesOf, registerWarm, setOutline } from '../common/outline'
 
 type Mat = THREE.Material & { opacity: number; emissive?: THREE.Color; emissiveIntensity?: number; isMeshStandardMaterial?: boolean }
 type Tracked = { mat: Mat; base: number; baseDepthWrite: boolean; led: boolean; baseEmissive?: THREE.Color; baseEI?: number; fres: { value: number } }
@@ -50,11 +49,9 @@ export function ClickablePart({ id, follow, internal: internalProp, explode: exp
   const group = useRef<THREE.Group>(null!)
   const tracked = useRef<Tracked[]>([])
   const fade = useRef({ v: 1, f: 0, applied: -1, fApplied: -1, sel: false })
-  const [hover, setHover] = useState(false)
+  const outlined = useRef<THREE.Object3D[]>([])
   // só o aparelho ativo recebe eventos; os outros 6 ficam montados, mas invisíveis e inertes
   const current = useShowroom((s) => interactive && s.scene === 'showroom' && s.device === deviceId)
-  const warm = useShowroom((s) => interactive && s.warm)
-  useCursor(hover && current)
 
   // materiais próprios da parte, para esmaecer sem afetar as outras. Ficam sempre "transparent",
   // com opacidade 1: assim esmaecer, Raio-X e voltar ao normal nunca trocam de programa de shader.
@@ -81,7 +78,9 @@ export function ClickablePart({ id, follow, internal: internalProp, explode: exp
     })
     tracked.current = list
     const off = interactive ? registerPart(deviceId, { group: group.current, id, explode, internal }) : undefined
-    return () => { off?.(); list.forEach((t) => t.mat.dispose()) }
+    // no aquecimento da carga, as partes clicáveis do showroom ficam contornadas por dois quadros (compila o contorno)
+    const offWarm = interactive && id ? registerWarm(meshesOf(group.current)) : undefined
+    return () => { off?.(); offWarm?.(); list.forEach((t) => t.mat.dispose()) }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useFrame((_, dt) => {
@@ -128,12 +127,18 @@ export function ClickablePart({ id, follow, internal: internalProp, explode: exp
   }
 
   const handlers = useMemo(() => (!current || !id ? {} : {
+    // hover sem estado do React: contorno e cursor mudam direto (ver common/outline.ts)
     onPointerOver: (e: ThreeEvent<PointerEvent>) => {
       if (!clickable(e)) return
-      e.stopPropagation(); setHover(true); useShowroom.getState().setHovered(id)
+      e.stopPropagation()
+      outlined.current = meshesOf(group.current)
+      setOutline(outlined.current)
+      document.body.style.cursor = 'pointer'
+      useShowroom.getState().setHovered(id)
     },
     onPointerOut: () => {
-      setHover(false)
+      clearOutline(outlined.current)
+      document.body.style.cursor = 'auto'
       const s = useShowroom.getState()
       if (s.hovered === id) s.setHovered(null)
     },
@@ -145,11 +150,17 @@ export function ClickablePart({ id, follow, internal: internalProp, explode: exp
     },
   }), [current, id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // o aparelho saiu de cena com o mouse em cima de uma parte: apaga o contorno e o cursor de mão
+  useEffect(() => {
+    if (current || !outlined.current.length) return
+    clearOutline(outlined.current)
+    outlined.current = []
+    document.body.style.cursor = 'auto'
+  }, [current])
+
   return (
-    <Select enabled={(hover && current) || (warm && !!id)}>
-      <group ref={group} name={id ?? `shell:${follow ?? ''}`} userData={{ partId: id, internalPart: internal && !!id }} {...handlers}>
-        {children}
-      </group>
-    </Select>
+    <group ref={group} name={id ?? `shell:${follow ?? ''}`} userData={{ partId: id, internalPart: internal && !!id }} {...handlers}>
+      {children}
+    </group>
   )
 }

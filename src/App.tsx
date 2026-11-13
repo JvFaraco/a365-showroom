@@ -2,7 +2,6 @@ import { Suspense, lazy, useEffect, useRef, useState, type ComponentType } from 
 import { MotionConfig } from 'framer-motion'
 import { Canvas, useThree } from '@react-three/fiber'
 import { AdaptiveDpr, PerformanceMonitor } from '@react-three/drei'
-import { Selection } from '@react-three/postprocessing'
 import { useShowroom } from './store/showroomStore'
 import { CameraRig } from './three/CameraRig'
 import { Stage } from './three/Stage'
@@ -133,15 +132,13 @@ export default function App() {
           aria-label="Showroom 3D dos equipamentos do Alarme 365"
         >
           <Suspense fallback={null}>
-            <Selection>
-              <Stage />
-              {/* os 7 aparelhos do showroom ficam montados o tempo todo */}
-              <ShowroomDevices />
-              <Scenes />
-              {REF_ON ? <RefCamera /> : <CameraRig />}
-              <Chunk name="PostFX" />
-              <Boot />
-            </Selection>
+            <Stage />
+            {/* os 7 aparelhos do showroom ficam montados o tempo todo */}
+            <ShowroomDevices />
+            <Scenes />
+            {REF_ON ? <RefCamera /> : <CameraRig />}
+            <Chunk name="PostFX" />
+            <Boot />
             {Perf && <Perf position="bottom-right" />}
           </Suspense>
           {FORCE_DPR === null && <AdaptiveDpr />}
