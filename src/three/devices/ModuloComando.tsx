@@ -34,32 +34,33 @@ const VIAS_FROM: [number, number, number] = [0, 0.2, 0]
 const outR = (t: number) => RF * (1 - 0.2 * Math.sin(t) ** 2 * Math.max(0, Math.cos(t)))
 const Y_SIDE = 0.04 // borda de baixo da tampa nos lados, onde a base cinza aparece (~21 mm do fundo)
 const DEG = Math.PI / 180
-const sstep = (a: number, b: number, x: number) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u) }
+
+const FOOT_T = 127 * DEG // os dois fechos de trás ficam a ~127° da frente, um de cada lado
 
 /**
- * Altura da borda de baixo da tampa em volta do contorno. Vista de lado, a tampa é uma PONTE: desce até o fundo
- * na frente (queixo) e atrás (cauda) e sobe em arco nos dois lados, onde a base cinza aparece. Perto da antena
- * há um recorte, por onde passa a rosca.
+ * Borda de baixo da tampa em volta do contorno: [raio, altura]. A tampa encosta no fundo em TRÊS pontos, que é onde
+ * ficam os fechos: na frente (largo: de frente, a tampa cobre tudo), atrás à esquerda e atrás à direita. Entre eles
+ * a borda sobe em arco: nos dois lados, onde a base cinza aparece, e atrás, por onde saem a antena e os cabos.
  */
-function lidEdge(t: number) {
+function lidRim(t: number): [number, number] {
   const a = Math.abs(Math.atan2(Math.sin(t), Math.cos(t))) // 0 na frente, π atrás
-  let y = Y_SIDE
-  if (a < 60 * DEG) y = BOTTOM + (Y_SIDE - BOTTOM) * (1 - Math.pow(1 - Math.min(1, Math.max(0, (a - 14 * DEG) / (46 * DEG))), 2.4))
-  else if (a > 128 * DEG) { const u = Math.min(1, (a - 128 * DEG) / (44 * DEG)); y = Y_SIDE - (Y_SIDE - BOTTOM) * u * u }
-  const d = Math.abs(Math.atan2(Math.sin(t - ANT_T), Math.cos(t - ANT_T)))
-  return y + (Math.max(y, -0.03) - y) * (1 - sstep(7 * DEG, 11 * DEG, d))
+  const clamp = (x: number) => Math.min(1, Math.max(0, x))
+  const front = 1 - Math.pow(1 - clamp((a - 18 * DEG) / (50 * DEG)), 1.2)
+  const rear = 1 - Math.pow(1 - clamp((Math.abs(a - FOOT_T) - 5 * DEG) / (16 * DEG)), 1.5)
+  // nos fechos de trás a tampa abre um pouco para fora (vista de cima, o contorno ganha dois "ombros")
+  return [outR(t) + 0.012 + 0.025 * (1 - rear), BOTTOM + (Y_SIDE - BOTTOM) * Math.min(front, rear)]
 }
 
 /** Raio da lateral da tampa na altura y (a reta do canto do topo até a borda de baixo). Abaixo da borda não há tampa. */
 function lidRadiusAt(t: number, y: number) {
-  const ey = lidEdge(t)
+  const [er, ey] = lidRim(t)
   if (y <= ey) return Infinity
-  return R_TOP + (outR(t) + 0.012 - R_TOP) * Math.min(1, Math.max(0, (YC - y) / (YC - ey)))
+  return R_TOP + (er - R_TOP) * Math.min(1, Math.max(0, (YC - y) / (YC - ey)))
 }
 
 /**
  * Tampa: UMA superfície. Topo plano e nivelado (disco de raio R_TOP), canto arredondado e lateral que desce,
- * abrindo, até o contorno em gota. A borda de baixo segue lidEdge() e dobra para dentro (dá espessura à borda).
+ * abrindo, até o contorno em gota. A borda de baixo segue lidRim() e dobra para dentro (dá espessura à borda).
  * Devolve duas malhas que dividem os mesmos vértices: o topo (fosco) e a lateral (com brilho).
  */
 function lidGeometry() {
@@ -68,7 +69,7 @@ function lidGeometry() {
   const W = 2 + NF + NC + NS
   for (let i = 0; i <= NT; i++) {
     const t = (i / NT) * Math.PI * 2, sn = Math.sin(t), cs = Math.cos(t)
-    const er = outR(t) + 0.012, ey = lidEdge(t)
+    const [er, ey] = lidRim(t)
     let dr = er - R_TOP, dy = ey - YC
     const dl = Math.hypot(dr, dy); dr /= dl; dy /= dl // direção da lateral, do canto até a borda de baixo
     const put = (r: number, y: number) => { pos.push(r * sn, y, r * cs); uv.push(r * sn * 3, r * cs * 3) }
@@ -109,8 +110,7 @@ const POCKET = { x0: -0.2, x1: 0.3, z0: -0.76, z1: -0.22, d: 0.24 } // bolsão f
 const LABEL = { x0: -0.3, x1: 0.3, z0: 0.0, z1: 0.3 } // rebaixo raso da etiqueta (fica vazio)
 const RJ = { x: 0.0, z: -0.31 } // RJ45 na face funda do bolsão, embaixo da grade, boca para quem olha o fundo
 const GRILLE = { x: (POCKET.x0 + POCKET.x1) / 2, z: -0.565, pitch: 0.054 } // grade de som: hexágono de furos na face funda do bolsão
-const ANT_X = -0.35 // a antena não fica no centro: sai num ressalto ao lado do bolsão
-const ANT_T = Math.atan2(ANT_X, -0.8) // ângulo da antena em volta do contorno (0 na frente)
+const ANT_X = -0.35 // a antena não fica no centro: sai num ressalto ao lado do bolsão, sob o arco de trás da tampa
 /** Altura depois do achatamento do corpo (para o que fica fora do grupo achatado). */
 const sq = (y: number) => BOTTOM + (y - BOTTOM) * SQUASH
 const NET_Y = Y_BOT + POCKET.d - 0.2, POW_X = POCKET.x1 - 0.15 // posição encaixada dos plugues
@@ -217,8 +217,9 @@ const G = () => (cache ??= build())
 
 
 /**
- * Módulo de Comando. Tampa branca numa superfície só, com topo plano e a lateral em "ponte" (desce na frente e
- * atrás, arco nos lados); botão do 190 na frente, com o LED no centro; base cinza em gota com o bolsão dos cabos
+ * Módulo de Comando. Tampa branca numa superfície só, com topo plano; a lateral encosta no fundo em três pontos
+ * (frente, trás à esquerda e trás à direita, onde ficam os fechos) e sobe em arco entre eles; botão do 190 na
+ * frente, com o LED no centro; base cinza em gota com o bolsão dos cabos
  * no meio da borda de trás e a antena saindo ao lado dele (fora do centro).
  * Por dentro, a placa verde real: cartão do chip 4G, módulo Wi-Fi, rádio dos sensores,
  * alto-falante na caixinha cinza, microfone, LED e botão sob a cápsula, e a bateria por baixo.
@@ -334,9 +335,16 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         {/* ================= tampa branca (cúpula em concha) ================= */}
         <group ref={lid}>
           <ClickablePart id="tampa">
-            {/* uma superfície só: topo plano, canto arredondado e lateral em ponte (queixo na frente, cauda atrás, arco nos lados) */}
+            {/* uma superfície só: topo plano, canto arredondado e lateral que encosta no fundo nos três fechos, com arcos entre eles */}
             <mesh geometry={g.lid.top} material={topMat} castShadow />
             <mesh geometry={g.lid.side} material={apronMat} castShadow />
+            {/* os três fechos da tampa: na frente, atrás à esquerda e atrás à direita (de baixo, a aba branca com a fenda) */}
+            {[0, FOOT_T, -FOOT_T].map((a) => (
+              <group key={a} rotation={[0, a, 0]}>
+                <RoundedBox args={[0.13, 0.014, 0.06]} radius={0.005} smoothness={2} position={[0, Y_BOT - 0.004, lidRim(a)[0] - 0.05]} material={M.white} />
+                <mesh material={M.hole} position={[0, Y_BOT - 0.0115, lidRim(a)[0] - 0.055]} rotation={[Math.PI / 2, 0, 0]}><planeGeometry args={[0.07, 0.016]} /></mesh>
+              </group>
+            ))}
             <group position={[0, YC, 0]} rotation={[TILT, 0, 0]}>
               <LogoGroove r={0.4} position={[0.02, 0.003, -0.1]} rotation={[-Math.PI / 2, 0, 0]} />
               {/* por dentro: bloco do guia de luz com furo de parafuso, ganchos e ressalto quadrado */}
@@ -410,7 +418,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
           {[0, 2.25, -2.25].map((a) => <mesh key={a} geometry={g.foot} material={M.grey} position={[Math.sin(a) * 0.68, Y_BOT - 0.01, Math.cos(a) * 0.68]} />)}
           {/* furo pequeno, à esquerda do bolsão */}
           <mesh material={M.hole} position={[0.43, Y_BOT - 0.001, -0.5]} rotation={[Math.PI / 2, 0, 0]}><circleGeometry args={[0.022, 14]} /></mesh>
-          {/* ressalto da rosca da antena: bloco de face plana na borda de trás, à direita do bolsão; aparece no recorte da tampa */}
+          {/* ressalto da rosca da antena: bloco de face plana na borda de trás, à direita do bolsão; aparece sob o arco de trás da tampa */}
           <RoundedBox args={[0.16, 0.341, 0.122]} radius={0.03} smoothness={3} position={[ANT_X, -0.2255, -0.761]} material={M.grey} />
           {/* duas travas cinza, em lados opostos, que prendem a placa */}
           {[-1, 1].map((sx) => (
