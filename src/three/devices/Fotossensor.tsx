@@ -32,17 +32,20 @@ const BAY = { y0: H(64), y1: 0.645, hw: mm(24.5), floor: HD - 0.24 }
 // pilha AA (50,5 × 14,5 mm): cilindro de ponta reta com o polo + saliente
 const CELL = { r: mm(7.25), len: mm(50.5), y: (H(64) + 0.645) / 2, s: HD - 0.125 }
 const CELL_X = [-0.193, 0, 0.193]
-// Cápsula da câmera: pílula de ~30 × 55 mm, mais larga em cima, INCLINADA (o topo sai mais que a base: a
-// câmera olha um pouco para baixo). Tudo dela é medido a partir da base da cápsula.
-const CAP = { bottom: H(70), h: mm(55), hwTop: mm(15), hwBottom: mm(11), tilt: 0.07, z: HD - 0.085 }
+// Cápsula da câmera: ~30 mm de largura máxima (no topo, ~44% da largura do corpo), afinando de forma contínua
+// para baixo, sem orelhas nem saia, até um pescoço curto logo acima do funil. O topo fica a ~12% da altura do
+// corpo e a base a ~45%. É INCLINADA: o topo sai mais que a base. Medidas a partir da ponta do pescoço.
+const CAP = { bottom: H(69), neck: mm(11), neckHw: mm(6.5), h: mm(58.5), hwTop: mm(15), tilt: 0.07, z: HD - 0.085 }
 const CAP_F = 0.085 // face da frente da cápsula, nas coordenadas dela
-const LENS_L = mm(43), LEDWIN_L = mm(22) // altura da lente e da janela do LED dentro da cápsula
+const LENS_L = mm(46), LEDWIN_L = mm(29) // lente no terço de cima; janela do LED no meio
 const LENS_Y = CAP.bottom + LENS_L, LEDWIN_Y = CAP.bottom + LEDWIN_L
+/** Meia largura da cápsula na altura local y (0 = ponta do pescoço). */
+const capHwAt = (y: number) => y <= CAP.neck ? CAP.neckHw : CAP.neckHw + (CAP.hwTop - CAP.neckHw) * Math.min(1, (y - CAP.neck) / (CAP.h - CAP.hwTop - CAP.neck))
 // Relevo da frente (tudo para DENTRO do corpo; só a cápsula é saliente):
 // - capuz: corte em arco no alto, que acompanha o topo da cápsula com ~3,5 mm de folga;
 // - funil do PIR: trapézio escavado, estreito logo abaixo da cápsula (~30 mm) e abrindo para baixo até ~61 mm;
 //   as paredes inclinadas são os "ombros"; o fundo fica ~17 mm atrás da frente.
-const HOOD = { hw: mm(18.5), top: CAP.bottom + mm(55 + 3.5), depth: 0.055 } // raso: no Raio-X o contorno do corte quase coincide com o da cápsula
+const HOOD = { hw: mm(18.5), top: CAP.bottom + CAP.h + mm(3.5), depth: 0.055 } // raso: no Raio-X o contorno do corte quase coincide com o da cápsula
 const WELL = { y0: H(20), y1: H(64), hwTop: mm(15), hwBottom: mm(30.5), depth: mm(17) }
 // janela PIR: no fundo do funil, na parte de baixo dele; levemente convexa, com tom próprio e borda
 const PIR = { y0: H(24), y1: H(50), hw: mm(19.5), bulge: mm(6) }
@@ -93,8 +96,7 @@ function frontCut(x: number, y: number, z: number) {
   // capuz: arco de meia-volta no alto; abaixo dele os lados acompanham a cápsula, que afina, e o corte
   // emenda no começo do funil (sem degrau entre os dois)
   const yArc = HOOD.top - HOOD.hw
-  const capHw = CAP.hwBottom + (CAP.hwTop - CAP.hwBottom) * Math.min(1, Math.max(0, (y - CAP.bottom) / CAP.h))
-  const side = y >= yArc ? HOOD.hw - Math.hypot(ax, y - yArc) : capHw + (HOOD.hw - CAP.hwTop) - ax
+  const side = y >= yArc ? HOOD.hw - Math.hypot(ax, y - yArc) : capHwAt(y - CAP.bottom) + (HOOD.hw - CAP.hwTop) - ax
   const hood = smooth(0, 0.035, side) * smooth(0, 0.05, y - (WELL.y1 - 0.05))
   // funil: a largura cresce de cima para baixo
   const k = Math.min(1, Math.max(0, (WELL.y1 - y) / (WELL.y1 - WELL.y0)))
@@ -201,12 +203,14 @@ function build() {
 
   // cápsula da câmera: pílula vertical, com a cabeça (lente) mais larga e a parte do LED mais estreita
   const cp = new THREE.Shape()
-  const rT = CAP.hwTop, rB = CAP.hwBottom
-  cp.moveTo(rB, rB)
-  cp.lineTo(rT, CAP.h - rT)
+  const rT = CAP.hwTop, nk = CAP.neckHw
+  cp.moveTo(nk, nk) // pescoço: ponta arredondada
+  cp.lineTo(nk, CAP.neck)
+  cp.lineTo(rT, CAP.h - rT) // lados retos, abrindo de forma contínua até a largura máxima
   cp.absarc(0, CAP.h - rT, rT, 0, Math.PI, false)
-  cp.lineTo(-rB, rB)
-  cp.absarc(0, rB, rB, Math.PI, Math.PI * 2, false)
+  cp.lineTo(-nk, CAP.neck)
+  cp.lineTo(-nk, nk)
+  cp.absarc(0, nk, nk, Math.PI, Math.PI * 2, false)
   const capsule = new THREE.ExtrudeGeometry(cp, { depth: 0.05, bevelEnabled: true, bevelSize: 0.035, bevelThickness: 0.035, bevelSegments: 6, curveSegments: 40 })
 
   // traseira: tampa curva, aba de alavanca no topo, presilhas embaixo e os frisos perto da base (dos dois lados)
