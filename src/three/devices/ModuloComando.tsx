@@ -117,11 +117,11 @@ function baseGeometry() {
 /** Placa verde: redonda, com o recorte onde encaixa a caixinha do alto-falante. */
 function pcbGeometry() {
   const s = new THREE.Shape()
-  const R = 0.76
+  const R = 0.76, x0 = POCKET.x0 - 0.04, x1 = POCKET.x1 + 0.04, zc = -(POCKET.z1 + 0.06) // recorte retangular grande, sobre o bolsão
   // contorno no plano (x, -z): começa depois do recorte e dá a volta
-  const a0 = Math.asin(0.29 / R), a1 = Math.PI * 2 - Math.asin(0.17 / R)
+  const a0 = Math.asin(x1 / R), a1 = Math.PI * 2 + Math.asin(x0 / R)
   for (let i = 0; i <= 80; i++) { const a = a0 + ((a1 - a0) * i) / 80; const x = Math.sin(a) * R, y = Math.cos(a) * R; i ? s.lineTo(x, y) : s.moveTo(x, y) }
-  s.lineTo(-0.17, 0.19); s.lineTo(0.29, 0.19); s.closePath()
+  s.lineTo(x0, zc); s.lineTo(x1, zc); s.closePath()
   const g = new THREE.ExtrudeGeometry(s, { depth: 0.02, bevelEnabled: false, curveSegments: 4 })
   g.rotateX(Math.PI / 2) // deita: (x, y) → (x, -z)... o recorte fica atrás (−Z)
   g.scale(1, 1, -1)
@@ -147,7 +147,6 @@ function build() {
     pcb: pcbGeometry(),
     cone: smoothLatheY([[0.185, 0.04], [0.175, 0.046], [0.155, 0.036], [0.11, 0.02], [0.06, 0.012], [0.03, 0.03]], 48, 24),
     magnet: smoothLatheY([[0.064, 0.012], [0.064, 0.03], [0.062, 0.044], [0.05, 0.05], [0.001, 0.05]], 32, 16),
-    smd: new THREE.BoxGeometry(0.03, 0.014, 0.018),
     hole: new THREE.CircleGeometry(0.018, 10),
     // cabos e fios
     coaxA: wire([[-0.42, PCB_Y + 0.045, 0.13], [-0.2, PCB_Y + 0.07, -0.05], [-0.25, PCB_Y + 0.06, -0.4], [-0.42, PCB_Y + 0.03, -0.6]], 0.007),
@@ -166,17 +165,6 @@ function build() {
 }
 const G = () => (cache ??= build())
 
-// posições pseudoaleatórias fixas dos componentes SMD, fora dos blocos grandes
-const SMD: [number, number, number, number][] = (() => {
-  const out: [number, number, number, number][] = []
-  let seed = 11
-  const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280)
-  const blocked = (x: number, z: number) =>
-    (x > -0.2 && x < 0.32 && z < -0.15) || (x > -0.46 && x < -0.16 && z > 0.08 && z < 0.56) || (x > -0.1 && x < 0.58 && z > 0.1 && z < 0.6) ||
-    (x > -0.42 && x < -0.18 && z > -0.42 && z < -0.18) || Math.hypot(x, z) > 0.7
-  while (out.length < 90) { const x = rnd() * 1.5 - 0.75, z = rnd() * 1.5 - 0.75; if (!blocked(x, z)) out.push([x, z, rnd() * Math.PI, rnd()]) }
-  return out
-})()
 
 /**
  * Módulo de Comando. Tampa branca em concha (face plana inclinada + saia que se abre para trás),
@@ -197,13 +185,11 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
   const netRef = useRef<THREE.Group>(null!)
   const powRef = useRef<THREE.Group>(null!)
   const fins = useRef<THREE.InstancedMesh>(null!)
-  const smd = useRef<THREE.InstancedMesh>(null!)
   const holes = useRef<THREE.InstancedMesh>(null!)
   const shieldHoles = useRef<THREE.InstancedMesh>(null!)
   const inited = useRef(false)
   const cableMat = useMemo(() => fxBasic('#2a2d35'), [])
   const apronMat = useMemo(() => { const m = M.white.clone(); m.side = THREE.DoubleSide; return m }, [])
-  const smdMat = useMemo(() => new THREE.MeshStandardMaterial({ roughness: 0.5 }), [])
   const viasPhase = useActionPhase('antena', [4, 7.5, 10])
   const audioPhase = useActionPhase('audio', [1.2])
   const batPhase = useActionPhase('bateria-modulo', [2.2])
@@ -215,19 +201,14 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
   }
 
   useFrame(() => {
-    if (!inited.current && fins.current && smd.current && holes.current && shieldHoles.current) {
-      const o = new THREE.Object3D(), c = new THREE.Color()
+    if (!inited.current && fins.current && holes.current && shieldHoles.current) {
+      const o = new THREE.Object3D()
       // fendas curtas e estreitas (ventilação) em volta do contorno inteiro, no fundo, perto da borda
       for (let i = 0; i < 60; i++) {
         const a = (i / 60) * Math.PI * 2, r = outR(a) * 0.85
         o.position.set(Math.sin(a) * r, Y_BOT - 0.0015, Math.cos(a) * r); o.rotation.set(0, a, 0); o.scale.setScalar(1)
         o.updateMatrix(); fins.current.setMatrixAt(i, o.matrix)
       }
-      SMD.forEach(([x, z, r, k], i) => {
-        o.position.set(x, PCB_Y + 0.007, z); o.rotation.set(0, r, 0); o.scale.setScalar(0.7 + k * 0.9)
-        o.updateMatrix(); smd.current.setMatrixAt(i, o.matrix)
-        smd.current.setColorAt(i, c.set(k < 0.45 ? '#15161a' : k < 0.75 ? '#b99a62' : '#8a6b4a'))
-      })
       // grade de som: 37 furos redondos em hexágono, na parede do fundo do bolsão (vertical, virada para a frente)
       let n = 0
       const HS = 0.03, rows = [4, 5, 6, 7, 6, 5, 4]
@@ -243,9 +224,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         o.position.set(-0.375 + i * 0.05, PCB_Y + 0.0465, -0.375 + j * 0.05); o.rotation.set(-Math.PI / 2, 0, 0); o.scale.setScalar(0.55)
         o.updateMatrix(); shieldHoles.current.setMatrixAt(n++, o.matrix)
       }
-      for (const m of [fins, smd, holes, shieldHoles]) m.current.instanceMatrix.needsUpdate = true
-      if (smd.current.instanceColor) smd.current.instanceColor.needsUpdate = true
-      for (const m of [fins, smd, holes, shieldHoles]) m.current.computeBoundingBox()
+      for (const m of [fins, holes, shieldHoles]) m.current.instanceMatrix.needsUpdate = true
+      for (const m of [fins, holes, shieldHoles]) m.current.computeBoundingBox()
       inited.current = true
     }
     if (!interactive) return
@@ -405,7 +385,10 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         {/* ================= interior ================= */}
         <ClickablePart id="placa-principal">
           <mesh geometry={g.pcb} material={M.pcb} position={[0, PCB_Y, 0]} />
-          <instancedMesh ref={smd} args={[g.smd, smdMat, SMD.length]} />
+          {/* placa limpa: verde liso, poucos componentes grandes. RJ45 (caixa metálica) no fundo do recorte e o jack
+              da fonte (caixa preta) ao lado dele, alinhados com o bolsão do fundo */}
+          <mesh material={M.metal} position={[RJ.x, PCB_Y - 0.06, RJ.z + 0.14]}><boxGeometry args={[0.22, 0.1, 0.12]} /></mesh>
+          <mesh material={M.chip} position={[POCKET.x1 + 0.07, PCB_Y - 0.05, JACK.z]}><boxGeometry args={[0.12, 0.09, 0.12]} /></mesh>
           {/* área de energia: bobinas e chips pequenos */}
           {[[0.5, -0.36], [0.62, -0.26], [0.56, -0.16]].map(([x, z], i) => (
             <RoundedBox key={i} args={[0.075, 0.045, 0.075]} radius={0.012} smoothness={2} position={[x, PCB_Y + 0.022, z]} material={M.chip} />
@@ -418,9 +401,9 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         </ClickablePart>
 
         <ClickablePart id="led-botao-placa">
-          <Led sample={sampleLed} boost={3.5} baseColor="#b9c8ee" position={[-0.06, PCB_Y + 0.012, 0.655]}><boxGeometry args={[0.04, 0.022, 0.03]} /></Led>
-          <mesh material={M.metal} position={[0.07, PCB_Y + 0.014, 0.67]}><boxGeometry args={[0.085, 0.028, 0.085]} /></mesh>
-          <mesh material={M.wireBlue} position={[0.07, PCB_Y + 0.04, 0.67]}><cylinderGeometry args={[0.026, 0.028, 0.03, 16]} /></mesh>
+          <Led sample={sampleLed} boost={3.5} baseColor="#b9c8ee" position={[-0.06, PCB_Y + 0.012, CAPSULE_Z - 0.045]}><boxGeometry args={[0.04, 0.022, 0.03]} /></Led>
+          <mesh material={M.metal} position={[0.07, PCB_Y + 0.014, CAPSULE_Z - 0.03]}><boxGeometry args={[0.085, 0.028, 0.085]} /></mesh>
+          <mesh material={M.wireBlue} position={[0.07, PCB_Y + 0.04, CAPSULE_Z - 0.03]}><cylinderGeometry args={[0.026, 0.028, 0.03, 16]} /></mesh>
         </ClickablePart>
 
         {/* cartão do chip 4G: plaquinha espetada num slot preto, com o suporte metálico e o SIM */}

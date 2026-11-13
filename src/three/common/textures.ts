@@ -267,30 +267,26 @@ export const microNormalTexture = () =>
     return t
   })
 
-/** Placa de circuito: verde com trilhas, ilhas e serigrafia ilegível (sem marcas nem textos). */
+/** Placa de circuito: verde liso, de um tom só, com trilhas finas e MUITO discretas. Sem componentes pintados,
+ *  sem serigrafia, sem etiquetas: os componentes de verdade são poucos e ficam na geometria. */
 export const pcbTexture = () =>
   memo('pcb', () => {
-    const [c, ctx] = canvas(512, 512)
-    ctx.fillStyle = '#157a3c'; ctx.fillRect(0, 0, 512, 512)
+    const [c, ctx] = canvas(256, 256)
+    ctx.fillStyle = '#17803f'; ctx.fillRect(0, 0, 256, 256)
     let seed = 365
     const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280)
-    ctx.lineCap = 'round'
-    for (let i = 0; i < 90; i++) {
-      ctx.strokeStyle = `rgba(60,170,95,${0.35 + rnd() * 0.35})`
-      ctx.lineWidth = 1 + rnd() * 2.2
-      let x = rnd() * 512, y = rnd() * 512
+    ctx.lineCap = 'round'; ctx.lineWidth = 1
+    ctx.strokeStyle = 'rgba(70,165,100,0.22)'
+    for (let i = 0; i < 26; i++) {
+      // trilha em "L": um trecho reto, uma quebra a 45° e outro trecho reto
+      let x = rnd() * 256, y = rnd() * 256
+      const h = rnd() > 0.5, l1 = 20 + rnd() * 60, l2 = 15 + rnd() * 50
       ctx.beginPath(); ctx.moveTo(x, y)
-      for (let k = 0; k < 3; k++) { if (rnd() > 0.5) x += (rnd() - 0.5) * 180; else y += (rnd() - 0.5) * 180; ctx.lineTo(x, y) }
-      ctx.stroke()
+      if (h) x += l1; else y += l1
+      ctx.lineTo(x, y); x += 8; y += 8; ctx.lineTo(x, y)
+      if (h) y += l2; else x += l2
+      ctx.lineTo(x, y); ctx.stroke()
     }
-    for (let i = 0; i < 160; i++) {
-      const x = rnd() * 512, y = rnd() * 512
-      ctx.fillStyle = rnd() > 0.5 ? 'rgba(214,190,120,.9)' : 'rgba(15,60,30,.9)'
-      ctx.beginPath(); ctx.arc(x, y, 1.5 + rnd() * 2, 0, Math.PI * 2); ctx.fill()
-    }
-    // serigrafia: tracinhos brancos que lembram texto, mas não formam nada legível
-    ctx.fillStyle = 'rgba(235,245,238,.75)'
-    for (let i = 0; i < 70; i++) { const x = rnd() * 500, y = rnd() * 500; for (let k = 0; k < 2 + rnd() * 4; k++) ctx.fillRect(x + k * 4, y, 2.5, 1.2 + rnd() * 2.5) }
     return tex(c)
   })
 
