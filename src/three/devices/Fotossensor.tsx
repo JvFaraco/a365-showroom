@@ -259,7 +259,7 @@ function build() {
     pirLens: frontPanel(PIR.hw, PIR.y0, PIR.y1, 0.004, PIR.bulge),
     win: stadiumGeometry(mm(5), mm(11), 0.006, 0.003), // janela oval vertical do LED (~5 × 11 mm)
     cell: new THREE.CylinderGeometry(CELL.r, CELL.r, CELL.len, 32),
-    spring: (() => { const pts: THREE.Vector3[] = []; for (let i = 0; i <= 90; i++) { const t = i / 90; pts.push(new THREE.Vector3(Math.cos(t * Math.PI * 12) * 0.035, t * 0.2, Math.sin(t * Math.PI * 12) * 0.035)) } return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 140, 0.007, 5) })(),
+    spring: (() => { const pts: THREE.Vector3[] = []; for (let i = 0; i <= 90; i++) { const t = i / 90; pts.push(new THREE.Vector3(Math.cos(t * Math.PI * 12) * 0.035, t * 0.2, Math.sin(t * Math.PI * 12) * 0.035)) } return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 72, 0.007, 4) })(),
   }
 }
 const G = () => (cache ??= build())
@@ -433,17 +433,33 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
               <mesh geometry={g.pirLens} material={pirMat} />
             </ClickablePart>
 
-            {/* por dentro (só fotos e vídeos): armação com a placa da câmera em cima, a placa do PIR no meio e a
-                antena em mola embaixo. Sem etiquetas nem textos. */}
+            {/* ===== por dentro (pelos vídeos de fábrica): geometria simples, poucos segmentos, materiais que já existiam;
+                sem etiquetas nem textos. O corpo traseiro (a calha branca) é a metade de trás da casca. ===== */}
+            {/* placa principal: verde, vertical, ~50 × 85 mm, do meio do corpo para baixo; cabo flat à esquerda */}
             <ClickablePart id="placas">
-              <RoundedBox args={[0.6, 1.2, 0.03]} radius={0.012} smoothness={3} position={[0, H(72), 0.12]} material={M.chip} />
-              <mesh material={M.pcb} position={[0, H(104), 0.2]}><boxGeometry args={[0.5, 0.52, 0.02]} /></mesh>
-              <mesh material={M.chip} position={[0, LENS_Y, 0.235]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.07, 0.07, 0.06, 20]} /></mesh>
-              <mesh material={M.chip} position={[0.12, H(96), 0.216]}><boxGeometry args={[0.1, 0.1, 0.014]} /></mesh>
-              <mesh material={M.pcb} position={[0, H(42), 0.18]}><boxGeometry args={[0.52, 0.46, 0.02]} /></mesh>
-              <mesh material={M.white} position={[0, H(43), 0.205]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.06, 0.06, 0.03, 20]} /></mesh>
-              <mesh material={M.chip} position={[-0.14, H(34), 0.196]}><boxGeometry args={[0.09, 0.09, 0.014]} /></mesh>
-              <mesh geometry={g.spring} material={springMat} position={[0.1, H(12), 0.12]} rotation={[0, 0, Math.PI / 2]} />
+              <mesh material={M.pcb} position={[0, H(50), 0.1]}><boxGeometry args={[mm(50), mm(85), 0.02]} /></mesh>
+              <mesh material={M.chip} position={[-0.16, H(62), 0.116]}><boxGeometry args={[0.1, 0.1, 0.014]} /></mesh>
+              <mesh material={M.chip} position={[0.17, H(22), 0.116]}><boxGeometry args={[0.08, 0.12, 0.014]} /></mesh>
+              <mesh material={M.white} position={[-0.21, H(84), 0.135]}><boxGeometry args={[0.11, mm(34), 0.006]} /></mesh>
+            </ClickablePart>
+            {/* sensor PIR: cilindro metálico (~9 × 5 mm) com a janelinha escura, na altura da lente PIR */}
+            <ClickablePart id="sensor-pir">
+              <mesh material={M.metal} position={[0, H(37), 0.11 + mm(2.5)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(4.5), mm(4.5), mm(5), 14]} /></mesh>
+              <mesh material={M.hole} position={[0, H(37), 0.11 + mm(5) + 0.001]}><planeGeometry args={[mm(3.6), mm(3.6)]} /></mesh>
+            </ClickablePart>
+            {/* módulo da câmera, no terço de cima: plaquinha verde com o LED, suporte branco e o tubo preto da lente
+                (~9 mm), apontando para a frente e um pouco para baixo, alinhado com a lente da cápsula */}
+            <ClickablePart id="modulo-camera">
+              <mesh material={M.pcb} position={[0, H(104), 0.16]}><boxGeometry args={[mm(28), mm(24), 0.016]} /></mesh>
+              <mesh material={M.white} position={[0, LEDWIN_Y, 0.176]}><boxGeometry args={[0.04, 0.05, 0.016]} /></mesh>
+              <mesh material={M.white} position={[0, LENS_Y, 0.17 + mm(4)]}><boxGeometry args={[mm(20), mm(18), mm(8)]} /></mesh>
+              <group position={[0, LENS_Y, 0.17 + mm(8)]} rotation={[CAP.tilt, 0, 0]}>
+                <mesh material={M.chip} position={[0, 0, mm(4)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(4.5), mm(4.5), mm(9), 14]} /></mesh>
+              </group>
+            </ClickablePart>
+            {/* antena: mola de cobre em pé, no centro, logo acima da base */}
+            <ClickablePart id="antena">
+              <mesh geometry={g.spring} material={springMat} position={[0, H(8), 0.2]} />
             </ClickablePart>
 
             {/* faixa cinza da base, um pouco recuada */}
