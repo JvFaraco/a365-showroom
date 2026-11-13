@@ -88,16 +88,20 @@ O corpo é um seixo, não uma moeda: duas placas finas no contorno inteiro, em g
 
 ## Placa de aviso (1,5 × 2,0)
 
+A frente segue a arte oficial da placa (proporção 3:4): logo com 56% da largura no alto, "ORSEGUPS" e o telefone, faixa amarela de 66% a 83% da altura e rodapé com "ALARME 365" e o QR. O logo sai de `logoShape.ts`: o anel de dentro e o braço de fora, separados pelo corte curvo (largo à esquerda, rente ao miolo por cima, fino até a ponta da direita); a mesma forma desenha o logo da interface. As letras largas da arte são texto esticado na horizontal (`wideText`).
+
+As cores da marca saem exatas: o material da chapa leva `userData.brand`, e o `ClickablePart` acrescenta ao shader a inversa da curva de tone mapping (`brandPatch`), para o amarelo não lavar no fim do quadro. A chapa lisa usa uma textura azul de 1 px, de modo que a placa inteira usa um só programa de shader.
+
 | part.id | Como é modelada |
 |---|---|
-| `logo` | Anel amarelo grande com o swoosh recortado, em canvas de 2048 px, sobre a chapa azul de cantos redondos. |
-| `telefone` | Plano com "ORSEGUPS" e "4020.4411". |
-| `faixa` | Faixa amarela com o ícone de câmera e o aviso. |
-| `verso` | Plano traseiro com "ALARME 365" e o QR Code ilustrativo. |
+| `logo` | Anel amarelo com o corte, em canvas de 2048 px, sobre a chapa azul de cantos redondos. |
+| `telefone` | Plano com "ORSEGUPS" (amarelo, letras largas) e "4020.4411" (branco). |
+| `faixa` | Faixa amarela de ponta a ponta: câmera de segurança (haste, braço, corpo inclinado e lente) e o aviso em azul. |
+| `verso` | Plano traseiro com "ALARME 365" e o QR Code ilustrativo. No rodapé da frente o QR é branco sobre o azul, como na arte. |
 
 ## Aplicativo (0,95 × 1,95)
 
-O corpo do celular é uma extrusão de cantos redondos. A tela é React de verdade dentro do 3D (`<Html transform occlude>`, em `src/ui/AppScreen.tsx`), e cada região é uma parte: `sos`, `alarme-geral`, `ultimas-imagens`, `ultimos-eventos` e `menu`.
+O corpo do celular é uma extrusão de cantos redondos com aro metálico, botão de liga à direita, dois de volume à esquerda e, atrás, a ilha da câmera com duas lentes. A tela é React de verdade dentro do 3D (`<Html transform occlude>`, em `src/ui/AppScreen.tsx`), e cada região é uma parte: `sos`, `alarme-geral`, `ultimas-imagens`, `ultimos-eventos` e `menu`. O desenho segue a tela inicial do aplicativo: fundo branco, o nome de cada seção por fora e os cartões em cinza claro, o seletor de três estados, a foto com a etiqueta do aparelho no canto e os pontinhos de página, e o menu inferior de ponta a ponta. A barra de status (hora, sinal, 5G e bateria) é a mesma na tela clara e na tela "Imagem".
 
 ## Placas internas
 
