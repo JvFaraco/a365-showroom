@@ -54,6 +54,22 @@ function shellWalls(w: number, h: number, r: number, t: number, z0: number, z1: 
   return g
 }
 const WALL_T = mm(2.2), FLOOR_T = mm(2) // paredes e fundo das duas cascas (medidas externas; por dentro, aproximado)
+// Ímã: base de 5 mm (presa no batente) e tampa por cima. Por dentro da base, nervuras atravessadas; o ímã fica
+// deitado sobre elas.
+const MB = BACK, MAG_SEAM = mm(5.1)
+let magGeo: ReturnType<typeof buildMag> | null = null
+function buildMag() {
+  const ribs = [-35.6, -25.6, -15.5, -5.2, 5.2, 15.5, 25.6, 35.6].map((y): Block => [0, mm(y), MB + mm(3.1), MAG.w - 2 * mm(2.1), mm(1), mm(2.4)])
+  return {
+    baseWalls: shellWalls(MAG.w, MAG.len, mm(1.2), mm(2.1), MB + mm(1), MB + MAG_SEAM),
+    tongue: shellWalls(MAG.w - mm(2), MAG.len - mm(6), mm(0.8), mm(1), MB + MAG_SEAM - 0.001, MB + mm(10)),
+    inside: boxesGeometry(ribs),
+    coverWalls: shellWalls(MAG.w, MAG.len, mm(1.2), mm(1), MB + MAG_SEAM + mm(0.1), MB + mm(13.5)),
+    coverInner: shellWalls(MAG.w - mm(2), MAG.len - mm(2), mm(0.8), mm(1.1), MB + mm(10.1), MB + mm(13.5)),
+    // linha da emenda: só um aro fino na borda (uma chapa cheia tamparia o miolo na vista explodida)
+    seam: shellWalls(MAG.w + 0.004, MAG.len + 0.004, mm(1.3), mm(0.8), MB + MAG_SEAM - 0.005, MB + MAG_SEAM + 0.005),
+  }
+}
 
 const knockT = () => { const k = useShowroom.getState().knock; return k ? now() - k.t0 : -1 }
 const knockFired = () => { const k = useShowroom.getState().knock; return !!k && k.fired && now() - k.t0 > 0.5 && now() - k.t0 < 3.5 }
@@ -66,6 +82,7 @@ const alarmOn = () => doorOpen() > 0.08 || knockFired()
  * Frente em +Z.
  */
 export function SensorMagnetico({ interactive = false, open }: DeviceProps & { open?: () => number }) {
+  const mg = (magGeo ??= buildMag())
   const door = useRef<THREE.Group>(null!)
   // anel em volta da janela do LED, por dentro da tampa (guia de luz)
   const ledPipe = useMemo(() => {
@@ -102,6 +119,8 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
     return {
       baseWalls: shellWalls(BODY.w, BODY.len, 0.03, WALL_T, BACK + FLOOR_T, SPLIT),
       coverWalls: shellWalls(BODY.w, BODY.len, 0.045, WALL_T, SPLIT - 0.1, FRONT - capD + 0.046),
+      // linha da emenda: aro fino na borda, não chapa cheia (senão tampa o miolo da base na vista explodida)
+      seam: shellWalls(BODY.w + 0.004, BODY.len + 0.004, 0.032, mm(1), SPLIT - 0.006, SPLIT + 0.006),
       capD,
     }
   }, [])
@@ -149,7 +168,7 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
                     <mesh key={`${y}${sx}`} material={M.white} position={[sx * (BODY.w / 2 - WALL_T - mm(0.8)), mm(y), mm(3)]}><boxGeometry args={[mm(1.6), mm(2.5), mm(6)]} /></mesh>
                   )))}
                 </group>
-                <RoundedBox args={[BODY.w + 0.004, BODY.len + 0.004, 0.012]} radius={0.006} smoothness={2} position={[BODY.x, 0, SPLIT]} material={M.partition} />
+                <mesh geometry={shells.seam} material={M.partition} position={[BODY.x, 0, 0]} />
               </group>
             </ClickablePart>
             <ClickablePart id="corpo">
@@ -221,13 +240,28 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
         </group>
       </group>
 
-      {/* ímã: fica parado no batente, acima do corpo, paralelo e alinhado no comprimento */}
+      {/* ímã: fica parado no batente, acima do corpo, paralelo e alinhado no comprimento. Tampa (na frente) e base
+          (atrás, 5 mm), com a emenda; explodido, a tampa sai e mostra a base por dentro */}
       <ClickablePart id="ima">
         <group rotation={DEITA}>
-          {/* base (atrás) e tampa (na frente), com a emenda */}
-          <RoundedBox args={[MAG.w, MAG.len, MAG.d * 0.45]} radius={0.02} smoothness={4} position={[MAG_X, 0, MAG_Z - MAG.d * 0.275]} material={M.white} castShadow />
-          <RoundedBox args={[MAG.w, MAG.len, MAG.d * 0.62]} radius={0.035} smoothness={5} position={[MAG_X, 0, MAG_Z + MAG.d * 0.19]} material={M.white} castShadow />
-          <RoundedBox args={[MAG.w + 0.004, MAG.len + 0.004, 0.01]} radius={0.005} smoothness={2} position={[MAG_X, 0, MAG_Z - MAG.d * 0.06]} material={M.partition} />
+          <RoundedBox args={[MAG.w, MAG.len, mm(3)]} radius={mm(1)} smoothness={4} position={[MAG_X, 0, MB + mm(13.5)]} material={M.white} castShadow />
+          <mesh geometry={mg.coverWalls} material={M.white} position={[MAG_X, 0, 0]} castShadow />
+          <mesh geometry={mg.coverInner} material={M.white} position={[MAG_X, 0, 0]} />
+        </group>
+      </ClickablePart>
+      <ClickablePart follow="ima" explode={[0, 0.42, 0]}>
+        <group rotation={DEITA}>
+          <RoundedBox args={[MAG.w, MAG.len, mm(1.9)]} radius={mm(0.8)} smoothness={2} position={[MAG_X, 0, MB + mm(0.95)]} material={M.white} castShadow />
+          <mesh geometry={mg.baseWalls} material={M.white} position={[MAG_X, 0, 0]} castShadow />
+          <mesh geometry={mg.tongue} material={M.white} position={[MAG_X, 0, 0]} />
+          <mesh geometry={mg.inside} material={M.white} position={[MAG_X, 0, 0]} />
+          <mesh geometry={mg.seam} material={M.partition} position={[MAG_X, 0, 0]} />
+        </group>
+      </ClickablePart>
+      {/* o ímã em si: barra cinza deitada sobre as nervuras, no meio do comprimento (posição aproximada) */}
+      <ClickablePart follow="ima" internal explode={[0, 0.42, 0]}>
+        <group rotation={DEITA}>
+          <mesh material={M.cell} position={[MAG_X, 0, MB + mm(6.8)]}><boxGeometry args={[mm(5.4), mm(30), mm(5)]} /></mesh>
         </group>
       </ClickablePart>
 

@@ -368,7 +368,7 @@ export const DEVICES: Device[] = [
         facts: ['Distância máxima entre as duas peças: 1 cm'],
         camera: { position: [0.5, 1.0, 2.6], target: [0, 0.32, 0] },
         action: 'ima',
-        explode: [0, 0.45, 0],
+        explode: [0, 0.8, 0.12],
       },
       {
         id: 'led',
