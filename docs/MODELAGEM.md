@@ -12,19 +12,19 @@ A tampa é uma superfície só: topo plano e nivelado, de 58,5 mm de raio, e lat
 |---|---|
 | `tampa` | Uma malha paramétrica só (`lidGeometry`), desenhada em dois trechos que dividem os vértices: o disco do topo, fosco, e a lateral, com brilho. O raio da lateral em cada altura vem de `wallR` (o perfil externo) e a altura da borda de baixo em volta do contorno vem de `lidRim` (os três apoios e os arcos entre eles). Sob cada apoio, uma aba branca com fenda marca o fecho (aparece por baixo). Logo em sulcos finos. Por dentro: bloco do guia de luz com furo de parafuso, ganchos e ressalto. |
 | `botao-sos` | Tecla branca de cantos redondos, rente à tampa, na borda da frente, mais larga que alta (~29 × 12 mm), com uma fresta fina em volta (sem aro prateado). Embaixo dela, um pino de cristal (guia de luz) desce até a placa. A tecla afunda enquanto o 190 é segurado. |
-| `led` | Ponto emissivo pequeno e forte no centro da tecla (escuro quando apagado); o brilho em volta vem do bloom. |
+| `led` | Ponto emissivo pequeno e forte no centro da tecla (escuro quando apagado); o brilho em volta vem do bloom. A luz vem do LED da placa: com o módulo explodido, a tecla apaga e acende o LED de `led-botao-placa`. |
 | `antena` | Conector dourado rosqueado, junta com pino (articulação) e pá extrudada com chanfro. Sai da base, atrás, fora do centro: num ressalto de face plana ao lado do bolsão. |
 | `base` | Base cinza: tambor redondo rente à tampa (`baseR` dá o raio em cada altura: afina até o fundo sob os arcos e abre sob os três apoios), com nervuras fundas só nos dois lados, e fundo com o rebaixo da etiqueta e o rasgo do bolsão, que atravessa a parede de trás (na largura dele a parede só existe acima da face funda, e os frisos somem), numa malha só; onde a tampa cobre a base, a parede recua para dentro dela; rasgos do fundo em `InstancedMesh` (um por nervura, só nas duas faixas laterais). Acompanham: pés, furo pequeno, ressalto da antena e as duas travas da placa. |
 | `alto-falante` | Grade de 37 furos redondos em hexágono (`InstancedMesh`), na moldura da face funda do bolsão: de baixo, é o que mais aparece. |
 | `ethernet`, `fonte` | Porta de rede na parede da frente do bolsão (só a boca aparece; o corpo do conector fica embaixo da placa); conector de energia na parede esquerda. Na ação dos cabos, os dois chegam por trás, deitados, pela abertura do bolsão. |
 | `placa-principal` (i) | Placa verde limpa, com o recorte retangular no meio da borda de trás (onde passam o bolsão e o alto-falante): RJ45 no fundo do recorte, jack da fonte num dos braços, área de energia, pinos de teste, parafusos e etiqueta lisa. |
 | `led-botao-placa` (i) | LED SMD e botão tátil azul na borda da placa, embaixo da cápsula. |
-| `chip-4g` (i) | Cartão verde espetado num slot preto, suporte metálico com o SIM e cabo coaxial. |
+| `chip-4g` (i) | Cartão verde do modem espetado num slot preto, suporte metálico com o SIM e cabo coaxial; na outra ponta, a presilha metálica (base e duas travas nos cantos) que segura o cartão. Sai junto com a placa na vista explodida. |
 | `wifi` (i) | Blindagem prateada com etiqueta lisa, conector dourado, coaxial e LEDs verdes. |
-| `radio` (i) | Blindagem quadrada com furinhos (instanciados), chip ao lado e a antena de fio amarelo. |
+| `radio` (i) | Blindagem quadrada com furinhos (instanciados), chip ao lado e a antena de fio amarelo, soldada atrás do rádio e correndo pela borda de trás, por cima da caixinha do alto-falante (pela foto da placa aberta). |
 | `speaker` (i) | Caixinha cinza no recorte da placa, cone preto e ímã cromado em `LatheGeometry`, dois fios. |
 | `microfone` (i) | Cápsula pequena e dois fios, ao lado do alto-falante. |
-| `bateria` (i) | Bloco por baixo da placa, com o conector branco de 2 pinos e os fios vermelho e preto. |
+| `bateria` (i) | Bloco por baixo da placa, com o cabo vermelho e preto que sai da ponta dela, sobe por fora da borda e passa por cima da placa até o conector branco de 2 pinos. Sai junto com a placa na vista explodida. |
 
 Vista explodida, de cima para baixo: cúpula; placa (com o cartão do chip um pouco acima); caixinha do alto-falante; bateria; base cinza, que fica parada com a antena.
 
@@ -49,7 +49,7 @@ O corpo é um cilindro de 68 mm de diâmetro e 137 de altura (medidas externas d
 
 | part.id | Como é modelada |
 |---|---|
-| `corpo` | Barra de cantos pouco arredondados (quase uma caixa), em duas peças: a base atrás e a tampa na frente, com a emenda entre elas. Na face: o logo em relevo, no meio do comprimento; a janela do LED; e, perto de uma ponta, a emenda da tampinha, que dá a volta na frente e nos lados. |
+| `corpo` | Duas cascas finas (paredes de ~2 mm), como as peças reais: a base atrás, com o fundo e, por dentro, o ressalto em cruz, as guias da placa, a divisória da ponta, o rasgo e o furo dos parafusos que prendem na porta; e a tampa na frente, de frente arredondada, com o anel da luz do LED e o apoio da placa por dentro. Na face: o logo em relevo, no meio do comprimento; a janela do LED; e, perto de uma ponta, a emenda da tampinha. |
 | `ima` | Barra fina e longa (quase o comprimento do corpo, metade da altura e da profundidade), paralela e alinhada, com vão de poucos milímetros. Na cena da porta fica no batente; o corpo vai na folha. |
 | `led` | Janela escura pequena (~8 × 4 mm), atravessada na face, a 18 mm do meio, entre o logo e a tampinha da ponta, com LED emissivo. |
 | `placa`, `choque` (i) | Placa verde comprida e estreita (~74 × 19 mm, pela foto da placa): borne preto de 2 parafusos num canto, do lado da tampinha; na outra ponta, a antena em mola de cobre, que sai para fora da placa e ocupa o resto do corpo; fila de cinco pontos de teste numa borda; sensor do ímã no canto da antena; chip do sensor de choque. Sem etiqueta. |
@@ -81,7 +81,7 @@ O corpo é um seixo, não uma moeda: duas placas finas no contorno inteiro, em g
 | `btn-panico`, `btn-desarmar`, `btn-armar`, `btn-parcial` | Setores de anel extrudados, em cruz, com o ícone em textura. |
 | centro (sem `id`) | Disco fixo, modelado com o corpo; não é botão. Logo em baixo-relevo discreto (a confirmar). |
 | `led` | Fenda de ~7 × 2 mm na parte plana da frente, entre o teclado e a borda de cima. |
-| `corpo` | Um só bloco em gota (extrusão com chanfro), preto soft-touch, com o filete azul em volta. Atrás, o aro grosso com a cavidade da bateria. |
+| `corpo` | Gota (extrusão com chanfro), preto soft-touch, com o filete azul em volta. A casca da frente é oca, como a peça real: a face é aberta em anel onde entra o teclado de borracha, o miolo fica preso por quatro raios em X (nas frestas entre as teclas) e, por dentro, há a parede circular em volta do teclado e oito pinos de apoio da placa. O teclado (lâmina e um pino embaixo de cada tecla, que aperta o domo dourado da placa) sai junto com as teclas na vista explodida. Atrás, o aro grosso com a cavidade da bateria. |
 | `argola` | Furo oval deitado (~6,5 × 4 mm) perto da ponta do olhal, com a borda chanfrada. |
 | `tampa` | Disco com um lado reto, girado 45° em relação ao olhal: no lado reto, duas abas que engancham; no lado oposto, a presilha, uma aba curta com a fenda por onde a tampa abre e fecha. Fora do lado reto a casca de trás é fechada (a placa não aparece por fora). Por dentro: nervura em U e etiqueta lisa. |
 | `bateria` (i) | CR2032 prateada com o "+" gravado, no suporte preto com a lâmina de contato dourada, sobre a placa verde. Do outro lado da placa, sob os botões: 4 chaves em domo dourado, o chip no centro, o LED e a antena de fio amarelo. |

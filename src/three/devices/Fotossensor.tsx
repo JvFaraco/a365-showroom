@@ -407,6 +407,13 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
     alertV.current += (pirAlert() - alertV.current) * Math.min(1, dt * 10)
   })
 
+  // LED de status: verde piscando; vermelho fixo no alerta do PIR
+  const sampleStatus = (t: number, o: { color: string; on: number }) => {
+    const al = interactive ? alertV.current : 0
+    o.color = al > 0.5 ? '#ff2a2a' : '#27d455'
+    o.on = al > 0.5 ? 1 : t % 3 < 0.25 ? 0.9 : 0.25
+  }
+
   return (
     <DeviceCtx.Provider value={{ deviceId: 'fotossensor', interactive }}>
       <group ref={flip}>
@@ -467,11 +474,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
             {/* LED verde, na parte de baixo da janela */}
             <ClickablePart id="led">
               <group position={camAt(LEDWIN_H)} rotation={CAM_ROT}>
-                <Led sample={(t, o) => {
-                  const al = interactive ? alertV.current : 0
-                  o.color = al > 0.5 ? '#ff2a2a' : '#27d455'
-                  o.on = al > 0.5 ? 1 : t % 3 < 0.25 ? 0.9 : 0.25
-                }} position={[0, -mm(3.4), 0.004]} rotation={[Math.PI / 2, 0, 0]}>
+                <Led on="shell" sample={sampleStatus} position={[0, -mm(3.4), 0.004]} rotation={[Math.PI / 2, 0, 0]}>
                   <cylinderGeometry args={[0.016, 0.016, 0.004, 16]} />
                 </Led>
               </group>
@@ -524,6 +527,8 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
                 <mesh material={M.pcb}><boxGeometry args={[mm(24), mm(22), mm(1.6)]} /></mesh>
                 {[-1, 1].map((sx) => <mesh key={sx} material={M.smdTan} position={[sx * mm(6), mm(5), mm(1)]}><boxGeometry args={[mm(2), mm(1.2), mm(0.8)]} /></mesh>)}
                 <mesh material={M.chip} position={[mm(-5), mm(-6), mm(1)]}><boxGeometry args={[mm(4), mm(3), mm(0.9)]} /></mesh>
+                {/* o LED de status de verdade fica aqui; com o aparelho explodido, é ele que acende (a janela da carcaça apaga) */}
+                <Led on="board" sample={sampleStatus} position={[0, mm(-3.4), mm(1)]}><boxGeometry args={[mm(2.5), mm(1.6), mm(1)]} /></Led>
               </group>
             </ClickablePart>
             {/* antena: mola de cobre soldada na borda de baixo da placa principal, pendurada até perto da base */}

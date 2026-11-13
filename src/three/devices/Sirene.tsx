@@ -158,6 +158,7 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
   useEffect(() => { if (clicPhase === 0) beep('click') }, [clicPhase])
 
   const isOn = () => (sounding ? sounding() : interactive && useShowroom.getState().sirenOn)
+  const sampleLed = (t: number, o: { color: string; on: number }) => { const on = isOn(); o.color = on ? '#ff2a2a' : '#2f6dff'; o.on = on ? (t % 0.3 < 0.15 ? 1 : 0.05) : 0.55 }
   const level = () => (isOn() ? (interactive ? useShowroom.getState().sirenLevel : 2) : 0)
 
   useFrame(({ clock }) => {
@@ -205,7 +206,7 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
         <ClickablePart id="led">
           <group position={[0, LED_Y, FACE_Z]}>
             <mesh geometry={slit} material={M.hole} position={[0, 0, -0.0035]} scale={[1.16, 1.4, 1]} />
-            <Led geometry={slit} boost={6} sample={(t, o) => { const on = isOn(); o.color = on ? '#ff2a2a' : '#2f6dff'; o.on = on ? (t % 0.3 < 0.15 ? 1 : 0.05) : 0.55 }} position={[0, 0, -0.003]} />
+            <Led on="shell" geometry={slit} boost={6} sample={sampleLed} position={[0, 0, -0.003]} />
             <mesh geometry={slit} material={lens} position={[0, 0, 0.0012]} scale={[1, 1, 0.5]} />
           </group>
         </ClickablePart>
@@ -269,6 +270,8 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
           {/* a placa inteira fica por dentro: contorno em cunha, chips, antena de fio preto e os dois fios brancos do elemento sonoro */}
           <group position={[0, -0.08, 0]}>
             <mesh geometry={board} material={M.pcb} position={[0, 0, -0.2]} />
+            {/* o LED de verdade fica na placa, atrás da janela da face; com a sirene explodida, é ele que acende */}
+            <Led on="board" sample={sampleLed} boost={4} position={[LED_Y, 0.08, -0.16]}><boxGeometry args={[0.05, 0.035, 0.02]} /></Led>
             <mesh material={M.chip} position={[-0.45, -0.12, -0.165]}><boxGeometry args={[0.14, 0.14, 0.02]} /></mesh>
             {[0, 1, 2, 3, 4, 5].map((i) => <mesh key={i} material={M.gold} position={[-0.16, 0.0 - i * 0.045, -0.172]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.012, 0.012, 0.006, 8]} /></mesh>)}
             <mesh geometry={smd.tan} material={M.smdTan} />

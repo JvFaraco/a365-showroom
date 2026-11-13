@@ -152,7 +152,7 @@ export const DEVICES: Device[] = [
         facts: [],
         camera: { position: [1.2, 1.3, 1.4], target: [0.2, -0.03, 0.35] },
         internal: true,
-        explode: [0, 0.98, 0],
+        explode: [0, 0.75, 0], // preso na placa pela presilha: sai junto com ela
       },
       {
         id: 'wifi',
@@ -198,7 +198,7 @@ export const DEVICES: Device[] = [
         camera: { position: [1.7, 0.7, 1.7], target: [0.1, -0.24, 0.1] },
         internal: true,
         action: 'bateria-modulo',
-        explode: [0, 0.25, 0],
+        explode: [0, 0.75, 0], // presa embaixo da placa pelo cabo: sai junto com ela
       },
     ],
   },

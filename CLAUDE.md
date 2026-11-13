@@ -217,6 +217,13 @@ Frente sempre em +Z. As medidas citadas são externas, em mm. Detalhe de cada pa
 - A tampa de trás do controle deixava a placa verde aparecer: ela fecha a cavidade inteira.
 - Antes de dizer que algo "está pronto", renderize e olhe o print de vários ângulos, inclusive de trás e de lado.
 
+- O LED aparece na janela da carcaça, mas fica na placa. `<Led on="shell">` é a janela (apaga com o aparelho
+  explodido) e `<Led on="board">` é o LED na placa (só acende explodido). Peças presas na placa (câmera, mola, cartão
+  do modem, bateria pelo cabo) têm o mesmo `explode` da placa: nunca saem soltas na vista explodida.
+- Cascas não são blocos maciços: por dentro elas têm paredes, guias, pinos e aberturas (magnético, controle).
+- No celular, durante uma ação, o card fica compacto e a câmera mede a área livre pelo topo real do card. Sem isso,
+  a câmera recuava para dentro da névoa e a cena da ação sumia.
+
 **Render e interface**
 
 - O sinal do deslocamento vertical da câmera estava invertido (no `camera-controls`, Y positivo desce a câmera): no
