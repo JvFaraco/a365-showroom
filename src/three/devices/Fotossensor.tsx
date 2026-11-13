@@ -132,10 +132,11 @@ function shellGeometry() {
   col(Math.PI * 1.5, fB, true); col(Math.PI * 1.5, fB, false); col(Math.PI * 1.5, (1 + fB) / 2, false)
   for (let i = 0; i <= C4; i++) col(Math.PI * 1.5 + (i / C4) * (Math.PI / 2), 1, false)
 
-  type Row = { y: number; inset: number; bay: boolean; flat?: boolean }
+  // `fan`: tampa de cima ou de baixo, em leque: o anel (em `inset`) é puxado para o centro da planta (0..1)
+  type Row = { y: number; inset: number; bay: boolean; fan?: number }
   const rows: Row[] = []
   // fundo (tampado pela faixa cinza) e lábio arredondado da base
-  rows.push({ y: Y_BASE, inset: RC, bay: false, flat: true }, { y: Y_BASE, inset: RC - 0.002, bay: false }, { y: Y_BASE, inset: 0.12, bay: false }, { y: Y_BASE, inset: 0.032, bay: false })
+  rows.push({ y: Y_BASE, inset: 0.032, bay: false, fan: 1 }, { y: Y_BASE, inset: 0.032, bay: false, fan: 0.5 }, { y: Y_BASE, inset: 0.032, bay: false })
   rows.push({ y: Y_BASE + 0.012, inset: 0.014, bay: false }, { y: Y_BASE + 0.03, inset: 0.004, bay: false })
   const yA = Y_BASE + 0.055, yB = Y_TOP - TOP_R, N = 132
   for (let i = 0; i <= N; i++) {
@@ -146,14 +147,17 @@ function shellGeometry() {
     if (y < BAY.y1 && next >= BAY.y1) rows.push({ y: BAY.y1, inset: 0, bay: true }, { y: BAY.y1, inset: 0, bay: false })
   }
   for (let k = 1; k <= 8; k++) { const a = (k / 8) * (Math.PI / 2); rows.push({ y: yB + TOP_R * Math.sin(a), inset: TOP_R * (1 - Math.cos(a)), bay: false }) }
-  rows.push({ y: Y_TOP, inset: 0.18, bay: false }, { y: Y_TOP, inset: RC - 0.002, bay: false }, { y: Y_TOP, inset: RC, bay: false, flat: true })
+  rows.push({ y: Y_TOP, inset: TOP_R, bay: false, fan: 0.5 }, { y: Y_TOP, inset: TOP_R, bay: false, fan: 1 })
 
   const C = cols.length, R = rows.length
+  const ZC = (HD - RC - (HD - RB)) / 2 // centro da planta, para onde as tampas convergem
   const pos = new Float32Array(C * R * 3), uv = new Float32Array(C * R * 2)
   rows.forEach((r, j) => cols.forEach((c, i) => {
     const rad = Math.max(0, c.r - r.inset)
-    const x = c.cx + rad * c.nx
-    let z = r.flat ? 0 : c.cz + rad * c.nz
+    let x = c.cx + rad * c.nx
+    let z = c.cz + rad * c.nz
+    // tampas em leque: sem triângulos sobrepostos (eram eles que riscavam o topo visto de cima)
+    if (r.fan) { x *= 1 - r.fan; z += (ZC - z) * r.fan }
     if (r.bay && c.bay) z = -BAY.floor
     else if (r.inset === 0 && c.nz > 0.05) z = frontCut(x, r.y, z)
     pos.set([x, r.y, z], (j * C + i) * 3)
