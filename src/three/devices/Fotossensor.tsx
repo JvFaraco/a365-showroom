@@ -43,9 +43,8 @@ const LENS_Y = CAP.bottom + LENS_L, LEDWIN_Y = CAP.bottom + LEDWIN_L
 //   as paredes inclinadas são os "ombros"; o fundo fica ~17 mm atrás da frente.
 const HOOD = { hw: mm(18.5), top: CAP.bottom + mm(55 + 3.5), depth: 0.085 }
 const WELL = { y0: H(20), y1: H(64), hwTop: mm(15), hwBottom: mm(30.5), depth: mm(17) }
-// janela PIR: na parte de baixo do funil; convexa (acompanha a curva do corpo), com o meio a ~6 mm da frente,
-// para a frente continuar uma curva contínua de perfil (o meio da lente fica a ~2 mm da linha do corpo)
-const PIR = { y0: H(23), y1: H(51), hw: mm(21), bulge: mm(15) }
+// janela PIR: no fundo do funil, na parte de baixo dele; levemente convexa, com tom próprio e borda
+const PIR = { y0: H(24), y1: H(50), hw: mm(19.5), bulge: mm(6) }
 const LOGO_Y = H(13.5)
 // placa de fixação na parede (cinza): ~31 × 67 mm, de h = 0 a 68, ~11 mm de espessura
 const WALL = { hw: mm(15.5), top: H(67), plate: 0.045, rail: 0.085 }
@@ -254,6 +253,8 @@ function build() {
   return {
     shellFront: shell.front, shellBack: shell.back, base, baseSeam, capsule, cover, coverSeam, latch, clipL, clipR, rails, plate,
     ribs: mergeGeometries(fr),
+    // borda da lente: um quadro um pouco maior e mais escuro, logo atrás dela
+    pirFrame: frontPanel(PIR.hw + mm(1.2), PIR.y0 - mm(1.2), PIR.y1 + mm(1.2), 0.002, PIR.bulge - 0.012),
     pirBack: frontPanel(PIR.hw, PIR.y0, PIR.y1, 0.003, PIR.bulge - 0.02),
     pirLens: frontPanel(PIR.hw, PIR.y0, PIR.y1, 0.004, PIR.bulge),
     win: stadiumGeometry(mm(5), mm(11), 0.006, 0.003), // janela oval vertical do LED (~5 × 11 mm)
@@ -297,8 +298,8 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   // a cápsula é um plástico um pouco mais frio e brilhante que o corpo
   const capMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#d3d6df', roughness: 0.26, clearcoat: 0.6, clearcoatRoughness: 0.2 }), [])
   const mountMat = useMemo(() => { const m = M.grey.clone(); m.color.set('#9a9ea6'); return m }, [])
-  const lensBack = useMemo(() => new THREE.MeshStandardMaterial({ color: '#d6d9df', roughness: 0.7 }), [])
-  const pirMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#e6e8ec', roughness: 0.36, clearcoat: 1, clearcoatRoughness: 0.12, transparent: true, opacity: 0.88, envMapIntensity: 1.4 }), [])
+  const lensBack = useMemo(() => new THREE.MeshStandardMaterial({ color: '#c3cad6', roughness: 0.7 }), [])
+  const pirMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#d5dcea', roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12, transparent: true, opacity: 0.82, envMapIntensity: 1.4 }), [])
   const polMat = useMemo(() => new THREE.MeshBasicMaterial({ map: polaroidTexture(), toneMapped: false, side: THREE.DoubleSide }), [])
   const rulerMat = useMemo(() => fxBasic('#ffffff', 0.5), [])
   const bandMat = useMemo(() => fxBasic('#35d46a', 0.35), [])
@@ -427,6 +428,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
 
             {/* janela PIR: grande, quase quadrada, branco-leitosa, com Fresnel discreto; acompanha a curva da frente */}
             <ClickablePart id="pir">
+              <mesh geometry={g.pirFrame} material={M.partition} />
               <mesh geometry={g.pirBack} material={lensBack} />
               <mesh geometry={g.pirLens} material={pirMat} />
             </ClickablePart>
