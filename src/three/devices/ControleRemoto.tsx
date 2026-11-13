@@ -225,10 +225,10 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
         {/* por dentro: placa verde, suporte preto da bateria com a lâmina de contato dourada e o bloco do encaixe */}
         <ClickablePart internal>
           <mesh material={M.pcb} position={[0, 0, -0.06]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.69, 0.69, 0.02, 64]} /></mesh>
-          {/* frente da placa, sob os botões: 4 chaves em domo dourado, o chip no centro, o LED e a antena de fio amarelo */}
+          {/* frente da placa, sob os botões: 4 pads dourados redondos, o CI preto quadrado no centro, a fileira de 5 pads
+              perto da borda de baixo e a antena de fio amarelo. O resto é verde liso */}
           {BUTTONS.map((b) => (
             <group key={b.id} position={[Math.cos(b.angle * D2R) * 0.47, Math.sin(b.angle * D2R) * 0.47, -0.047]} rotation={[0, 0, Math.PI / 4]}>
-              <mesh material={M.chip}><boxGeometry args={[0.17, 0.17, 0.006]} /></mesh>
               <mesh material={M.gold} position={[0, 0, 0.004]} scale={[1, 1, 0.3]}><sphereGeometry args={[0.062, 20, 12]} /></mesh>
             </group>
           ))}
