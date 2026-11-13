@@ -431,7 +431,7 @@ export const DEVICES: Device[] = [
         what: 'Indica o status.',
         facts: [],
         tip: 'Instale com o LED voltado para o chão.',
-        camera: { position: [0.3, -1.6, 1.8], target: [0, -0.86, 0.1] },
+        camera: { position: [0.25, -1.3, 2.0], target: [0, -0.5, 0.3] },
         explode: [0, 0, 0.6],
       },
       {
