@@ -77,6 +77,28 @@ partes de cada aparelho; este arquivo é o complemento para quem vai trabalhar n
   `selectPart('led')`, `setView('xray'|'exploded'|'manual')`, `startAction('tamper')`, `setScene('inaction')`).
   `?debug=1` mostra programas e triângulos; `?hq` trava a qualidade máxima.
 
+### Desempenho: o que já se sabe
+
+- **Meta do usuário:** acima de 60 fps, sem nenhuma travada, no PC e no celular (o site precisa funcionar bem no
+  celular). Ele não aceita lentidão.
+- **Como medir no aparelho de verdade:** `?perf=1` mostra fps e quadros lentos ao vivo e tem o botão "Testar
+  fluidez" (~45 s, resultado copiável). A raiz do site é a `main`; o branch `acabamento-4` sai em `/preview/`. Para
+  provar uma melhora, o usuário roda o teste nos dois endereços, no mesmo aparelho, e manda os dois resultados.
+  `&q=0..3`, `&dpr=` e `&fpsmin=` testam ajustes sem mudar o código.
+- **Fluxo de uma mudança de desempenho:** commit no `acabamento-4` → prévia em `/preview/` → usuário mede → os números
+  dele entram no PR → só então mescla.
+- **Chamadas de desenho por quadro** (nível de qualidade 0): abertura ~1.540, cena "Em ação" ~1.870, um aparelho no
+  showroom de ~300 a ~740 (o módulo tem ~127 malhas visíveis e dá ~650 a ~740). O reflexo do piso
+  (`MeshReflectorMaterial`, em `Stage.tsx`) redesenha a cena inteira: sem ele (nível 3) as chamadas caem pela metade.
+  O contorno só redesenha a cena quando há algo sob o mouse.
+- **Qualidade adaptativa:** o `PerformanceMonitor` do drei, no padrão, só reduz quando a média cai abaixo de 40 fps
+  numa tela de 60 Hz. Para a meta de 60, o limite candidato é ~55 (`&fpsmin=55`), a confirmar com a medição.
+- **React fora do caminho do quadro:** o hover não pode passar por estado ou contexto que envolva a cena toda. O
+  contorno era um `<Selection>`/`<Select>` em volta de tudo e re-renderizava centenas de partes a cada passada do
+  mouse (picos de 20 a 40 ms); agora é controlado direto no efeito (`common/outline.ts`).
+- A contagem de programas de shader varia ±2 entre rodadas, conforme o momento em que é feita. Compare sempre na
+  mesma etapa (por exemplo, logo depois de entrar no showroom) e nas duas versões.
+
 ## 4. Como o código está organizado
 
 - **`src/data/devices.ts`** é a fonte única de conteúdo: aparelhos, partes, textos dos cards e câmeras. Cada parte
@@ -209,7 +231,7 @@ Frente sempre em +Z. As medidas citadas são externas, em mm. Detalhe de cada pa
   artes oficiais, e os acertos de interface. O usuário considera os modelos 3D ok; o que vem agora é ajuste fino.
 - Números na `main` (do `?debug=1`): 57 programas de shader; triângulos na abertura 249.173; módulo 61.741,
   fotossensor 63.180, magnético 17.008, sirene 32.826, controle 73.238.
-- **Pendente do usuário:** medir fps e carga numa máquina com GPU (`tools/perf.mjs`) e mandar os números.
+- **Pendente do usuário:** medir a fluidez com `?perf=1` no PC e no celular e mandar os resultados.
 - O azul da placa ainda sai um pouco mais claro que o da arte.
 - As pendências de conteúdo a confirmar com a Orsegups estão no fim do `README.md` (destino do QR, cor do filete do
   controle, logo no disco central, lado do borne do magnético, posição exata de peças internas).
