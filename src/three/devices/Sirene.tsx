@@ -54,9 +54,9 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
     for (let i = 0; i <= 40; i++) { const r = Math.max(0.001, 1 - i / 40); pts.push([r, domeZ(r)]) }
     return smoothLatheZ(pts, 128, 96)
   }, [])
-  // aro do suporte: aberto em cima, que é por onde a sirene desce para encaixar
+  // aro do suporte: raso e fechado; fica escondido atrás da base
   const rim = useMemo(() => {
-    const prof: [number, number][] = [[0.9, -0.63], [0.86, -0.45], [0.82, -0.29]], N = 72, a0 = (150 * Math.PI) / 180, a1 = (390 * Math.PI) / 180
+    const prof: [number, number][] = [[0.9, -0.63], [0.86, -0.45], [0.82, -0.29]], N = 72, a0 = 0, a1 = Math.PI * 2
     const pos: number[] = [], idx: number[] = []
     for (let i = 0; i <= N; i++) { const a = a0 + ((a1 - a0) * i) / N; for (const [r, z] of prof) pos.push(r * Math.cos(a), r * Math.sin(a), z) }
     for (let i = 0; i < N; i++) for (let j = 0; j < prof.length - 1; j++) { const a = i * prof.length + j, b = a + prof.length; idx.push(a, b, a + 1, a + 1, b, b + 1) }
@@ -132,7 +132,7 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
             <mesh geometry={dome} material={M.white} castShadow />
             {/* linha de partição entre a face e o corpo, e o mesmo símbolo do módulo em sulcos finos */}
             <mesh material={M.partition} position={[0, 0, -0.235]}><torusGeometry args={[0.997, 0.006, 6, 128]} /></mesh>
-            <LogoGroove r={0.26} position={[0, 0.02, 0.3008]} />
+            <LogoGroove r={0.26} position={[0, 0.02, 0.304]} />
           </group>
         </ClickablePart>
         {/* LED pequeno no chanfro da frente, do lado de baixo (fica voltado para o chão): azul; vermelho ao tocar */}
@@ -216,7 +216,7 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
 
       {/* suporte de parede: prato com furo grande, canal vertical, recortes e travas do encaixe */}
       <ClickablePart id="suporte">
-        <group position={[0, 0, SUP_DZ]} scale={[1, 1, SUP_S]}>
+        <group position={[0, 0, SUP_DZ]} scale={[0.86, 0.86, SUP_S]}>
           <mesh geometry={rim} material={whiteDS} castShadow />
           <mesh geometry={floor} material={whiteDS} position={[0, 0, -0.63]} />
           <mesh material={M.whiteRelief} position={[-0.42, -0.02, -0.54]}><boxGeometry args={[0.22, 0.95, 0.14]} /></mesh>
