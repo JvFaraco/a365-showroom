@@ -27,16 +27,21 @@ const CMD: ActionId[] = ['btn-desarmar', 'btn-armar', 'btn-parcial']
 const MINI: [number, number, number] = [2.5, 0.75, 0]
 const cmdTime = () => { for (const c of CMD) { const t = actionTime(c); if (t >= 0) return t } return -1 }
 
-// Ficha: 45 de largura × 51 de altura (com a cauda da argola) × 13 mm de espessura. 1 unidade = 25,9 mm.
-// Nas fotos e no vídeo ele é gordinho: as bordas da frente e de trás são bem arredondadas (um seixo, não uma moeda).
-const THICK = 1.6 // a espessura modelada (0,34) vira ~14 mm no meio
+// Medidas externas: 44 de largura × 51 de altura (com o olhal da argola) × 13 mm de espessura. 1 unidade = 25,9 mm.
+// As bordas da frente e de trás são arredondadas (um seixo, não uma moeda); a frente e as costas são quase planas.
+const THICK = 1.45 // a espessura modelada (0,34) vira ~13 mm no meio
 // ombro arredondado do corpo: quanto a borda recua (no raio) e sobe (na espessura) até a face plana
 const SH = { r: 0.15, z: 0.11, z0: 0.06, face: 0.17 }
 /** Perfil do ombro, da borda (raio R) até a face plana: quarto de elipse. Pontos [raio, z ≥ 0]. */
 const shoulder = (n = 14): [number, number][] => Array.from({ length: n + 1 }, (_, i) => { const a = (i / n) * (Math.PI / 2); return [R - SH.r * (1 - Math.cos(a)), SH.z0 + SH.z * Math.sin(a)] as [number, number] })
-const KY = 0.06 // o teclado (~32 mm de diâmetro) fica um pouco acima do centro
-// corpo redondo com cauda CURTA (só o furo da argola, colado ao corpo): altura total ≈ 1,2× a largura
-const R = 0.87, TAIL_Y = -0.9, TAIL_R = 0.2, FILLET = 0.1
+const KY = 0 // o teclado (~32 mm de diâmetro) fica no centro do corpo
+// corpo redondo (raio 22 mm) que vira gota embaixo: o olhal da argola é um círculo de ~6 mm de raio com o centro
+// quase na borda do corpo, ligado a ele por concordâncias largas. Altura total ≈ 1,15× a largura
+const R = 0.853, TAIL_Y = -0.861, TAIL_R = 0.24, FILLET = 0.15
+const HOLE_Y = -0.95 // furo da argola: oval deitado (~6,5 × 4 mm), perto da ponta
+// tampa da bateria, atrás: disco com um lado reto (onde ela engancha) e a presilha de abrir no lado oposto; fica
+// girada 45° em relação ao olhal
+const COVER_ROT = -Math.PI / 4, CHORD = 0.382
 
 /**
  * Contorno do corpo: um círculo com uma aba curta embaixo (o olhal da argola), ligada por duas concordâncias
@@ -57,7 +62,7 @@ function teardrop(grow = 0) {
   s.closePath()
   return s
 }
-const ringHole = () => { const h = new THREE.Path(); h.absarc(0, TAIL_Y, 0.11, 0, Math.PI * 2, true); return h }
+const ringHole = () => { const h = new THREE.Path(); h.absellipse(0, HOLE_Y, 0.125, 0.08, 0, Math.PI * 2, true, 0); return h }
 
 type Geo = ReturnType<typeof build>
 let cache: Geo | null = null
@@ -80,10 +85,13 @@ function build() {
   // é um anel de verdade (não um disco): na vista explodida aparece fino, só o contorno
   fl.holes.push(new THREE.Path(teardrop(-0.05).getPoints(120).reverse()))
   const fillet = new THREE.ExtrudeGeometry(fl, { depth: 0.03, bevelEnabled: true, bevelSize: 0.004, bevelThickness: 0.004, bevelSegments: 2, curveSegments: 64 }); fillet.translate(0, 0, -0.015)
-  // tampa: circular com o topo levemente reto
-  const cs = new THREE.Shape()
-  const ca = Math.asin(0.6 / 0.69)
-  cs.absarc(0, 0, 0.69, Math.PI - ca, Math.PI * 2 + ca, false); cs.closePath()
+  // tampa: disco com um lado reto (embaixo, no referencial da tampa); a presilha fica na borda oposta
+  const cs = new THREE.Shape(), ca = Math.asin(CHORD / 0.87 / 0.7)
+  cs.absarc(0, 0, 0.7, -ca, Math.PI + ca, false); cs.closePath()
+  // fora do lado reto da tampa a casca de trás é fechada: a cavidade (e a placa) não aparecem por fora
+  const fs2 = new THREE.Shape(), fa = Math.asin((CHORD - 0.007) / 0.62)
+  fs2.absarc(0, 0, 0.62, Math.PI + fa, Math.PI * 2 - fa, false); fs2.closePath()
+  const coverSill = new THREE.ExtrudeGeometry(fs2, { depth: 0.109, bevelEnabled: false, curveSegments: 24 }); coverSill.translate(0, 0, -0.184)
   const cover = new THREE.ExtrudeGeometry(cs, { depth: 0.014, bevelEnabled: true, bevelSize: 0.008, bevelThickness: 0.008, bevelSegments: 3, curveSegments: 48 }); cover.translate(0, 0, -0.022)
   // componentes pequenos na frente da placa (sob o teclado), em volta do CI do centro, como na placa real: capacitores
   // (bege), resistores e CIs pequenos (pretos), o cristal (metal) e dois pontos de teste (dourados). Sem texto
@@ -94,21 +102,21 @@ function build() {
   const smdMetal = boxesGeometry([[0, 0.29, -0.042, 0.1, 0.06, 0.016]])
   const smdGold = boxesGeometry([[0.13, 0.29, -0.048, 0.035, 0.035, 0.004], [0.2, 0.29, -0.048, 0.035, 0.035, 0.004]])
   return {
-    front, back, frontDome, backDome, fillet, cover, smdTan, smdBlack, smdMetal, smdGold,
+    front, back, frontDome, backDome, fillet, cover, coverSill, smdTan, smdBlack, smdMetal, smdGold,
     sector: ringSectorGeometry(0.3, 0.62, -38 * D2R, 38 * D2R, 0.018, 0.022),
     // disco central fixo: baixo, sem contorno de tecla
     center: smoothLatheZ([[0.27, 0.168], [0.266, 0.182], [0.245, 0.19], [0.001, 0.192]], 96, 24),
     coin: smoothLatheZ([[0.001, -0.14], [0.39, -0.14], [0.415, -0.135], [0.42, -0.12], [0.42, -0.09], [0.41, -0.08], [0.001, -0.08]], 64, 32),
     slit: stadiumGeometry(0.27, 0.075, 0.01, 0.003), // fenda do LED: ~7 × 2 mm
     aerial: wire([[0.5, 0.42, -0.045], [0.63, 0.2, -0.04], [0.66, -0.1, -0.04], [0.56, -0.36, -0.04]], 0.012),
-    rib: wire([[-0.42, 0.25, 0], [-0.45, -0.1, 0], [-0.3, -0.42, 0], [0, -0.52, 0], [0.3, -0.42, 0], [0.45, -0.1, 0], [0.42, 0.25, 0]], 0.014),
+    rib: wire([[-0.42, 0.25, 0], [-0.45, -0.1, 0], [-0.36, -0.34, 0], [0, -0.39, 0], [0.36, -0.34, 0], [0.45, -0.1, 0], [0.42, 0.25, 0]], 0.014),
   }
 }
 const G = () => (cache ??= build())
 
 /**
  * Controle remoto: corpo redondo e gordinho (bordas bem arredondadas), com uma aba fina para o furo da argola, preto/grafite brilhante
- * com filete azul, 4 botões em cunha (em X) em volta de um disco central fixo, que não é botão. Atrás, a tampa redonda de topo reto
+ * com filete azul, 4 botões em cunha (em X) em volta de um disco central fixo, que não é botão. Atrás, a tampa (um disco de um lado reto)
  * fecha a cavidade com a placa verde, o suporte e a bateria CR2032. Frente em +Z.
  */
 export function ControleRemoto({ interactive = false, pressed }: DeviceProps & { pressed?: () => string | null }) {
@@ -190,16 +198,17 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
         <ClickablePart follow="corpo" explode={[0, 0, -0.6]}>
           <mesh geometry={g.back} material={bodyMat} castShadow />
           <mesh geometry={g.backDome} material={bodyMat} castShadow />
+          <mesh geometry={g.coverSill} material={bodyMat} rotation={[0, 0, COVER_ROT]} />
         </ClickablePart>
         <ClickablePart id="argola">
-          {/* furo da argola, na aba fina que sai do corpo, com a borda chanfrada */}
+          {/* furo da argola (oval deitado), no olhal fino que sai do corpo, com a borda chanfrada */}
           {[0.062, -0.072].map((z) => (
-            <mesh key={z} material={M.blackGloss} position={[0, TAIL_Y, z]} scale={[1, 1, 0.4]}><torusGeometry args={[0.117, 0.022, 12, 64]} /></mesh>
+            <mesh key={z} material={M.blackGloss} position={[0, HOLE_Y, z]} scale={[1.12, 0.74, 0.4]}><torusGeometry args={[0.117, 0.022, 12, 64]} /></mesh>
           ))}
         </ClickablePart>
         <ClickablePart id="led">
-          <mesh geometry={g.slit} material={M.blackGloss} position={[0, 0.78, 0.154]} rotation={[-0.32, 0, 0]} />
-          <Led sample={(t, o) => { o.color = '#3d7bff'; o.on = tx() ? (t % 0.24 < 0.12 ? 1 : 0.1) : 0.05 }} position={[0, 0.784, 0.1685]} rotation={[-0.32, 0, 0]}>
+          <mesh geometry={g.slit} material={M.blackGloss} position={[0, 0.685, 0.159]} rotation={[-0.12, 0, 0]} />
+          <Led sample={(t, o) => { o.color = '#3d7bff'; o.on = tx() ? (t % 0.24 < 0.12 ? 1 : 0.1) : 0.05 }} position={[0, 0.687, 0.1735]} rotation={[-0.12, 0, 0]}>
             <boxGeometry args={[0.2, 0.04, 0.004]} />
           </Led>
         </ClickablePart>
@@ -224,16 +233,19 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
           <LogoGroove r={0.12} position={[0, KY, 0.1925]} material={M.logoGrooveDark} />
         </ClickablePart>
 
-        {/* tampa traseira: circular de topo reto, duas abas em cima e uma embaixo, entalhe e símbolo em relevo */}
+        {/* tampa traseira: disco de um lado reto, com duas abas nesse lado, a presilha no lado oposto e o símbolo em relevo */}
         <ClickablePart id="tampa">
-          <group position={[0, -0.574, -0.165]}>
+          <group rotation={[0, 0, COVER_ROT]}>
+          <group position={[0, -CHORD, -0.165]}>
             <group ref={cover}>
-              <group position={[0, 0.574, 0]} scale={[0.87, 0.87, 1]}>
+              <group position={[0, CHORD, 0]} scale={[0.87, 0.87, 1]}>
                 <mesh geometry={g.cover} material={coverMat} />
-                <mesh material={M.hole} position={[0, 0.585, -0.024]}><boxGeometry args={[0.2, 0.05, 0.016]} /></mesh>
+                {/* presilha da tampa, na borda oposta ao lado reto: lingueta retangular com a fenda onde se apoia para abrir */}
+                <mesh material={coverMat} position={[0, 0.6, -0.031]}><boxGeometry args={[0.24, 0.11, 0.012]} /></mesh>
+                <mesh material={M.hole} position={[0, 0.61, -0.0375]}><boxGeometry args={[0.16, 0.028, 0.004]} /></mesh>
                 <mesh material={M.black} position={[0, 0.3, -0.031]} rotation={[Math.PI / 2, Math.PI / 6, 0]}><cylinderGeometry args={[0.07, 0.07, 0.006, 3]} /></mesh>
                 <mesh material={M.black} position={[0, 0.17, -0.031]}><boxGeometry args={[0.2, 0.035, 0.006]} /></mesh>
-                {[[-0.22, 0.62], [0.22, 0.62], [0, -0.7]].map(([x, y], i) => (
+                {[[-0.22, -0.45], [0.22, -0.45]].map(([x, y], i) => (
                   <mesh key={i} material={coverMat} position={[x, y, -0.006]}><boxGeometry args={[0.12, 0.06, 0.03]} /></mesh>
                 ))}
                 {/* por dentro: nervura em "U" e a etiqueta (lisa, sem texto) */}
@@ -241,6 +253,7 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
                 <mesh material={M.white} position={[0, 0.02, 0.0005]}><planeGeometry args={[0.5, 0.34]} /></mesh>
               </group>
             </group>
+          </group>
           </group>
         </ClickablePart>
         {/* por dentro: placa verde, suporte preto da bateria com a lâmina de contato dourada e o bloco do encaixe */}
@@ -278,7 +291,7 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
           </group>
         </ClickablePart>
         {interactive && coverPhase === 0 && (
-          <Html position={[0, 0.7, -0.2]} center style={{ pointerEvents: 'none' }}>
+          <Html position={[0.45, 0.45, -0.2]} center style={{ pointerEvents: 'none' }}>
             <div className="fx-tag -translate-y-7 text-center text-xs font-semibold text-accent">entalhe<div className="text-xl leading-none">▼</div></div>
           </Html>
         )}

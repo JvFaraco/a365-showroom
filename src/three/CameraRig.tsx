@@ -145,7 +145,8 @@ export function CameraRig() {
     POS.copy(TGT).addScaledVector(DIR, dist)
     // centraliza o alvo na área livre: desloca a câmera lateralmente (em unidades de mundo na distância do alvo)
     const pxToWorld = (dist * tanHalf) / (H / 2)
-    const fx = -(free.cx - W / 2) * pxToWorld, fy = (free.cy - H / 2) * pxToWorld
+    // (no camera-controls, o deslocamento focal positivo em y desce a câmera, isto é, sobe a cena na tela)
+    const fx = -(free.cx - W / 2) * pxToWorld, fy = -(free.cy - H / 2) * pxToWorld
     void c.setFocalOffset(fx, fy, 0, anim)
     void c.setLookAt(POS.x, POS.y, POS.z, TGT.x, TGT.y, TGT.z, anim)
   }

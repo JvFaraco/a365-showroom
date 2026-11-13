@@ -1,4 +1,5 @@
 import type { SVGProps } from 'react'
+import { LOGO_RING, logoCut } from '../three/common/logoShape'
 
 type P = SVGProps<SVGSVGElement> & { size?: number }
 const base = (size = 20, p: P) => ({ width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true, ...p })
@@ -26,17 +27,21 @@ export const ListIcon = ({ size, ...p }: P) => (<svg {...base(size, p)}><path d=
 export const Close = ({ size, ...p }: P) => (<svg {...base(size, p)}><path d="M6 6l12 12M18 6L6 18" /></svg>)
 export const Chevron = ({ size, dir = 'right', ...p }: P & { dir?: 'left' | 'right' }) => (<svg {...base(size, p)}><path d={dir === 'right' ? 'M9 5l7 7-7 7' : 'M15 5l-7 7 7 7'} /></svg>)
 
-/** Logo Orsegups: anel com um "swoosh" curvo recortado. `draw` anima o traço (tela de carregamento). */
-export function OrsegupsLogo({ size = 64, color = '#F9E000', draw = false }: { size?: number; color?: string; draw?: boolean }) {
-  const id = draw ? 'ors-cut-d' : 'ors-cut'
+// logo Orsegups na forma oficial (a mesma da placa): anel + corte, num viewBox de 120 com raio de fora 54
+const LR = 54
+const circle = (cx: number, cy: number, r: number) => `M${cx + r} ${cy}A${r} ${r} 0 1 0 ${cx - r} ${cy}A${r} ${r} 0 1 0 ${cx + r} ${cy}Z`
+const LOGO_D = circle(LR * LOGO_RING.outer[0], LR * LOGO_RING.outer[1], LR) + circle(LR * LOGO_RING.hole[0], LR * LOGO_RING.hole[1], LR * LOGO_RING.holeR)
+const LOGO_CUT_D = logoCut(0, 0, LR).map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join('') + 'Z'
+
+/** Logo Orsegups: o anel de dentro e o braço de fora, separados pelo corte curvo. */
+export function OrsegupsLogo({ size = 64, color = '#F9E000' }: { size?: number; color?: string }) {
   return (
-    <svg width={size} height={size} viewBox="-60 -60 120 120" role="img" aria-label="Orsegups">
-      <mask id={id}>
-        <rect x="-60" y="-60" width="120" height="120" fill="#fff" />
-        <path d="M -44 4 A 50 50 0 0 1 56 6 A 54 54 0 0 0 -44 4 Z" fill="#000" transform="rotate(-8)" />
+    <svg width={size} height={size} viewBox="-60 -62 120 120" role="img" aria-label="Orsegups">
+      <mask id="ors-cut" maskUnits="userSpaceOnUse" x="-60" y="-62" width="120" height="120">
+        <rect x="-60" y="-62" width="120" height="120" fill="#fff" />
+        <path d={LOGO_CUT_D} fill="#000" />
       </mask>
-      <circle r="40" fill="none" stroke={color} strokeWidth="20" mask={`url(#${id})`}
-        {...(draw ? { pathLength: 1, strokeDasharray: 1, strokeDashoffset: 1, style: { animation: 'logo-draw 1.4s ease-in-out forwards' } } : {})} />
+      <path d={LOGO_D} fill={color} fillRule="evenodd" mask="url(#ors-cut)" />
     </svg>
   )
 }

@@ -23,6 +23,7 @@ export function Smartphone({ interactive = false }: DeviceProps) {
   // aro metálico em volta do corpo (grafite), como nos celulares atuais
   const band = useMemo(() => roundedRectGeometry(0.962, 1.962, 0.136, 0.05, 0.008), [])
   const bandMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#4a4d55', roughness: 0.28, metalness: 0.95 }), [])
+  const island = useMemo(() => roundedRectGeometry(0.36, 0.36, 0.09, 0.02, 0.006), [])
   const glass = useMemo(() => roundedRectGeometry(0.89, 1.89, 0.11, 0.004, 0), [])
   const armOn = useActionPhase('alarme-geral') >= 0
   // no showroom os 7 aparelhos ficam montados: a tela (DOM) só aparece quando o celular é o aparelho ativo
@@ -34,8 +35,17 @@ export function Smartphone({ interactive = false }: DeviceProps) {
         <mesh ref={body} geometry={frame} material={M.blackGloss} castShadow />
         <mesh geometry={band} material={bandMat} />
         <mesh geometry={glass} material={M.lens} position={[0, 0, 0.046]} />
-        <mesh material={M.metal} position={[0.482, 0.4, 0]}><boxGeometry args={[0.012, 0.22, 0.03]} /></mesh>
-        <mesh material={M.lens} position={[-0.25, 0.7, -0.05]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.09, 0.09, 0.02, 24]} /></mesh>
+        {/* botão de liga à direita e os dois de volume à esquerda */}
+        <mesh material={bandMat} position={[0.482, 0.4, 0]}><boxGeometry args={[0.012, 0.22, 0.03]} /></mesh>
+        {[0.52, 0.32].map((y) => <mesh key={y} material={bandMat} position={[-0.482, y, 0]}><boxGeometry args={[0.012, 0.14, 0.03]} /></mesh>)}
+        {/* atrás: ilha da câmera (quadrado de cantos redondos) com duas lentes em diagonal */}
+        <mesh geometry={island} material={M.blackGloss} position={[-0.2, 0.7, -0.053]} rotation={[0, Math.PI, 0]} />
+        {[[-0.275, 0.775], [-0.125, 0.625]].map(([x, y]) => (
+          <group key={x} position={[x, y, -0.079]} rotation={[Math.PI / 2, 0, 0]}>
+            <mesh material={bandMat}><cylinderGeometry args={[0.075, 0.075, 0.012, 24]} /></mesh>
+            <mesh material={M.lens} position={[0, -0.004, 0]}><cylinderGeometry args={[0.056, 0.056, 0.012, 24]} /></mesh>
+          </group>
+        ))}
       </ClickablePart>
       <Html transform occlude={[body]} position={[0, 0, 0.052]} scale={HTML_SCALE} zIndexRange={[10, 0]}
         style={{ transition: 'opacity var(--duration-fast) var(--ease-out)', display: shown ? 'block' : 'none' }} pointerEvents={interactive ? 'auto' : 'none'}>

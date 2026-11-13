@@ -38,6 +38,7 @@ export type Device = {
   id: DeviceId
   name: string
   short: string
+  fem?: boolean // nome feminino: "da sirene", "da placa"
   tagline: string
   parts: Part[]
   inKit365S: boolean
@@ -411,6 +412,7 @@ export const DEVICES: Device[] = [
     id: 'sirene',
     name: 'Sirene',
     short: 'Sirene',
+    fem: true,
     tagline: 'Até 110 dB de alerta.',
     inKit365S: true,
     home: { position: [1.5, 0.5, 3.7], target: [0, 0, 0] },
@@ -431,7 +433,7 @@ export const DEVICES: Device[] = [
         what: 'Indica o status.',
         facts: [],
         tip: 'Instale com o LED voltado para o chão.',
-        camera: { position: [0.25, -1.25, 2.0], target: [0, -0.5, 0.3] },
+        camera: { position: [0.25, -1.3, 2.0], target: [0, -0.55, 0.3] },
         explode: [0, 0, 0.6],
       },
       {
@@ -440,7 +442,7 @@ export const DEVICES: Device[] = [
         what: 'É parafusado na parede. A sirene desce de cima para baixo no suporte e trava com um clique.',
         facts: [],
         tip: 'Instale em local visível e de difícil acesso, longe de sol direto e umidade.',
-        camera: { position: [1.9, 0.7, -3.0], target: [0, 0, -0.6] },
+        camera: { position: [1.9, 0.7, -3.0], target: [0, 0, -0.45] },
         action: 'encaixe',
         explode: [0, 0, -1.1],
       },
@@ -449,7 +451,7 @@ export const DEVICES: Device[] = [
         name: 'Encaixe do suporte',
         what: 'Centraliza a sirene no suporte de parede.',
         facts: [],
-        camera: { position: [0.9, -0.2, -2.9], target: [0.2, -0.42, -0.5] },
+        camera: { position: [1.1, 0.5, -2.7], target: [0.42, 0.2, -0.3] },
         internal: true,
         explode: [0, 0, -0.5],
       },
@@ -457,9 +459,9 @@ export const DEVICES: Device[] = [
         id: 'tamper',
         name: 'Anti-sabotagem (tamper)',
         what: 'Micro-chave que o suporte mantém apertada; se a sirene sai do suporte, o sistema é avisado.',
-        facts: ['Fica numa plaquinha à direita da traseira, logo abaixo do conector da bateria'],
+        facts: ['Fica numa plaquinha na traseira, ao lado do conector da bateria'],
         tip: 'Com a sirene aberta, não é possível armar.',
-        camera: { position: [-1.2, 0.5, -2.6], target: [-0.5, 0.08, -0.5] },
+        camera: { position: [-0.6, -0.2, -2.4], target: [-0.08, -0.5, -0.3] },
         internal: true,
         action: 'tamper',
         explode: [0, 0, -0.5],
@@ -469,7 +471,7 @@ export const DEVICES: Device[] = [
         name: 'Elemento sonoro',
         what: 'É de onde sai o som da sirene.',
         facts: ['Até 110 dB', 'Volume programável em 3 níveis'],
-        camera: { position: [0.9, -0.1, -2.9], target: [0.2, -0.42, -0.4] },
+        camera: { position: [1.1, 0.5, -2.7], target: [0.42, 0.2, -0.2] },
         internal: true,
         action: 'som',
         explode: [0, 0, -0.1],
@@ -479,7 +481,7 @@ export const DEVICES: Device[] = [
         name: 'Bateria de lítio',
         what: 'Alimenta a sirene, sem fios. Fica num berço na traseira.',
         facts: ['Dura até 2 anos, conforme o uso'],
-        camera: { position: [-0.5, 1.1, -2.9], target: [-0.03, 0.45, -0.55] },
+        camera: { position: [-1.0, 0.6, -2.7], target: [-0.38, 0.02, -0.3] },
         internal: true,
         action: 'bateria-sirene',
         explode: [0, 0, -0.5],
@@ -489,7 +491,7 @@ export const DEVICES: Device[] = [
         name: 'Placa eletrônica',
         what: 'Recebe o comando do módulo por radiofrequência.',
         facts: [],
-        camera: { position: [-1.2, 0.3, -2.6], target: [-0.43, 0.08, -0.5] },
+        camera: { position: [-0.7, -0.1, -2.4], target: [0, -0.43, -0.25] },
         internal: true,
         explode: [0, 0, -0.05],
       },
@@ -572,7 +574,7 @@ export const DEVICES: Device[] = [
       {
         id: 'tampa',
         name: 'Tampa traseira',
-        what: 'Tampa redonda, quase rente à face de trás. Abre por alavanca, pelo entalhe no topo.',
+        what: 'Tampa redonda com um lado reto, quase rente à face de trás. Abre por alavanca, pelo entalhe da borda.',
         facts: [],
         camera: { position: [0.9, 0.5, -2.5], target: [0, 0.1, -0.18] },
         action: 'tampa-controle',
@@ -593,6 +595,7 @@ export const DEVICES: Device[] = [
     id: 'placa',
     name: 'Placa de aviso',
     short: 'Placa',
+    fem: true,
     tagline: 'A primeira barreira.',
     inKit365S: true,
     home: { position: [1.0, 0.3, 4.0], target: [0, 0, 0] },

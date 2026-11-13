@@ -97,7 +97,7 @@ function ActionToast() {
   if (!cfg) return null
   return (
     <div className="pointer-events-none fixed inset-x-0 top-[11.9rem] z-40 flex justify-center px-3 md:top-[10.2rem]">
-      <div ref={el} role="status" className="flex max-w-full items-center gap-2 rounded-full bg-alert px-4 py-1.5 text-sm font-bold text-white shadow-lg shadow-black/40 transition-opacity duration-200" style={{ opacity: 0 }}>
+      <div ref={el} role="status" className="flex max-w-full items-center gap-2 rounded-full bg-alert px-4 py-1.5 text-sm font-bold text-white shadow-lg shadow-black/40 transition-opacity duration-base ease-out" style={{ opacity: 0 }}>
         <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-white" style={{ animation: 'blink 0.6s steps(2) infinite' }} />
         {cfg.text}
       </div>
@@ -128,7 +128,7 @@ function ShowroomUI() {
             : view === 'exploded' ? 'Aparelho explodido: as partes internas também são clicáveis.'
             : view === 'xray' ? 'Raio-X: clique numa parte interna.'
             : <>
-                <span className="hint-mouse">Arraste para girar · role para aproximar · clique numa parte do {DEVICE_BY_ID[device].short.toLowerCase()} · duplo clique reseta</span>
+                <span className="hint-mouse">Arraste para girar · role para aproximar · clique numa parte {DEVICE_BY_ID[device].fem ? 'da' : 'do'} {DEVICE_BY_ID[device].short.toLowerCase()} · duplo clique reseta</span>
                 <span className="hint-touch">Arraste para girar · pinça para aproximar · toque numa parte</span>
               </>}
         </p>
@@ -162,9 +162,9 @@ function IntroUI() {
 
 function OutroUI() {
   return (
-    <div className="pointer-events-none fixed inset-0 z-20 flex flex-col items-center justify-between py-[10vh] text-center">
+    <div className="pointer-events-none fixed inset-0 z-20 flex flex-col items-center justify-between pb-[10vh] pt-[6vh] text-center">
       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1.6, duration: 0.9 }} className="flex flex-col items-center">
-        <OrsegupsLogo size={110} />
+        <OrsegupsLogo size={96} />
         <div className="mt-2 font-title text-3xl font-bold tracking-[0.2em] text-accent">ORSEGUPS</div>
         <p className="mt-3 font-title text-[clamp(1.1rem,2.6vw,1.9rem)] text-white">{SLOGAN}</p>
       </motion.div>
@@ -182,7 +182,7 @@ function InActionUI() {
   // a barra de tempo é atualizada direto no DOM (o tempo corre em `ia.t`, fora do React)
   useEffect(() => {
     let raf = 0
-    const tick = () => { if (bar.current) bar.current.style.width = `${(ia.t / IA_DURATION) * 100}%`; raf = requestAnimationFrame(tick) }
+    const tick = () => { if (bar.current) bar.current.style.transform = `scaleX(${Math.min(1, ia.t / IA_DURATION)})`; raf = requestAnimationFrame(tick) }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
   }, [])
@@ -198,7 +198,7 @@ function InActionUI() {
             {!started ? 'Dê Play para ver o alarme em ação. Clique num aparelho para abri-lo no showroom.' : <><b className="text-accent">{cur + 1}.</b> {IA_STEPS[cur].text}</>}
           </p>
         </div>
-        <div className="relative h-1.5 rounded-full bg-white/10"><div ref={bar} className="absolute inset-y-0 left-0 rounded-full bg-accent" style={{ width: 0 }} /></div>
+        <div className="relative h-1.5 overflow-hidden rounded-full bg-white/10"><div ref={bar} className="absolute inset-0 origin-left rounded-full bg-accent" style={{ transform: 'scaleX(0)' }} /></div>
         <ol className="mt-2 grid grid-cols-5 gap-1">
           {IA_STEPS.map((s, i) => (
             <li key={s.label}>

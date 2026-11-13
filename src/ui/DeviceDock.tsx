@@ -19,7 +19,7 @@ export function DeviceDock() {
   const device = useShowroom((st) => st.device)
   const hide = useShowroom((st) => !!st.part)
   return (
-    <nav aria-label="Aparelhos" className={`pointer-events-none fixed inset-x-0 bottom-3 z-20 flex justify-center px-2 transition-opacity ${hide ? 'opacity-0 md:opacity-100' : ''}`}>
+    <nav aria-label="Aparelhos" className={`pointer-events-none fixed inset-x-0 bottom-3 z-20 flex justify-center px-2 transition-opacity duration-base ease-out ${hide ? 'opacity-0 md:opacity-100' : ''}`}>
       <ul className={`glass flex max-w-full gap-1 overflow-x-auto rounded-2xl p-1.5 ${hide ? 'pointer-events-none md:pointer-events-auto' : 'pointer-events-auto'}`}>
         {DEVICES.map((d, i) => (
           <li key={d.id}>
