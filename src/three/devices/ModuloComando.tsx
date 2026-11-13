@@ -21,6 +21,7 @@ import { HoldRing } from '../fx/HoldRing'
 const BOTTOM = -0.4, SQUASH = 0.6 // o corpo foi modelado mais alto; SQUASH leva a altura a ~0,475 (38 mm)
 const RF = 0.9 // raio de referência do corpo (72 mm)
 const R_FOOT = 0.912 // raio da tampa no fundo (73 mm): com a base logo por dentro, a planta fecha nos 144 × 145 mm da ficha
+const TIP_UP = 0.27 // fração da subida da borda que a ponta da frente já começa acima do fundo (~6 mm)
 const CHIN = 0.07 // quanto a ponta da frente avança além do contorno, no fundo (~6 mm)
 const R_TOP = 0.855 // raio do topo, contando o ombro arredondado (~68 mm): o topo é largo, quase do tamanho do corpo
 const YC = 0.39 // altura do topo (antes do achatamento): plano e nivelado
@@ -51,7 +52,8 @@ function wallR(t: number, y: number) {
  * lados, onde a base cinza aparece, e atrás, por onde saem a antena e os cabos.
  */
 function lidRim(t: number): [number, number] {
-  const [front, rear] = lidFeet(t), y = BOTTOM + (Y_SIDE - BOTTOM) * Math.min(front, rear)
+  // a ponta da frente não chega ao fundo: termina ~6 mm acima dele (TIP_UP); os apoios de trás descem até o fundo
+  const [front, rear] = lidFeet(t), y = BOTTOM + (Y_SIDE - BOTTOM) * Math.min(TIP_UP + (1 - TIP_UP) * front, rear)
   return [wallR(t, y), y]
 }
 
@@ -59,9 +61,10 @@ function lidRim(t: number): [number, number] {
 function lidFeet(t: number): [number, number] {
   const a = Math.abs(Math.atan2(Math.sin(t), Math.cos(t))) // 0 na frente, π atrás
   const clamp = (x: number) => Math.min(1, Math.max(0, x))
-  // na frente a ponta tem a base reta (±15°) e a borda sobe dos dois lados em curva côncava: rápido no começo, depois
-  // quase em linha reta até os lados (pelas fotos de frente)
-  const front = Math.pow(clamp((Math.sin(Math.min(a, Math.PI / 2)) - Math.sin(15 * DEG)) / (Math.sin(80 * DEG) - Math.sin(15 * DEG))), 0.55)
+  // na frente a ponta tem a base reta (±13°), cantos arredondados, e a borda sobe dos dois lados em curva côncava:
+  // rápido no começo, depois quase em linha reta até os lados (pelas fotos de frente)
+  const sf = clamp((Math.sin(Math.min(a, Math.PI / 2)) - Math.sin(13 * DEG)) / (Math.sin(80 * DEG) - Math.sin(13 * DEG)))
+  const front = Math.pow(sf, 0.55) * (sf / (sf + 0.05)) * 1.05
   // atrás a borda desce até cada apoio numa curva longa, como na frente (pela foto de lado)
   const rear = 1 - Math.pow(1 - clamp((Math.abs(a - FOOT_T) - 4 * DEG) / (42 * DEG)), 1.6)
   return [front, rear]
@@ -94,7 +97,7 @@ function lidGeometry() {
       put(a * (R_TOP - C) + m * R_TOP + c * r0, a * YC + m * YC + c * y0)
     }
     for (let j = 1; j <= NS; j++) { const k = j / NS, y = y0 + (ey - y0) * k; put(j === NS ? er : r0 + (lidRadiusAt(t, y) - lidRadiusAt(t, y0)), y) }
-    put(er - (0.012 + 0.035 * (1 - Math.min(...lidFeet(t)))), ey) // a borda dobra para dentro até encostar na carcaça cinza
+    put(er - (0.012 + 0.035 * (1 - lidFeet(t)[1])), ey) // a borda dobra para dentro até encostar na carcaça cinza
   }
   for (let i = 0; i < NT; i++) for (let j = 0; j < W - 1; j++) {
     const a = i * W + j, b = a + W
@@ -116,9 +119,9 @@ function lidGeometry() {
   return { top: part(idxTop), side: part(idxSide) }
 }
 
-/** Adesivo da frente: retalho de ~24 × 31 mm colado na lateral da tampa, centrado sob o botão. */
+/** Adesivo da frente: retalho de ~22 × 25 mm colado na lateral da tampa, centrado sob o botão. */
 function stickerGeometry() {
-  const NU = 8, NV = 8, HALF = 0.165, Y1 = 0.29, Y0 = -0.35 // meia largura (rad) e alturas de cima e de baixo
+  const NU = 8, NV = 8, HALF = 0.15, Y1 = 0.29, Y0 = -0.235 // meia largura (rad) e alturas de cima e de baixo
   const pos: number[] = [], uv: number[] = [], idx: number[] = []
   for (let j = 0; j <= NV; j++) for (let i = 0; i <= NU; i++) {
     const t = (i / NU - 0.5) * 2 * HALF, y = Y1 + (Y0 - Y1) * (j / NV), r = wallR(t, y) + 0.004
@@ -457,8 +460,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
             <mesh geometry={g.lid.side} material={apronMat} castShadow />
             {/* adesivo "Dúvidas?" na frente, sob o botão: o QR é ilustrativo, não codifica nada */}
             <mesh geometry={g.sticker} material={stickerMat} />
-            {/* os três fechos da tampa: na frente, atrás à esquerda e atrás à direita (de baixo, a aba branca com a fenda) */}
-            {[0, FOOT_T, -FOOT_T].map((a) => (
+            {/* presilhas de trás: de baixo, a aba branca com a fenda sob cada apoio (a da frente é a lingueta cinza da base) */}
+            {[FOOT_T, -FOOT_T].map((a) => (
               <group key={a} rotation={[0, a, 0]}>
                 <RoundedBox args={[0.13, 0.014, lidRim(a)[0] - RF * K_FLOOR + 0.05]} radius={0.005} smoothness={2} position={[0, Y_BOT - 0.004, (lidRim(a)[0] + RF * K_FLOOR - 0.05) / 2 - 0.004]} material={M.white} />
                 <mesh material={M.hole} position={[0, Y_BOT - 0.0115, RF * K_FLOOR + 0.03]} rotation={[Math.PI / 2, 0, 0]}><planeGeometry args={[0.07, 0.016]} /></mesh>
@@ -542,6 +545,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
           ))}
           {/* furo pequeno, à esquerda do bolsão */}
           <mesh material={M.hole} position={[0.42, Y_BOT - 0.001, -0.5]} rotation={[Math.PI / 2, 0, 0]}><circleGeometry args={[0.022, 14]} /></mesh>
+          {/* presilha da frente: lingueta cinza da base, logo abaixo da ponta da tampa */}
+          <RoundedBox args={[0.1, 0.1, 0.05]} radius={0.012} smoothness={2} position={[0, -0.33, RF * K_WALL + 0.012]} material={M.grey} />
           {/* ressalto da rosca da antena: bloco de face plana na borda de trás, à direita do bolsão; aparece sob o arco de trás da tampa */}
           <RoundedBox args={[0.16, 0.341, 0.122]} radius={0.03} smoothness={3} position={[ANT_X, -0.2255, -0.74]} material={M.grey} />
           {/* duas travas cinza, em lados opostos, que prendem a placa */}
