@@ -16,31 +16,34 @@ const TAMPER: [number, number] = [-0.5, 0.0] // micro-chave do anti-sabotagem (�
 const LIFT = 1.9 // quanto a sirene sobe para sair do suporte
 // Ficha (1 unidade = 64 mm): 128 mm de diâmetro e 60 mm de projeção da parede.
 const FACE_Z = 0.3 // face da frente
-const BACK = FACE_Z - 60 / 64 // face traseira (a que encosta no suporte)
-const FACE_R = 0.74 // raio da face plana (~95 mm de diâmetro)
-const LED_Y = -0.6 // LED na face, perto da borda, centralizado embaixo (às 6 horas): fica voltado para o chão
+const WALL = FACE_Z - 60 / 64 // plano da parede: a borda de trás do corpo chega até aqui
+const BACK = WALL + 0.15 // placa traseira: fica recuada dentro da borda, e o suporte de parede cabe nesse recuo
+const FACE_R = 0.7 // raio da face plana (~90 mm de diâmetro)
+const LED_Y = -0.57 // LED na face, perto da borda, centralizado embaixo (às 6 horas): fica voltado para o chão
 
 /**
- * Perfil do corpo, visto de cima: NÃO é uma cúpula. É um copo: face plana na frente, ombro arredondado e a
- * lateral que abre em curva suave até a parede, numa peça só, sem emenda no meio. Pontos [raio, z], de trás para a frente.
+ * Perfil do corpo, visto de cima: NÃO é uma cúpula. É um copo numa peça só, sem emenda no meio: face plana, quina
+ * curta e marcada, barriga que abre rápido até a largura total e daí segue reta até a parede. A borda de trás
+ * dobra para dentro e forma o recuo que esconde o suporte. Pontos [raio, z], de trás para a frente.
  */
 function shellProfile(): [number, number][] {
   const pts: [number, number][] = []
   for (let i = 0; i <= 6; i++) pts.push([Math.max(0.001, (FACE_R * i) / 6), FACE_Z])
-  const RS = 0.11, A = (55 * Math.PI) / 180 // ombro: arco de 55°
-  for (let i = 1; i <= 8; i++) { const a = (A * i) / 8; pts.push([FACE_R + RS * Math.sin(a), FACE_Z - RS * (1 - Math.cos(a))]) }
-  // lateral: curva que sai tangente ao ombro e chega reta na parede
-  const [sr, sz] = pts[pts.length - 1], RMAX = 0.992, zEnd = BACK + 0.03
+  const RS = 0.05, A = Math.PI / 4 // quina da face: arco curto de 45°
+  for (let i = 1; i <= 6; i++) { const a = (A * i) / 6; pts.push([FACE_R + RS * Math.sin(a), FACE_Z - RS * (1 - Math.cos(a))]) }
+  // barriga: sai tangente à quina e chega reta na largura total
+  const [sr, sz] = pts[pts.length - 1], RMAX = 0.992, zBelly = -0.2
   const cz = sz - ((RMAX - sr) / Math.cos(A)) * Math.sin(A)
   for (let i = 1; i <= 18; i++) {
     const k = i / 18, a = (1 - k) * (1 - k), m = 2 * k * (1 - k), c = k * k
-    pts.push([a * sr + m * RMAX + c * RMAX, a * sz + m * cz + c * zEnd])
+    pts.push([a * sr + m * RMAX + c * RMAX, a * sz + m * cz + c * zBelly])
   }
-  pts.push([RMAX - 0.008, BACK + 0.008], [0.93, BACK]) // a borda de trás dobra para dentro e cobre a beirada da placa traseira
+  // lateral reta até a parede; a borda arredonda e volta para dentro até a placa traseira
+  pts.push([RMAX, WALL + 0.03], [RMAX - 0.006, WALL + 0.008], [0.972, WALL], [0.955, WALL + 0.006], [0.95, BACK + 0.002])
   return pts.reverse()
 }
-// o suporte de parede fica raso atrás da base (escala em Z), para não aparecer de lado com recortes e travas
-const SUP_S = 0.45
+// o suporte de parede é raso (escala em Z) e fica inteiro dentro do recuo da traseira: de lado e de cima, não aparece
+const SUP_S = 0.42
 const SUP_DZ = BACK + 0.277 * SUP_S // o suporte de parede acompanha a face traseira
 
 /** Fundo do suporte: disco com furo grande deslocado e dois recortes triangulares. */
@@ -79,7 +82,8 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
     return g
   }, [])
   const floor = useMemo(supportFloor, [])
-  const slit = useMemo(() => stadiumGeometry(0.15, 0.062, 0.006, 0.002), []) // janela do LED na face: ~10 × 4 mm
+  const slit = useMemo(() => stadiumGeometry(0.13, 0.048, 0.004, 0.002), []) // janela do LED na face: ~9 × 3,5 mm
+  const lens = useMemo(() => { const m = M.crystal.clone(); m.opacity = 0.2; return m }, []) // lente fina: deixa a cor do LED passar
   // tampa do tamper: disco em degraus (anéis concêntricos) com o miolo abaulado, virado para trás
   const tamperCap = useMemo(() => smoothLatheZ([[0.31, 0.0], [0.305, -0.03], [0.28, -0.04], [0.225, -0.042], [0.21, -0.07], [0.13, -0.075], [0.1, -0.1], [0.04, -0.115], [0.001, -0.118]], 64, 48), [])
   const piezo = useMemo(() => smoothLatheZ([[0.04, 0.06], [0.2, 0.06], [0.225, 0.05], [0.23, 0.03], [0.23, -0.04], [0.22, -0.05], [0.001, -0.05]], 48, 24), [])
@@ -117,8 +121,8 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
     if (te >= 0) { away = ease(bump(te, 0.2, 1.0, 1.5, 2.6)); settle = bump(te, 2.6, 2.68, 2.7, 2.9) }
     else if (tq >= 0) { away = ease(seg(tq, 0, 1.1)); settle = tr >= 0 && tr < 0.2 ? bump(tr, 0, 0.06, 0.08, 0.2) * 0.6 : 0 }
     const flip = tb < 0 ? 0 : seg(tb, 1.2, 2.0)
-    // no fim da descida, um pequeno assentamento para baixo
-    body.current.position.set(0, away * LIFT - settle * 0.03, 0)
+    // sai um pouco da parede (o suporte fica dentro do recuo da traseira) e sobe; no fim da descida, um pequeno assentamento
+    body.current.position.set(0, away * LIFT - settle * 0.03, Math.min(1, away * 6) * 0.17)
     body.current.rotation.set(0, flip * Math.PI, 0)
     ringMat.opacity = te < 0 ? 0 : bump(te, 2.6, 2.7, 2.9, 3.7)
     plugRef.current.position.z = -(tb < 0 ? 0 : seg(tb, 2.2, 2.8)) * 0.14
@@ -141,15 +145,13 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
             <LogoGroove r={0.26} position={[0, 0.02, FACE_Z + 0.004]} />
           </group>
         </ClickablePart>
-        {/* LED: janela pequena na face, perto da borda, centralizada embaixo. Azul; vermelho ao tocar */}
+        {/* LED: janela pequena na face, perto da borda, centralizada embaixo. Moldura escura, luz forte (azul; vermelho
+            piscando ao tocar) e, por cima, a lente de cristal fina */}
         <ClickablePart id="led">
           <group position={[0, LED_Y, FACE_Z]}>
-            <mesh material={M.hole} position={[0, 0, 0.0012]}><planeGeometry args={[0.15, 0.062]} /></mesh>
-            <Led sample={(t, o) => { const on = isOn(); o.color = on ? '#ff2a2a' : '#3d7bff'; o.on = on ? (t % 0.3 < 0.15 ? 1 : 0.05) : 0.14 }} position={[0, 0, 0.003]}>
-              <boxGeometry args={[0.1, 0.034, 0.003]} />
-            </Led>
-            {/* cristal do LED: o mesmo plástico translúcido dos outros aparelhos */}
-            <mesh geometry={slit} material={M.crystal} position={[0, 0, 0.004]} />
+            <mesh geometry={slit} material={M.hole} position={[0, 0, -0.0035]} scale={[1.16, 1.4, 1]} />
+            <Led geometry={slit} boost={6} sample={(t, o) => { const on = isOn(); o.color = on ? '#ff2a2a' : '#2f6dff'; o.on = on ? (t % 0.3 < 0.15 ? 1 : 0.05) : 0.55 }} position={[0, 0, -0.003]} />
+            <mesh geometry={slit} material={lens} position={[0, 0, 0.0012]} scale={[1, 1, 0.5]} />
           </group>
         </ClickablePart>
 
