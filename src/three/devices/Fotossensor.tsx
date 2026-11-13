@@ -33,7 +33,7 @@ const CELL = { r: mm(7.25), len: mm(50.5), y: (H(64) + 0.68) / 2, s: HD - 0.125 
 const CELL_X = [-0.196, 0, 0.196]
 // Cápsula da câmera: pílula de ~30 × 55 mm, mais larga em cima, INCLINADA (o topo sai mais que a base: a
 // câmera olha um pouco para baixo). Tudo dela é medido a partir da base da cápsula.
-const CAP = { bottom: H(70), h: mm(55), hwTop: mm(15), hwBottom: mm(11), tilt: 0.07, z: HD - 0.1 }
+const CAP = { bottom: H(70), h: mm(55), hwTop: mm(15), hwBottom: mm(11), tilt: 0.07, z: HD - 0.085 }
 const CAP_F = 0.085 // face da frente da cápsula, nas coordenadas dela
 const LENS_L = mm(43), LEDWIN_L = mm(22) // altura da lente e da janela do LED dentro da cápsula
 const LENS_Y = CAP.bottom + LENS_L, LEDWIN_Y = CAP.bottom + LEDWIN_L
@@ -41,7 +41,7 @@ const LENS_Y = CAP.bottom + LENS_L, LEDWIN_Y = CAP.bottom + LEDWIN_L
 // - capuz: corte em arco no alto, que acompanha o topo da cápsula com ~3,5 mm de folga;
 // - funil do PIR: trapézio escavado, estreito logo abaixo da cápsula (~30 mm) e abrindo para baixo até ~61 mm;
 //   as paredes inclinadas são os "ombros"; o fundo fica ~17 mm atrás da frente.
-const HOOD = { hw: mm(18.5), top: CAP.bottom + mm(55 + 3.5), depth: 0.085 }
+const HOOD = { hw: mm(18.5), top: CAP.bottom + mm(55 + 3.5), depth: 0.055 } // raso: no Raio-X o contorno do corte quase coincide com o da cápsula
 const WELL = { y0: H(20), y1: H(64), hwTop: mm(15), hwBottom: mm(30.5), depth: mm(17) }
 // janela PIR: no fundo do funil, na parte de baixo dele; levemente convexa, com tom próprio e borda
 const PIR = { y0: H(24), y1: H(50), hw: mm(19.5), bulge: mm(6) }
