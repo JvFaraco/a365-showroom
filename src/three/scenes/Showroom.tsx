@@ -138,7 +138,8 @@ export function Boot() {
   const scene = useThree((s) => s.scene)
   const camera = useThree((s) => s.camera)
   useEffect(() => {
-    ;(window as unknown as { __gl: unknown }).__gl = gl
+    ;(window as unknown as { __gl: unknown; __scene: unknown }).__gl = gl
+    ;(window as unknown as { __scene: unknown }).__scene = scene
     let dead = false
     const st = useShowroom.getState
     const n = DEVICES.length

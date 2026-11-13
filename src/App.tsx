@@ -16,17 +16,31 @@ const Q = typeof location !== 'undefined' ? location.search : ''
 // ?hq: mantém reflexo e pós-processamento completos mesmo se o FPS cair
 const FORCE_HQ = Q.includes('hq')
 // ?debug=1 (só em desenvolvimento): FPS, draw calls e triângulos
-const DEBUG = import.meta.env.DEV && Q.includes('debug')
-const Perf = DEBUG ? lazy(() => import('r3f-perf').then((m) => ({ default: m.Perf }))) : null
+// ?debug=1: programas de shader e triângulos (vale também no build, para medir na máquina da apresentação);
+// o painel do r3f-perf (FPS, draw calls) só entra em desenvolvimento
+const DEBUG = Q.includes('debug')
+const Perf = DEBUG && import.meta.env.DEV ? lazy(() => import('r3f-perf').then((m) => ({ default: m.Perf }))) : null
 const MAX_DPR = typeof window !== 'undefined' ? Math.min(2, window.devicePixelRatio || 1) : 1
 
-/** `?debug=1`: quantos programas de shader existem (cada combinação de flags de material é um a mais). */
+type DebugGL = { info: { programs: unknown[] | null } }
+type DebugNode = { visible: boolean; children: DebugNode[]; isMesh?: boolean; count?: number; geometry?: { index: { count: number } | null; attributes: { position?: { count: number } } } }
+/** Triângulos dos objetos visíveis da cena (conta a geometria; não depende de quantos passes o render faz). */
+function visibleTriangles(root: DebugNode): number {
+  if (!root.visible) return 0
+  let n = 0
+  if (root.isMesh && root.geometry) n += ((root.geometry.index?.count ?? root.geometry.attributes.position?.count ?? 0) / 3) * (root.count ?? 1)
+  for (const c of root.children) n += visibleTriangles(c)
+  return n
+}
+/** `?debug=1`: programas de shader (cada combinação de flags de material é um a mais) e triângulos visíveis. */
 function ProgramCount() {
   const el = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const t = setInterval(() => {
-      const gl = (window as unknown as { __gl?: { info: { programs: unknown[] | null } } }).__gl
-      if (el.current) el.current.textContent = `programas de shader: ${gl?.info.programs?.length ?? '…'}`
+      const w = window as unknown as { __gl?: DebugGL; __scene?: DebugNode }
+      const tris = w.__scene ? Math.round(visibleTriangles(w.__scene)) : 0
+      ;(window as unknown as { __debug?: object }).__debug = { programs: w.__gl?.info.programs?.length ?? 0, triangles: tris }
+      if (el.current) el.current.textContent = `programas de shader: ${w.__gl?.info.programs?.length ?? '…'} · triângulos visíveis: ${tris.toLocaleString('pt-BR')}`
     }, 500)
     return () => clearInterval(t)
   }, [])
