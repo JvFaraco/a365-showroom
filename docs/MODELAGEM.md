@@ -7,14 +7,14 @@ Materiais: plástico branco acetinado #F1F2F4 com verniz leve e micro-textura (`
 ## Módulo de Comando (planta de 144 × 145 mm, 38 mm de altura; 1 un = 80 mm; frente em +Z)
 
 
-A tampa é uma superfície só (topo plano que desce para a lateral em curva contínua), no mesmo contorno em gota da base: redondo do lado da antena e afinando para uma ponta arredondada na frente. A base cinza é lisa, com fendas curtas de ventilação em volta, três pés baixos, o rebaixo raso da etiqueta (vazio) e o bolsão fundo no meio da borda de trás: grade de som em hexágono (37 furos) na face funda, RJ45 embaixo dela com a boca para quem olha o fundo e o jack da fonte na parede esquerda, a meia altura. A antena não sai do centro: fica num ressalto ao lado do bolsão (à direita de quem olha o fundo); o furo pequeno fica do outro lado.
+A tampa é uma superfície só: topo plano e nivelado (um disco redondo), canto arredondado e lateral que desce, abrindo, até o contorno em gota (redondo do lado da antena, afinando para uma ponta arredondada na frente). Vista de lado, a tampa é uma ponte: a borda de baixo vai até o fundo na frente (queixo) e atrás (cauda) e sobe em arco nos dois lados, onde aparece a base cinza. A base tem frisos verticais rasos na parede (os sulcos caem em cima das fendas do fundo e somem antes da borda de baixo), fendas curtas de ventilação em volta, três pés baixos, o rebaixo raso da etiqueta (vazio) e o bolsão fundo no meio da borda de trás: grade de som em hexágono (37 furos) na face funda, RJ45 embaixo dela com a boca para quem olha o fundo e o jack da fonte na parede esquerda, a meia altura. A antena não sai do centro: fica num ressalto ao lado do bolsão (à direita de quem olha o fundo); o furo pequeno fica do outro lado.
 | part.id | Como é modelada |
 |---|---|
-| `tampa` | Uma malha paramétrica só: topo plano, levemente caído para a frente, que desce para a lateral em curva contínua, com o logo em sulcos finos. Por dentro: bloco do guia de luz com furo de parafuso, ganchos e ressalto. |
-| `botao-sos` | A cápsula perto da borda da frente (eixo maior tangente à borda): aro cromado fino e guia de luz em cristal translúcido (o mesmo material das janelas de LED dos outros aparelhos). A peça inteira afunda enquanto o 190 é segurado. |
-| `led` | Ponto emissivo forte no centro da cápsula e halo fraco pelo contorno. |
+| `tampa` | Uma malha paramétrica só (`lidGeometry`), desenhada em dois trechos que dividem os vértices: o disco do topo, fosco, e a lateral, com brilho. A altura da borda de baixo em volta do contorno vem de `lidEdge` (queixo, arco, cauda e o recorte da antena). Logo em sulcos finos. Por dentro: bloco do guia de luz com furo de parafuso, ganchos e ressalto. |
+| `botao-sos` | Tecla branca de cantos redondos, rente à tampa, perto da borda da frente, com aro prateado fino. Embaixo dela, um pino de cristal (guia de luz) desce até a placa. A tecla afunda enquanto o 190 é segurado. |
+| `led` | Ponto emissivo pequeno e forte no centro da tecla (escuro quando apagado); o brilho em volta vem do bloom. |
 | `antena` | Conector dourado rosqueado, junta com pino (articulação) e pá extrudada com chanfro. Sai da base, atrás, fora do centro: num ressalto de face plana ao lado do bolsão. |
-| `base` | Base cinza: parede lisa no contorno em gota e fundo recortado (bolsão e etiqueta), numa malha só; fendas de ventilação em `InstancedMesh` (não há fenda atrás do bolsão nem do ressalto da antena). Acompanham: pés, furo pequeno, ressalto da antena e as duas travas da placa. |
+| `base` | Base cinza: parede com frisos verticais rasos no contorno em gota e fundo recortado (bolsão e etiqueta), numa malha só; onde a tampa cobre a base, a parede recua para dentro dela; fendas de ventilação em `InstancedMesh` (não há fenda atrás do bolsão nem do ressalto da antena). Acompanham: pés, furo pequeno, ressalto da antena e as duas travas da placa. |
 | `alto-falante` | Grade de 37 furos redondos em hexágono (`InstancedMesh`), na face funda do bolsão: de baixo, é o que mais aparece. |
 | `ethernet`, `fonte` | Porta de rede na face funda do bolsão, embaixo da grade; conector de energia na parede esquerda. |
 | `placa-principal` (i) | Placa verde limpa, com o recorte retangular no meio da borda de trás (onde passam o bolsão e o alto-falante): RJ45 no fundo do recorte, jack da fonte num dos braços, área de energia, pinos de teste, parafusos e etiqueta lisa. |
@@ -61,8 +61,8 @@ A traseira é uma placa branca plana, sem tampa extra: é o suporte que cobre es
 
 | part.id | Como é modelada |
 |---|---|
-| `corpo` | `LatheGeometry` de perfil suave: face plana, chanfro largo e lateral levemente cônica; linha de partição e logo em sulcos finos. |
-| `led` | Fenda na borda de baixo da face, virada para o chão. |
+| `corpo` | Um copo numa peça só (`LatheGeometry` com o perfil exato de `shellProfile`): face plana na frente, ombro arredondado e lateral que abre em curva suave até a parede. Não é cúpula e não tem emenda no meio. Logo em sulcos finos no centro da face. |
+| `led` | Janela pequena de cristal (~10 × 4 mm) na face, perto da borda, centralizada embaixo (6 horas): fica virada para o chão. |
 | `suporte` | Prato de parede: aro aberto em cima (é por onde a sirene desce), fundo extrudado com furo grande e recortes, canal vertical, travas e parafusos. A sirene não gira: desce na vertical e trava com um clique. |
 | `tamper` (i) | Micro-chave preta (~6 × 6 mm, com o botão no meio) numa plaquinha verde (~15 × 20 mm), à direita da traseira, logo abaixo do conector branco da bateria. O ressalto do suporte mantém o botão apertado; fora do suporte, ele sobe ~1 mm. |
 | `encaixe-suporte` (i) | Disco levemente elevado, anel e arcos no centro-baixo da traseira: plástico fixo, que centraliza a sirene no suporte. Não é o tamper. |
