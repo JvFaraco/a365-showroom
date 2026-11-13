@@ -63,8 +63,8 @@ function domeGeometry(N = 144) {
 }
 
 /**
- * Prato do suporte: disco do diâmetro da sirene, com o furo redondo do elemento sonoro, a abertura comprida da
- * bateria (emendada no recorte do tamper) e, em cada pé, uma cunha aberta por onde entra o parafuso.
+ * Prato do suporte: disco fechado do diâmetro da sirene, só com o furo redondo do elemento sonoro e, em cada pé, uma
+ * cunha aberta por onde entra o parafuso. A calha da bateria é um rebaixo (fechado) para o lado da parede.
  */
 function supportPlate() {
   const s = new THREE.Shape()
@@ -72,7 +72,7 @@ function supportPlate() {
   const poly = (pts: [number, number][]) => { const p = new THREE.Path(); p.moveTo(...pts[0]); for (const q of pts.slice(1)) p.lineTo(...q); p.closePath(); return p }
   const hole = new THREE.Path()
   hole.absarc(...rot(SOUND), 0.36, 0, Math.PI * 2, true)
-  s.holes.push(hole, poly(([[-0.62, 0.58], [0.6, 0.58], [0.6, 0.15], [-0.35, 0.15], [-0.35, -0.18], [-0.62, -0.18]] as [number, number][]).map(rot)))
+  s.holes.push(hole)
   for (const a of FOOT_AT) {
     const pts: [number, number][] = [[FOOT_IN * Math.cos(a), FOOT_IN * Math.sin(a)]]
     for (let i = 0; i <= 6; i++) { const t = a + ((i / 6) * 2 - 1) * 0.33; pts.push([0.95 * Math.cos(t), 0.95 * Math.sin(t)]) }
@@ -234,7 +234,7 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
         </ClickablePart>
         {/* anti-sabotagem (tamper): micro-chave preta (~6 × 6 mm, com o botão no meio) numa plaquinha verde (~15 × 20 mm),
             na traseira, ao lado do conector branco da bateria; aparece por um recorte retangular. O suporte de parede
-            tem uma travessa que mantém o botão apertado; fora do suporte, o botão sobe ~1 mm */}
+            tem o prato, que mantém o botão apertado; fora do suporte, o botão sobe ~1 mm */}
         <ClickablePart id="tamper">
           <mesh material={M.hole} position={[TAMPER[0], TAMPER[1] + 0.05, BACK - 0.001]} rotation={[0, Math.PI, 0]}><planeGeometry args={[0.3, 0.46]} /></mesh>
           <mesh material={M.pcb} position={[TAMPER[0], TAMPER[1] + 0.04, BACK - 0.008]}><boxGeometry args={[15 / 64, 20 / 64, 0.014]} /></mesh>
@@ -288,7 +288,7 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
       </group>
 
       {/* suporte de parede: prato do diâmetro da sirene sobre três pés parafusados na parede. O prato tem o furo redondo
-          do elemento sonoro, a calha da bateria, as quatro travas do encaixe e a travessa que aperta o tamper */}
+          do elemento sonoro, a calha da bateria e as quatro travas do encaixe; o prato fechado aperta o botão do tamper */}
       <ClickablePart id="suporte">
         <mesh geometry={plate} material={M.white} position={[0, 0, SEAM - PLATE_T]} castShadow />
         <mesh geometry={feet} material={whiteDS} castShadow />
@@ -302,8 +302,6 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
         {LATCHES.map(([x, y], i) => (
           <mesh key={i} material={M.whiteRelief} position={[x, y, SEAM + 0.015]}><boxGeometry args={[0.08, 0.09, 0.04]} /></mesh>
         ))}
-        {/* travessa que mantém o botão da micro-chave apertado */}
-        <mesh material={M.whiteRelief} position={[rot(TAMPER)[0] + 0.015, rot(TAMPER)[1], SEAM - PLATE_T - 0.02]}><boxGeometry args={[0.43, 0.1, 0.02]} /></mesh>
       </ClickablePart>
 
       {interactive && clicPhase >= 0 && (
