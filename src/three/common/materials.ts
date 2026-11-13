@@ -30,8 +30,8 @@ export const M = {
   lens: new THREE.MeshPhysicalMaterial({ color: '#05060a', roughness: 0.04, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 1.6 }),
   chrome: std({ color: '#f3f5f8', roughness: 0.15, metalness: 1 }),
   blue: new THREE.MeshPhysicalMaterial({ color: '#1E398D', roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.25 }),
-  // filete do controle: azul da marca com um pouco de brilho
-  blueGlow: new THREE.MeshPhysicalMaterial({ color: '#1E398D', roughness: 0.3, clearcoat: 0.6, emissive: '#2a52d6', emissiveIntensity: 0.22 }),
+  // filete do controle: azul saturado, com brilho leve (abaixo do limiar do bloom). Mesmas flags de antes.
+  blueGlow: new THREE.MeshPhysicalMaterial({ color: '#2a5bff', roughness: 0.3, clearcoat: 0.6, emissive: '#2a5bff', emissiveIntensity: 0.5 }),
   pcb: std({ color: '#ffffff', roughness: 0.5, ...(typeof document !== 'undefined' ? { map: pcbTexture() } : {}) }),
   pcbDark: std({ color: '#0f5a2c', roughness: 0.5 }),
   chip: std({ color: '#1b1c20', roughness: 0.4 }),
