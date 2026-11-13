@@ -2,7 +2,7 @@ import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
-import { fxBasic } from '../common/materials'
+import { fxBasic, mat as makeMat } from '../common/materials'
 
 const BLUE = new THREE.Color('#3d7bff'), RED = new THREE.Color('#ff3030'), WHITE = new THREE.Color('#ffffff')
 
@@ -60,7 +60,7 @@ export function DetectionFan({ length = 4, alert, show, labels = true, ...props 
 
 /** Silhueta humana low-poly (altura ~1 antes da escala), pés na origem. */
 export function LowPolyPerson({ color = '#c8d2e6', ...props }: { color?: string } & JSX.IntrinsicElements['group']) {
-  const mat = useMemo(() => new THREE.MeshStandardMaterial({ color, roughness: 0.8, flatShading: true }), [color])
+  const mat = useMemo(() => makeMat({ color, roughness: 0.8, flatShading: true }), [color])
   return (
     <group {...props}>
       <mesh material={mat} position={[0, 0.9, 0]} userData={{ fx: true }}><icosahedronGeometry args={[0.09, 0]} /></mesh>
@@ -75,7 +75,7 @@ export function LowPolyPerson({ color = '#c8d2e6', ...props }: { color?: string 
 
 /** Cachorrinho low-poly, patas na origem, olhando para +X. */
 export function LowPolyDog({ color = '#d9a066', ...props }: { color?: string } & JSX.IntrinsicElements['group']) {
-  const mat = useMemo(() => new THREE.MeshStandardMaterial({ color, roughness: 0.8, flatShading: true }), [color])
+  const mat = useMemo(() => makeMat({ color, roughness: 0.8, flatShading: true }), [color])
   return (
     <group {...props}>
       <mesh material={mat} position={[0, 0.2, 0]} userData={{ fx: true }}><boxGeometry args={[0.36, 0.14, 0.14]} /></mesh>

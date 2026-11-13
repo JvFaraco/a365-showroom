@@ -2,7 +2,7 @@ import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { Html } from '@react-three/drei'
 import { ClickablePart } from '../parts/ClickablePart'
-import { M } from '../common/materials'
+import { M, mat } from '../common/materials'
 import { roundedRectGeometry } from '../common/shapes'
 import { DeviceCtx, useActionPhase, type DeviceProps } from '../common/util'
 import { useShowroom } from '../../store/showroomStore'
@@ -22,7 +22,7 @@ export function Smartphone({ interactive = false }: DeviceProps) {
   const frame = useMemo(() => roundedRectGeometry(0.95, 1.95, 0.13, 0.07, 0.012), [])
   // aro metálico em volta do corpo (grafite), como nos celulares atuais
   const band = useMemo(() => roundedRectGeometry(0.962, 1.962, 0.136, 0.05, 0.008), [])
-  const bandMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#4a4d55', roughness: 0.28, metalness: 0.95 }), [])
+  const bandMat = useMemo(() => mat({ color: '#4a4d55', roughness: 0.28, metalness: 0.95 }), [])
   const glass = useMemo(() => roundedRectGeometry(0.89, 1.89, 0.11, 0.004, 0), [])
   const armOn = useActionPhase('alarme-geral') >= 0
   // no showroom os 7 aparelhos ficam montados: a tela (DOM) só aparece quando o celular é o aparelho ativo

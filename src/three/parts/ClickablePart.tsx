@@ -8,25 +8,13 @@ import { ACTIONS } from '../../data/actions'
 import { getPart } from '../../data/devices'
 import { useShowroom } from '../../store/showroomStore'
 import { explodeAmt, useDeviceCtx } from '../common/util'
+import { FRES_KEY, fresnelPatch } from '../common/materials'
 import { registerPart } from '../common/registry'
 
 type Mat = THREE.Material & { opacity: number; emissive?: THREE.Color; emissiveIntensity?: number; isMeshStandardMaterial?: boolean }
 type Tracked = { mat: Mat; base: number; baseDepthWrite: boolean; led: boolean; baseEmissive?: THREE.Color; baseEI?: number; fres: { value: number } }
 
 const GLOW = new THREE.Color('#2f66ff')
-
-// Contorno fresnel (Raio-X e partes esmaecidas): a borda da carcaça fica visível e o miolo, quase
-// transparente. É um uniform, então ligar/desligar não compila shader novo.
-function fresnelPatch(this: { fres: { value: number } }, shader: { uniforms: Record<string, { value: unknown }>; fragmentShader: string }) {
-  shader.uniforms.uFres = this.fres
-  shader.fragmentShader = shader.fragmentShader
-    .replace('#include <common>', '#include <common>\nuniform float uFres;')
-    .replace('#include <dithering_fragment>', `#include <dithering_fragment>
-      float frs = pow(1.0 - clamp(abs(dot(normalize(normal), normalize(vViewPosition))), 0.0, 1.0), 2.2) * uFres;
-      gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.72, 0.82, 1.0), frs * 0.75);
-      gl_FragColor.a = clamp(gl_FragColor.a + frs * 0.85, 0.0, 1.0);`)
-}
-const FRES_KEY = () => 'a365-fresnel'
 
 function isInternalObject(o: THREE.Object3D | null) {
   for (; o; o = o.parent) if (o.userData.internalPart) return true

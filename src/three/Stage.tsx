@@ -7,6 +7,7 @@ import { DEVICE_BY_ID } from '../data/devices'
 import { actionTime, useShowroom } from '../store/showroomStore'
 import { REF_ON } from '../dev/RefMode'
 import { pedestalRadius } from './common/registry'
+import { mat } from './common/materials'
 
 const DARK = new Set(['controle', 'app'])
 // constante fora do componente: o material refletor recria seus render targets quando `blur` muda de identidade
@@ -44,8 +45,9 @@ export function Stage() {
   const warm = useShowroom((s) => s.warm)
   const dim = useRef({ v: 1, rim: 1, glow: 0.12, room: 0, ped: 1 })
   // pedestal: disco neutro, fosco e discreto (sem aro luminoso); só um chanfro um pouco mais claro na borda
-  const ringMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2a2d35', roughness: 0.8 }), [])
-  const pedMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#17191f', roughness: 0.85, metalness: 0 }), [])
+  const ringMat = useMemo(() => mat({ color: '#2a2d35', roughness: 0.8 }), [])
+  const pedMat = useMemo(() => mat({ color: '#17191f', roughness: 0.85, metalness: 0 }), [])
+  const flatFloor = useMemo(() => mat({ color: '#05070d', roughness: 1, metalness: 0, envMapIntensity: 0.2 }), [])
   const glowMat = useMemo(() => new THREE.MeshBasicMaterial({ map: glowTexture(), transparent: true, opacity: 0.12, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending }), [])
 
   // sombra de contato: assada uma vez, depois que o aparelho pousa (nunca a cada frame)
@@ -108,7 +110,7 @@ export function Stage() {
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, floorY, 0]} raycast={() => null}>
           <planeGeometry args={[80, 80]} />
           {quality >= 3 ? (
-            <meshStandardMaterial color="#05070d" roughness={1} metalness={0} envMapIntensity={0.2} />
+            <primitive object={flatFloor} attach="material" />
           ) : (
             <MeshReflectorMaterial mirror={0.3} blur={REFLECT_BLUR} resolution={512} mixBlur={1} mixStrength={1.5} roughness={0.95}
               depthScale={1} minDepthThreshold={0.4} maxDepthThreshold={1.3} color="#060913" metalness={0.4} />

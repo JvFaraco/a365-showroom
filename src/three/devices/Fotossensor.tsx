@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { Html, RoundedBox } from '@react-three/drei'
 import { ClickablePart } from '../parts/ClickablePart'
-import { M, fxBasic } from '../common/materials'
+import { M, fxBasic, mat } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
 import { polaroidTexture } from '../common/textures'
@@ -285,16 +285,16 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   const ruler = useRef<THREE.Group>(null!)
   const alertV = useRef(0)
   const g = G()
-  const winMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#0f3a1f', roughness: 0.12, clearcoat: 1 }), [])
+  const winMat = useMemo(() => mat({ color: '#0f3a1f', roughness: 0.12, clearcoat: 1 }), [])
   // base e suporte de parede: o mesmo plástico cinza fosco
   const baseMat = useMemo(() => { const m = M.grey.clone(); m.color.set('#80848c'); return m }, [])
-  const springMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#b87333', roughness: 0.38, metalness: 1 }), [])
+  const springMat = useMemo(() => mat({ color: '#b87333', roughness: 0.38, metalness: 1 }), [])
   const shellMat = useMemo(() => { const m = M.white.clone(); m.side = THREE.DoubleSide; return m }, [])
   // a cápsula é um plástico um pouco mais frio e brilhante que o corpo
-  const capMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#d3d6df', roughness: 0.26, clearcoat: 0.6, clearcoatRoughness: 0.2 }), [])
+  const capMat = useMemo(() => mat({ color: '#d3d6df', roughness: 0.26, clearcoat: 0.6, clearcoatRoughness: 0.2 }), [])
   const mountMat = useMemo(() => { const m = M.grey.clone(); m.color.set('#9a9ea6'); return m }, [])
-  const lensBack = useMemo(() => new THREE.MeshStandardMaterial({ color: '#d6d9df', roughness: 0.7 }), [])
-  const pirMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#e6e8ec', roughness: 0.36, clearcoat: 1, clearcoatRoughness: 0.12, transparent: true, opacity: 0.88, envMapIntensity: 1.4 }), [])
+  const lensBack = useMemo(() => mat({ color: '#d6d9df', roughness: 0.7 }), [])
+  const pirMat = useMemo(() => mat({ color: '#e6e8ec', roughness: 0.36, clearcoat: 1, clearcoatRoughness: 0.12, transparent: true, opacity: 0.88, envMapIntensity: 1.4 }), [])
   const polMat = useMemo(() => new THREE.MeshBasicMaterial({ map: polaroidTexture(), toneMapped: false, side: THREE.DoubleSide }), [])
   const rulerMat = useMemo(() => fxBasic('#ffffff', 0.5), [])
   const bandMat = useMemo(() => fxBasic('#35d46a', 0.35), [])
