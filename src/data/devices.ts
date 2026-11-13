@@ -113,9 +113,9 @@ export const DEVICES: Device[] = [
       {
         id: 'ethernet',
         name: 'Porta Ethernet',
-        what: 'Entrada para cabo de rede, no bolsão do fundo.',
+        what: 'Entrada para cabo de rede, na parede do bolsão do fundo: o cabo entra deitado.',
         facts: ['Terceira via de comunicação: cabo de rede'],
-        camera: { position: [0.5, -2.2, -1.5], target: [0, -0.38, -0.4] },
+        camera: { position: [0.35, -1.7, -2.3], target: [0, -0.36, -0.3] },
         action: 'cabos',
       },
       {

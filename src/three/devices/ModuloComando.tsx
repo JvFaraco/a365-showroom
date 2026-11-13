@@ -106,15 +106,15 @@ function lidGeometry() {
 const Y_BOT = BOTTOM
 // Visto por baixo, com a antena para cima: o bolsão fica NO MEIO (um nada para a esquerda), encostado na borda de
 // trás; a antena sai ao lado dele, à direita (−X); o furo pequeno fica à esquerda (+X).
-const POCKET = { x0: -0.2, x1: 0.3, z0: -0.76, z1: -0.22, d: 0.24 } // bolsão fundo dos cabos, no meio
+const POCKET = { x0: -0.2, x1: 0.3, z0: -0.76, z1: -0.22, d: 0.3 } // bolsão fundo dos cabos, no meio (vai até a altura da placa)
 const LABEL = { x0: -0.3, x1: 0.3, z0: 0.0, z1: 0.3 } // rebaixo raso da etiqueta (fica vazio)
-const RJ = { x: 0.0, z: -0.31 } // RJ45 na face funda do bolsão, embaixo da grade, boca para quem olha o fundo
+const RJ = { x: 0.0, y: Y_BOT + 0.145 } // RJ45 deitado, na PAREDE DA FRENTE do bolsão, com a boca virada para dentro dele
 const GRILLE = { x: (POCKET.x0 + POCKET.x1) / 2, z: -0.565, pitch: 0.054 } // grade de som: hexágono de furos na face funda do bolsão
 const ANT_X = -0.35 // a antena não fica no centro: sai num ressalto ao lado do bolsão, sob o arco de trás da tampa
 /** Altura depois do achatamento do corpo (para o que fica fora do grupo achatado). */
 const sq = (y: number) => BOTTOM + (y - BOTTOM) * SQUASH
-const NET_Y = Y_BOT + POCKET.d - 0.2, POW_X = POCKET.x1 - 0.15 // posição encaixada dos plugues
-const JACK = { y: Y_BOT + POCKET.d * 0.5, z: -0.47 } // entrada da fonte na parede esquerda (+X), a meia altura
+const NET_Z = POCKET.z1 - 0.13, POW_X = POCKET.x1 - 0.15 // posição encaixada dos plugues
+const JACK = { y: Y_BOT + POCKET.d * 0.5, z: -0.56 } // entrada da fonte na parede esquerda (+X), a meia altura
 
 /**
  * Base cinza: parede no contorno em gota, com frisos verticais rasos (os sulcos caem em cima das fendas do fundo),
@@ -213,8 +213,8 @@ function build() {
     coaxB: wire([[0.0, PCB_Y + 0.05, 0.16], [-0.16, PCB_Y + 0.085, 0.02], [-0.345, PCB_Y + 0.075, -0.2], [-0.355, PCB_Y + 0.06, -0.5], [ANT_X, PCB_Y + 0.02, -0.69]], 0.007),
     // antena de fio do rádio dos sensores: acompanha a borda da placa
     yellow: wire([[-0.52, PCB_Y + 0.02, -0.42], [-0.63, PCB_Y + 0.06, -0.2], [-0.7, PCB_Y + 0.07, 0.05], [-0.66, PCB_Y + 0.06, 0.3], [-0.56, PCB_Y + 0.03, 0.46]], 0.009),
-    spkA: wire([[0.0, -0.03, -0.27], [-0.08, 0.0, -0.2], [-0.2, PCB_Y + 0.03, -0.14], [-0.24, PCB_Y + 0.012, -0.1]], 0.007),
-    spkB: wire([[0.07, -0.03, -0.27], [-0.01, 0.0, -0.19], [-0.13, PCB_Y + 0.03, -0.11], [-0.2, PCB_Y + 0.012, -0.06]], 0.007),
+    spkA: wire([[0.0, 0.02, -0.27], [-0.08, 0.03, -0.2], [-0.2, PCB_Y + 0.03, -0.14], [-0.24, PCB_Y + 0.012, -0.1]], 0.007),
+    spkB: wire([[0.07, 0.02, -0.27], [-0.01, 0.03, -0.19], [-0.13, PCB_Y + 0.03, -0.11], [-0.2, PCB_Y + 0.012, -0.06]], 0.007),
     micA: wire([[0.36, -0.2, -0.26], [0.4, -0.1, -0.2], [0.38, PCB_Y + 0.03, -0.12], [0.33, PCB_Y + 0.012, -0.08]], 0.006),
     micB: wire([[0.39, -0.2, -0.24], [0.44, -0.1, -0.17], [0.42, PCB_Y + 0.03, -0.1], [0.37, PCB_Y + 0.012, -0.05]], 0.006),
     batA: wire([[0.6, PCB_Y + 0.03, -0.02], [0.7, PCB_Y + 0.03, 0.1], [0.74, PCB_Y - 0.04, 0.22]], 0.008),
@@ -314,8 +314,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
     const tc = actionTime('cabos')
     cables.current.visible = tc >= 0
     if (tc >= 0) {
-      // o cabo de rede sobe e encaixa no RJ45, que tem a boca para baixo
-      netRef.current.position.y = NET_Y - (1 - seg(tc, 0.3, 1.3)) * 0.8 + bump(tc, 1.25, 1.4, 1.45, 1.6) * 0.02
+      // o cabo de rede sobe para dentro do bolsão e entra deitado no RJ45, que fica na parede da frente
+      netRef.current.position.set(RJ.x, RJ.y - (1 - seg(tc, 0.3, 1.0)) * 0.8, NET_Z - (1 - seg(tc, 1.0, 1.4)) * 0.16 + bump(tc, 1.35, 1.5, 1.55, 1.7) * 0.015)
       // o plugue da fonte sobe para dentro do bolsão e entra de lado, na parede esquerda
       powRef.current.position.set(POW_X - (1 - seg(tc, 2.2, 2.8)) * 0.16 + bump(tc, 2.75, 2.9, 2.95, 3.1) * 0.02, JACK.y - (1 - seg(tc, 1.6, 2.2)) * 0.7, JACK.z)
       cables.current.position.y = -seg(tc, 4.6, 5.4) * 1.1
@@ -441,11 +441,13 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         <ClickablePart id="alto-falante">
           <instancedMesh ref={holes} args={[g.hole, M.hole, 37]} />
         </ClickablePart>
-        {/* RJ45: na face funda do bolsão, embaixo da grade (perto da parede da frente), com a boca para quem olha o fundo */}
+        {/* RJ45: conector deitado (fica soldado embaixo da placa); só a boca aparece, na parede da frente do bolsão, virada
+            para dentro dele. Os contatos dourados ficam no alto da boca e as duas linguetas metálicas embaixo */}
         <ClickablePart id="ethernet">
-          <mesh material={M.metal} position={[RJ.x, Y_BOT + POCKET.d - 0.05, RJ.z]}><boxGeometry args={[0.2, 0.1, 0.16]} /></mesh>
-          <mesh material={M.hole} position={[RJ.x, Y_BOT + POCKET.d - 0.101, RJ.z]} rotation={[Math.PI / 2, 0, 0]}><planeGeometry args={[0.15, 0.11]} /></mesh>
-          <mesh material={M.gold} position={[RJ.x, Y_BOT + POCKET.d - 0.102, RJ.z - 0.035]} rotation={[Math.PI / 2, 0, 0]}><planeGeometry args={[0.11, 0.02]} /></mesh>
+          <mesh material={M.metal} position={[RJ.x, RJ.y, POCKET.z1 - 0.012]}><boxGeometry args={[0.2, 0.25, 0.03]} /></mesh>
+          <mesh material={M.hole} position={[RJ.x, RJ.y - 0.01, POCKET.z1 - 0.0275]} rotation={[0, Math.PI, 0]}><planeGeometry args={[0.15, 0.17]} /></mesh>
+          <mesh material={M.gold} position={[RJ.x, RJ.y + 0.06, POCKET.z1 - 0.028]} rotation={[0, Math.PI, 0]}><planeGeometry args={[0.11, 0.025]} /></mesh>
+          {[-0.055, 0.055].map((dx) => <mesh key={dx} material={M.metal} position={[RJ.x + dx, RJ.y - 0.115, POCKET.z1 - 0.034]}><boxGeometry args={[0.035, 0.03, 0.02]} /></mesh>)}
         </ClickablePart>
         {/* entrada da fonte: jack redondo na parede esquerda do bolsão, a meia altura, voltado para o lado; fenda pequena acima */}
         <ClickablePart id="fonte">
@@ -459,8 +461,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
           <mesh geometry={g.pcb} material={M.pcb} position={[0, PCB_Y, 0]} />
           {/* placa limpa: verde liso, poucos componentes grandes. RJ45 (caixa metálica) no fundo do recorte e o jack
               da fonte (caixa preta) ao lado dele, alinhados com o bolsão do fundo */}
-          <mesh material={M.metal} position={[RJ.x, PCB_Y - 0.06, RJ.z + 0.14]}><boxGeometry args={[0.22, 0.1, 0.12]} /></mesh>
-          <mesh material={M.chip} position={[POCKET.x1 + 0.07, PCB_Y - 0.05, JACK.z]}><boxGeometry args={[0.12, 0.09, 0.12]} /></mesh>
+          <mesh material={M.metal} position={[RJ.x, RJ.y, POCKET.z1 + 0.075]}><boxGeometry args={[0.2, 0.25, 0.15]} /></mesh>
+          <mesh material={M.chip} position={[POCKET.x1 + 0.07, PCB_Y - 0.12, JACK.z]}><boxGeometry args={[0.12, 0.2, 0.12]} /></mesh>
           {/* área de energia: bobinas e chips pequenos */}
           {[[0.5, -0.36], [0.62, -0.26], [0.56, -0.16]].map(([x, z], i) => (
             <RoundedBox key={i} args={[0.075, 0.045, 0.075]} radius={0.012} smoothness={2} position={[x, PCB_Y + 0.022, z]} material={M.chip} />
@@ -516,7 +518,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
 
         {/* alto-falante: caixinha cinza no recorte da placa, logo acima da grade do bolsão; cone preto e ímã cromado */}
         <ClickablePart id="speaker">
-          <group position={[GRILLE.x, -0.08, -0.5]}>
+          <group position={[GRILLE.x, -0.02, -0.5]}>
             <RoundedBox args={[0.44, 0.15, 0.5]} radius={0.04} smoothness={4} material={M.grey} />
             <mesh geometry={g.cone} material={M.black} position={[0, 0.045, 0]} />
             <mesh geometry={g.magnet} material={M.chrome} position={[0, 0.05, 0]} />
@@ -543,9 +545,9 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         {/* cabos que entram no bolsão: plugue de energia em L e cabo de rede */}
         {interactive && (
           <group ref={cables} visible={false}>
-            <group ref={netRef} position={[RJ.x, NET_Y, RJ.z]}>
-              <mesh material={M.wireBlue} position={[0, 0.02, 0]} userData={{ fx: true }}><boxGeometry args={[0.15, 0.2, 0.1]} /></mesh>
-              <mesh material={M.wireBlue} position={[0, -0.6, 0]} userData={{ fx: true }} raycast={() => null}><cylinderGeometry args={[0.03, 0.03, 1.1, 10]} /></mesh>
+            <group ref={netRef} position={[RJ.x, RJ.y, NET_Z]}>
+              <mesh material={M.wireBlue} userData={{ fx: true }}><boxGeometry args={[0.13, 0.14, 0.2]} /></mesh>
+              <mesh material={M.wireBlue} position={[0, -0.58, -0.08]} userData={{ fx: true }} raycast={() => null}><cylinderGeometry args={[0.03, 0.03, 1.1, 10]} /></mesh>
             </group>
             <group ref={powRef} position={[POW_X, JACK.y, JACK.z]}>
               <mesh material={M.chip} position={[0.02, 0, 0]} userData={{ fx: true }}><boxGeometry args={[0.2, 0.1, 0.09]} /></mesh>
