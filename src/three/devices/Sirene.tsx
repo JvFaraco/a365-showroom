@@ -207,7 +207,6 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
           {/* a placa inteira fica por dentro: contorno em cunha, chips, antena de fio preto e os dois fios brancos do elemento sonoro */}
           <mesh geometry={board} material={M.pcb} position={[0, 0, -0.2]} />
           <mesh material={M.chip} position={[-0.45, -0.12, -0.165]}><boxGeometry args={[0.14, 0.14, 0.02]} /></mesh>
-          <mesh material={M.chip} position={[-0.3, -0.26, -0.168]}><boxGeometry args={[0.09, 0.09, 0.016]} /></mesh>
           {[0, 1, 2, 3, 4, 5].map((i) => <mesh key={i} material={M.gold} position={[-0.16, 0.0 - i * 0.045, -0.172]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.012, 0.012, 0.006, 8]} /></mesh>)}
           <mesh geometry={antenna} material={M.chip} />
           <mesh geometry={piezoWireA} material={M.white} />
