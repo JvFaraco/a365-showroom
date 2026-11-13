@@ -7,7 +7,7 @@ import { M, fxBasic } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
 import { iconTexture, type IconId } from '../common/textures'
-import { latheZ, ringSectorGeometry, smoothLatheZ, stadiumGeometry, wire } from '../common/shapes'
+import { boxesGeometry, latheZ, ringSectorGeometry, smoothLatheZ, stadiumGeometry, wire, type Block } from '../common/shapes'
 import { DeviceCtx, bump, seg, useActionPhase, type DeviceProps } from '../common/util'
 import type { ActionId } from '../../data/devices'
 import { actionTau, actionTime, useShowroom, type ArmState } from '../../store/showroomStore'
@@ -85,8 +85,16 @@ function build() {
   const ca = Math.asin(0.6 / 0.69)
   cs.absarc(0, 0, 0.69, Math.PI - ca, Math.PI * 2 + ca, false); cs.closePath()
   const cover = new THREE.ExtrudeGeometry(cs, { depth: 0.014, bevelEnabled: true, bevelSize: 0.008, bevelThickness: 0.008, bevelSegments: 3, curveSegments: 48 }); cover.translate(0, 0, -0.022)
+  // componentes pequenos na frente da placa (sob o teclado), em volta do CI do centro, como na placa real: capacitores
+  // (bege), resistores e CIs pequenos (pretos), o cristal (metal) e dois pontos de teste (dourados). Sem texto
+  const ZS = -0.046, t = (x: number, y: number, w = 0.04, h = 0.022): Block => [x, y, ZS, w, h, 0.008]
+  const side = (v: number): Block[] => [t(-0.08, v), t(0, v), t(0.08, v), t(v, -0.08, 0.022, 0.04), t(v, 0, 0.022, 0.04), t(v, 0.08, 0.022, 0.04)]
+  const smdTan = boxesGeometry([...side(0.17), t(-0.3, -0.2), t(-0.21, -0.31, 0.022, 0.04), t(0.3, -0.17), t(0.22, 0.3, 0.022, 0.04), t(-0.24, 0.27)])
+  const smdBlack = boxesGeometry([...side(-0.17), [-0.3, -0.3, ZS, 0.07, 0.07, 0.01], [0.3, -0.28, ZS, 0.06, 0.09, 0.01], t(-0.32, 0.2, 0.022, 0.04)])
+  const smdMetal = boxesGeometry([[0, 0.29, -0.042, 0.1, 0.06, 0.016]])
+  const smdGold = boxesGeometry([[0.13, 0.29, -0.048, 0.035, 0.035, 0.004], [0.2, 0.29, -0.048, 0.035, 0.035, 0.004]])
   return {
-    front, back, frontDome, backDome, fillet, cover,
+    front, back, frontDome, backDome, fillet, cover, smdTan, smdBlack, smdMetal, smdGold,
     sector: ringSectorGeometry(0.3, 0.62, -38 * D2R, 38 * D2R, 0.018, 0.022),
     // disco central fixo: baixo, sem contorno de tecla
     center: smoothLatheZ([[0.27, 0.168], [0.266, 0.182], [0.245, 0.19], [0.001, 0.192]], 96, 24),
@@ -246,6 +254,10 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
             </group>
           ))}
           <mesh material={M.chip} position={[0, 0, -0.043]}><boxGeometry args={[0.2, 0.2, 0.014]} /></mesh>
+          <mesh geometry={g.smdTan} material={M.smdTan} />
+          <mesh geometry={g.smdBlack} material={M.chip} />
+          <mesh geometry={g.smdMetal} material={M.metal} />
+          <mesh geometry={g.smdGold} material={M.gold} />
           <mesh material={M.white} position={[0.3, 0.56, -0.045]}><boxGeometry args={[0.05, 0.03, 0.01]} /></mesh>
           {[0, 1, 2, 3, 4].map((i) => <mesh key={i} material={M.gold} position={[-0.14 + i * 0.07, -0.6, -0.048]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.018, 0.018, 0.004, 10]} /></mesh>)}
           <mesh geometry={g.aerial} material={M.yellow} />

@@ -6,7 +6,7 @@ import { ClickablePart } from '../parts/ClickablePart'
 import { M } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
-import { stadiumGeometry } from '../common/shapes'
+import { boxesGeometry, stadiumGeometry, type Block } from '../common/shapes'
 import { DeviceCtx, bump, useActionPhase, type DeviceProps } from '../common/util'
 import { actionTime, now, useShowroom } from '../../store/showroomStore'
 import { MagneticField } from '../fx/MagneticField'
@@ -47,6 +47,14 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
   const doorMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#6b5a4a', roughness: 0.8 }), [])
   const wallMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2a3145', roughness: 0.9 }), [])
   // antena em mola de cobre
+  const smd = useMemo(() => {
+    const z = -0.085, x = BODY.x, b = (dx: number, y: number, w: number, h: number, d = 0.012): Block => [x + dx, y, z, w, h, d]
+    return {
+      gold: boxesGeometry([-0.1, -0.03, 0.04, 0.11].map((y) => b(-0.14, y, 0.03, 0.03, 0.004))),
+      black: boxesGeometry([b(-0.1, 0.63, 0.05, 0.1, 0.03), b(0.11, 0.38, 0.04, 0.022)]),
+      tan: boxesGeometry([b(0.11, 0.57, 0.04, 0.022), b(0.11, 0.5, 0.04, 0.022), b(-0.11, 0.5, 0.022, 0.04), b(0.12, -0.56, 0.04, 0.022)]),
+    }
+  }, [])
   const spring = useMemo(() => {
     const pts: THREE.Vector3[] = []
     for (let i = 0; i <= 120; i++) { const t = i / 120; pts.push(new THREE.Vector3(Math.cos(t * Math.PI * 14) * 0.045, t * 0.16, Math.sin(t * Math.PI * 14) * 0.045)) }
@@ -106,6 +114,11 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
                 <mesh geometry={spring} material={copper} position={[BODY.x, 0.68, -0.08]} />
                 <mesh material={M.chip} position={[BODY.x, -0.72, -0.06]}><boxGeometry args={[0.2, 0.16, 0.08]} /></mesh>
                 {[-0.05, 0.05].map((dx) => <mesh key={dx} material={M.metal} position={[BODY.x + dx, -0.72, -0.016]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.026, 0.026, 0.008, 10]} /></mesh>)}
+                {/* como na placa real: fileira de pontos de teste dourados na borda, o sensor do ímã (preto, na ponta da
+                    antena) e alguns componentes pequenos perto do CI. Sem etiqueta */}
+                <mesh geometry={smd.gold} material={M.gold} />
+                <mesh geometry={smd.black} material={M.chip} />
+                <mesh geometry={smd.tan} material={M.smdTan} />
               </group>
             </ClickablePart>
             {/* sensor de choque: um CI pequeno na placa */}

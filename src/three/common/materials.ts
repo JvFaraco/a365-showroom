@@ -35,6 +35,8 @@ export const M = {
   pcb: std({ color: '#ffffff', roughness: 0.5, ...(typeof document !== 'undefined' ? { map: pcbTexture() } : {}) }),
   pcbDark: std({ color: '#0f5a2c', roughness: 0.5 }),
   chip: std({ color: '#1b1c20', roughness: 0.4 }),
+  // componentes pequenos de placa (capacitores): bege
+  smdTan: std({ color: '#b08a60', roughness: 0.55 }),
   // metais (molas, parafusos, conectores): metalness 1, roughness média
   metal: std({ color: '#cfd3d9', roughness: 0.38, metalness: 1 }),
   gold: std({ color: '#d9b25c', roughness: 0.36, metalness: 1 }),

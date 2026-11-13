@@ -6,7 +6,7 @@ import { ClickablePart } from '../parts/ClickablePart'
 import { M, fxBasic } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
-import { latheZ, smoothLatheZ, stadiumGeometry, wire } from '../common/shapes'
+import { boxesGeometry, latheZ, smoothLatheZ, stadiumGeometry, wire, type Block } from '../common/shapes'
 import { DeviceCtx, bump, clamp01, explodeAmt, seg, useActionPhase, type DeviceProps } from '../common/util'
 import { actionTau, actionTime, useShowroom } from '../../store/showroomStore'
 import { SoundWaves } from '../fx/SoundWaves'
@@ -91,6 +91,16 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
     const sh = new THREE.Shape()
     sh.moveTo(-0.72, 0.22); sh.lineTo(-0.24, 0.22); sh.lineTo(-0.24, 0.1); sh.lineTo(-0.14, 0.1); sh.lineTo(-0.14, -0.42); sh.lineTo(-0.5, -0.42); sh.lineTo(-0.74, -0.05); sh.closePath()
     return new THREE.ExtrudeGeometry(sh, { depth: 0.018, bevelEnabled: false })
+  }, [])
+  // componentes pequenos da placa, agrupados em volta dos CIs, como na placa real (sem texto): uma malha por cor
+  const smd = useMemo(() => {
+    const z = -0.176, t = (x: number, y: number, w = 0.04, h = 0.022): Block => [x, y, z, w, h, 0.012]
+    return {
+      tan: boxesGeometry([t(-0.57, -0.12), t(-0.57, -0.06), t(-0.45, -0.24, 0.022, 0.04), t(-0.39, -0.24, 0.022, 0.04), t(-0.34, -0.18), t(-0.52, 0.13), t(-0.52, 0.07), t(-0.33, 0.14, 0.022, 0.04), t(-0.33, 0.07, 0.022, 0.04), t(-0.27, -0.26)]),
+      black: boxesGeometry([[-0.42, 0.09, z, 0.09, 0.09, 0.014], t(-0.29, 0.0), t(-0.29, -0.05), t(-0.29, -0.1), t(-0.6, 0.05, 0.022, 0.04)]),
+      metal: boxesGeometry([[-0.61, 0.15, z, 0.07, 0.04, 0.016]]),
+      white: boxesGeometry([[-0.27, -0.37, -0.168, 0.12, 0.06, 0.028]]), // conector branco dos dois fios do elemento sonoro
+    }
   }, [])
   const antenna = useMemo(() => wire([[-0.7, 0.2, -0.175], [-0.72, 0.4, -0.12], [-0.55, 0.62, -0.06], [-0.2, 0.72, -0.02], [0.2, 0.68, 0.0]], 0.01), [])
   const piezoWireA = useMemo(() => wire([[0.0, -0.44, -0.09], [-0.12, -0.5, -0.13], [-0.25, -0.46, -0.17], [-0.3, -0.38, -0.178]], 0.009), [])
@@ -218,6 +228,10 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
           <mesh geometry={board} material={M.pcb} position={[0, 0, -0.2]} />
           <mesh material={M.chip} position={[-0.45, -0.12, -0.165]}><boxGeometry args={[0.14, 0.14, 0.02]} /></mesh>
           {[0, 1, 2, 3, 4, 5].map((i) => <mesh key={i} material={M.gold} position={[-0.16, 0.0 - i * 0.045, -0.172]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.012, 0.012, 0.006, 8]} /></mesh>)}
+          <mesh geometry={smd.tan} material={M.smdTan} />
+          <mesh geometry={smd.black} material={M.chip} />
+          <mesh geometry={smd.metal} material={M.metal} />
+          <mesh geometry={smd.white} material={M.white} />
           <mesh geometry={antenna} material={M.chip} />
           <mesh geometry={piezoWireA} material={M.white} />
           <mesh geometry={piezoWireB} material={M.white} />

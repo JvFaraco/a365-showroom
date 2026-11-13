@@ -7,7 +7,7 @@ import { ClickablePart } from '../parts/ClickablePart'
 import { M, fxBasic } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
-import { roundedRectGeometry, smoothLatheY, stadiumGeometry, wire } from '../common/shapes'
+import { boxesGeometry, roundedRectGeometry, smoothLatheY, stadiumGeometry, wire, type Block } from '../common/shapes'
 import { DeviceCtx, bump, seg, useActionPhase, type DeviceProps } from '../common/util'
 import { LED_BY_ID, ledSample } from '../../data/ledStates'
 import { actionTau, actionTime, useShowroom } from '../../store/showroomStore'
@@ -180,10 +180,21 @@ function pcbGeometry() {
   return g
 }
 
+// Componentes pequenos da placa, em grupos ordenados perto dos CIs (como na placa real, sem texto nem etiqueta):
+// fileiras ao longo de x ou de z, na face de cima da placa.
+const rowX = (x: number, z: number, n: number, dx = 0.045, w = 0.03, d = 0.016, h = 0.012): Block[] => Array.from({ length: n }, (_, i) => [x + i * dx, PCB_Y + h / 2, z, w, h, d] as Block)
+const rowZ = (x: number, z: number, n: number, dz = 0.045, w = 0.016, d = 0.03, h = 0.012): Block[] => Array.from({ length: n }, (_, i) => [x, PCB_Y + h / 2, z + i * dz, w, h, d] as Block)
+const ic = (x: number, z: number, w: number, d = w, h = 0.016): Block => [x, PCB_Y + h / 2, z, w, h, d]
+
 type Geo = ReturnType<typeof build>
 let cache: Geo | null = null
 function build() {
   return {
+    // capacitores (bege), resistores e CIs (pretos), cristal e bobina (metal) e os pontos de teste (dourados)
+    smdTan: boxesGeometry([...rowX(0.08, -0.1, 4), ...rowX(0.08, 0.08, 5), ...rowZ(0.36, -0.1, 4), ...rowZ(-0.2, -0.12, 3), ...rowZ(0.46, -0.08, 3, 0.05), ...rowX(-0.3, 0.62, 4), ...rowX(0.2, 0.64, 3), ...rowZ(-0.6, 0.12, 4, 0.05)]),
+    smdBlack: boxesGeometry([ic(0.2, -0.01, 0.1), ic(-0.1, 0.03, 0.05, 0.04), ic(0.66, 0.03, 0.05, 0.06), ic(-0.52, 0.02, 0.05, 0.04, 0.014), ...rowX(0.1, -0.045, 3), ...rowZ(0.3, -0.1, 3), ...rowX(-0.26, 0.58, 3), ...rowZ(0.6, 0.1, 2, 0.05)]),
+    smdMetal: boxesGeometry([ic(0.33, 0.07, 0.07, 0.03, 0.018), ic(0.44, -0.22, 0.06, 0.06, 0.03)]),
+    smdGold: boxesGeometry(rowZ(-0.66, 0.1, 6, 0.045, 0.022, 0.022, 0.004)),
     lid: lidGeometry(),
     base: baseGeometry(),
     slit: new THREE.BoxGeometry(0.016, 0.004, 0.075), // fenda de ventilação
@@ -459,6 +470,11 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
           {[[0.02, 0.0], [0.02, -0.12]].map(([x, z], i) => <mesh key={i} material={M.chip} position={[x, PCB_Y + 0.008, z]}><cylinderGeometry args={[0.03, 0.03, 0.016, 12]} /></mesh>)}
           <mesh material={M.white} position={[-0.42, PCB_Y + 0.002, -0.52]} rotation={[-Math.PI / 2, 0, 0.6]}><planeGeometry args={[0.13, 0.08]} /></mesh>
           <mesh material={M.chip} position={[-0.29, PCB_Y + 0.012, -0.05]}><boxGeometry args={[0.09, 0.022, 0.09]} /></mesh>
+          {/* componentes pequenos, agrupados perto dos CIs: uma malha por cor */}
+          <mesh geometry={g.smdTan} material={M.smdTan} />
+          <mesh geometry={g.smdBlack} material={M.chip} />
+          <mesh geometry={g.smdMetal} material={M.metal} />
+          <mesh geometry={g.smdGold} material={M.gold} />
         </ClickablePart>
 
         <ClickablePart id="led-botao-placa">

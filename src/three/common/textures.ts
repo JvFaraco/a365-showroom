@@ -272,20 +272,27 @@ export const microNormalTexture = () =>
 export const pcbTexture = () =>
   memo('pcb', () => {
     const [c, ctx] = canvas(256, 256)
-    ctx.fillStyle = '#17803f'; ctx.fillRect(0, 0, 256, 256)
+    ctx.fillStyle = '#157a3c'; ctx.fillRect(0, 0, 256, 256)
     let seed = 365
     const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280)
-    ctx.lineCap = 'round'; ctx.lineWidth = 1
-    ctx.strokeStyle = 'rgba(70,165,100,0.22)'
-    for (let i = 0; i < 26; i++) {
-      // trilha em "L": um trecho reto, uma quebra a 45° e outro trecho reto
-      let x = rnd() * 256, y = rnd() * 256
-      const h = rnd() > 0.5, l1 = 20 + rnd() * 60, l2 = 15 + rnd() * 50
-      ctx.beginPath(); ctx.moveTo(x, y)
-      if (h) x += l1; else y += l1
-      ctx.lineTo(x, y); x += 8; y += 8; ctx.lineTo(x, y)
-      if (h) y += l2; else x += l2
-      ctx.lineTo(x, y); ctx.stroke()
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 1.4
+    // trilhas como numa placa de verdade: feixes de 2 a 4 linhas paralelas (um tom acima do verde), com um trecho
+    // reto, uma quebra a 45° e outro trecho reto; no fim de cada linha, uma via (pontinho claro de miolo escuro)
+    for (let i = 0; i < 15; i++) {
+      const x0 = rnd() * 256, y0 = rnd() * 256, h = rnd() > 0.5, l1 = 24 + rnd() * 70, l2 = 18 + rnd() * 60, n = 2 + Math.floor(rnd() * 3)
+      for (let k = 0; k < n; k++) {
+        let x = x0 + (h ? 0 : k * 5), y = y0 + (h ? k * 5 : 0)
+        ctx.strokeStyle = 'rgba(92,186,118,0.3)'
+        ctx.beginPath(); ctx.moveTo(x, y)
+        if (h) x += l1 - k * 5; else y += l1 - k * 5
+        ctx.lineTo(x, y); x += 9; y += 9; ctx.lineTo(x, y)
+        if (h) y += l2; else x += l2
+        ctx.lineTo(x, y); ctx.stroke()
+        if (k === 0) {
+          ctx.fillStyle = 'rgba(150,215,165,0.5)'; ctx.beginPath(); ctx.arc(x, y, 2.2, 0, Math.PI * 2); ctx.fill()
+          ctx.fillStyle = 'rgba(8,40,20,0.75)'; ctx.beginPath(); ctx.arc(x, y, 0.9, 0, Math.PI * 2); ctx.fill()
+        }
+      }
     }
     return tex(c)
   })

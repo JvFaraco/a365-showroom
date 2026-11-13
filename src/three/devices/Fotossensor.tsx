@@ -8,7 +8,7 @@ import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
 import { polaroidTexture } from '../common/textures'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import { stadiumGeometry } from '../common/shapes'
+import { boxesGeometry, stadiumGeometry, type Block } from '../common/shapes'
 import { DeviceCtx, bump, seg, useActionPhase, type DeviceProps } from '../common/util'
 import { actionTau, actionTime, useShowroom } from '../../store/showroomStore'
 import { DetectionFan, LowPolyDog, LowPolyPerson } from '../fx/DetectionFan'
@@ -212,6 +212,9 @@ function lensPanel(hw: number, y0: number, y1: number, back: number) {
   return g
 }
 
+/** Componente pequeno na frente da placa principal: x, altura (mm, como na ficha), largura e altura dele. */
+const t = (x: number, h: number, w = 0.04, hh = 0.022): Block => [x, H(h), 0.116, w, hh, 0.012]
+
 type Geo = ReturnType<typeof build>
 let cache: Geo | null = null
 function build() {
@@ -274,6 +277,11 @@ function build() {
   const shell = shellGeometry()
   return {
     shellFront: shell.front, shellBack: shell.back, base, baseSeam, funnel, cover, coverSeam, latch, clipL, clipR, rails, plate,
+    // componentes pequenos da placa principal, em volta do sensor PIR e dos CIs, como na placa real (sem texto nem etiqueta)
+    smdTan: boxesGeometry([t(-0.12, 52), t(-0.12, 56), t(0.12, 52), t(0.12, 48), t(-0.06, 42, 0.022, 0.04), t(0, 42, 0.022, 0.04), t(0.06, 42, 0.022, 0.04), t(-0.26, 70), t(-0.26, 66), t(-0.05, 70)]),
+    smdBlack: boxesGeometry([[0.18, H(66), 0.117, 0.07, 0.07, 0.014], [-0.2, H(30), 0.117, 0.06, 0.09, 0.014], t(0.24, 40), t(0.24, 44), t(0.24, 48), [0.08, H(96), 0.172, 0.04, 0.03, 0.008], [-0.08, H(96), 0.172, 0.04, 0.03, 0.008]]),
+    smdMetal: boxesGeometry([[0.05, H(64), 0.118, 0.07, 0.035, 0.016]]),
+    smdGold: boxesGeometry([-0.125, -0.075, -0.025, 0.025, 0.075, 0.125].map((x) => [x, H(76), 0.112, 0.022, 0.022, 0.004] as Block)),
     ribs: mergeGeometries(fr),
     // lente PIR: painel fosco, com um fundo claro atrás e um quadro escuro um pouco maior (a linha fina em volta)
     pirFrame: lensPanel(LENS.hw + mm(0.6), LENS.y0 - mm(0.6), LENS.y1 + mm(0.6), LENS.depth - 0.002),
@@ -460,6 +468,10 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
               <mesh material={M.chip} position={[-0.16, H(62), 0.116]}><boxGeometry args={[0.1, 0.1, 0.014]} /></mesh>
               <mesh material={M.chip} position={[0.17, H(22), 0.116]}><boxGeometry args={[0.08, 0.12, 0.014]} /></mesh>
               <mesh material={M.white} position={[-0.21, H(84), 0.135]}><boxGeometry args={[0.11, mm(34), 0.006]} /></mesh>
+              <mesh geometry={g.smdTan} material={M.smdTan} />
+              <mesh geometry={g.smdBlack} material={M.chip} />
+              <mesh geometry={g.smdMetal} material={M.metal} />
+              <mesh geometry={g.smdGold} material={M.gold} />
             </ClickablePart>
             {/* sensor PIR: cilindro metálico (~9 × 5 mm) com a janelinha escura, no fundo do funil, no meio da lente PIR */}
             <ClickablePart id="sensor-pir">
