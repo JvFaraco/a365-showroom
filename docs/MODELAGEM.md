@@ -7,17 +7,17 @@ Materiais: plástico branco acetinado #F1F2F4 com verniz leve e micro-textura (`
 ## Módulo de Comando (planta de 144 × 145 mm, 38 mm de altura; 1 un = 80 mm; frente em +Z)
 
 
-A tampa é uma superfície só (topo plano que desce para a lateral em curva contínua), no mesmo contorno em gota da base: redondo do lado da antena e afinando para uma ponta arredondada na frente. A base cinza é lisa, com fendas curtas de ventilação em volta, três pés baixos, o rebaixo raso da etiqueta (vazio) e o bolsão fundo perto da borda de trás: grade de som em hexágono (37 furos) na parede do fundo, RJ45 embaixo dela com a boca para baixo e o jack da fonte na parede esquerda, a meia altura.
+A tampa é uma superfície só (topo plano que desce para a lateral em curva contínua), no mesmo contorno em gota da base: redondo do lado da antena e afinando para uma ponta arredondada na frente. A base cinza é lisa, com fendas curtas de ventilação em volta, três pés baixos, o rebaixo raso da etiqueta (vazio) e o bolsão fundo no meio da borda de trás: grade de som em hexágono (37 furos) na face funda, RJ45 embaixo dela com a boca para quem olha o fundo e o jack da fonte na parede esquerda, a meia altura. A antena não sai do centro: fica num ressalto ao lado do bolsão (à direita de quem olha o fundo); o furo pequeno fica do outro lado.
 | part.id | Como é modelada |
 |---|---|
-| `tampa` | Face: disco plano em `LatheGeometry`, inclinado para a frente, com linha de partição e o logo em sulcos finos. Saia: malha paramétrica que nasce redonda na borda da face e se abre em concha, com uma ponta na frente e duas asas atrás. Por dentro: bloco do guia de luz com furo de parafuso, ganchos e ressalto. |
-| `botao-sos` | A cápsula perto da borda da frente (eixo maior tangente à borda): aro cromado fino e guia de luz em `MeshTransmissionMaterial`. A peça inteira afunda enquanto o 190 é segurado. |
+| `tampa` | Uma malha paramétrica só: topo plano, levemente caído para a frente, que desce para a lateral em curva contínua, com o logo em sulcos finos. Por dentro: bloco do guia de luz com furo de parafuso, ganchos e ressalto. |
+| `botao-sos` | A cápsula perto da borda da frente (eixo maior tangente à borda): aro cromado fino e guia de luz em cristal translúcido (o mesmo material das janelas de LED dos outros aparelhos). A peça inteira afunda enquanto o 190 é segurado. |
 | `led` | Ponto emissivo forte no centro da cápsula e halo fraco pelo contorno. |
-| `antena` | Conector dourado rosqueado, junta com pino (articulação) e pá extrudada com chanfro. Sai da base, atrás. |
-| `base` | Base cinza: copo em `LatheGeometry` e 60 dentes arredondados em `InstancedMesh` (borda serrilhada, só forma). Acompanham: bolsão dos cabos, rebaixo da etiqueta, furo de parafuso, pé redondo e as duas travas da placa. |
-| `alto-falante` | Grade de furos redondos em `InstancedMesh`, no fundo do bolsão. |
-| `ethernet`, `fonte` | Porta de rede e conector de energia, lado a lado dentro do bolsão. |
-| `placa-principal` (i) | Placa verde recortada (extrusão), textura de trilhas, 90 componentes SMD em `InstancedMesh`, área de energia, pinos de teste, parafusos e etiqueta lisa. |
+| `antena` | Conector dourado rosqueado, junta com pino (articulação) e pá extrudada com chanfro. Sai da base, atrás, fora do centro: num ressalto de face plana ao lado do bolsão. |
+| `base` | Base cinza: parede lisa no contorno em gota e fundo recortado (bolsão e etiqueta), numa malha só; fendas de ventilação em `InstancedMesh` (não há fenda atrás do bolsão nem do ressalto da antena). Acompanham: pés, furo pequeno, ressalto da antena e as duas travas da placa. |
+| `alto-falante` | Grade de 37 furos redondos em hexágono (`InstancedMesh`), na face funda do bolsão: de baixo, é o que mais aparece. |
+| `ethernet`, `fonte` | Porta de rede na face funda do bolsão, embaixo da grade; conector de energia na parede esquerda. |
+| `placa-principal` (i) | Placa verde limpa, com o recorte retangular no meio da borda de trás (onde passam o bolsão e o alto-falante): RJ45 no fundo do recorte, jack da fonte num dos braços, área de energia, pinos de teste, parafusos e etiqueta lisa. |
 | `led-botao-placa` (i) | LED SMD e botão tátil azul na borda da placa, embaixo da cápsula. |
 | `chip-4g` (i) | Cartão verde espetado num slot preto, suporte metálico com o SIM e cabo coaxial. |
 | `wifi` (i) | Blindagem prateada com etiqueta lisa, conector dourado, coaxial e LEDs verdes. |

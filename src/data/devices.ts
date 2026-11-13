@@ -64,7 +64,7 @@ export const DEVICES: Device[] = [
         what: 'Antena removível, que se rosqueia até travar.',
         facts: ['Garante o sinal do chip 4G', 'Chip multi-operadora'],
         tip: 'Deixe o módulo perto de janelas ou de paredes externas para ter melhor sinal.',
-        camera: { position: [1.8, 1.1, -2.7], target: [0, 0.35, -1.15] },
+        camera: { position: [1.4, 1.1, -2.7], target: [-0.35, 0.35, -1.15] },
         action: 'antena',
       },
       {
@@ -107,7 +107,7 @@ export const DEVICES: Device[] = [
         name: 'Grade de som',
         what: 'Furos no fundo do módulo, dentro do bolsão dos cabos: é por onde passa o som.',
         facts: ['Áudio bidirecional: a Central Orsegups pode falar e ouvir o ambiente em tempo real'],
-        camera: { position: [0.6, -2.3, -1.9], target: [0, -0.4, -0.6] },
+        camera: { position: [0.5, -2.6, -1.5], target: [0, -0.35, -0.56] },
         action: 'audio',
       },
       {
@@ -115,7 +115,7 @@ export const DEVICES: Device[] = [
         name: 'Porta Ethernet',
         what: 'Entrada para cabo de rede, no bolsão do fundo.',
         facts: ['Terceira via de comunicação: cabo de rede'],
-        camera: { position: [0.9, -1.9, -1.9], target: [0.2, -0.4, -0.5] },
+        camera: { position: [0.5, -2.2, -1.5], target: [0, -0.38, -0.4] },
         action: 'cabos',
       },
       {
@@ -123,7 +123,7 @@ export const DEVICES: Device[] = [
         name: 'Entrada da fonte',
         what: 'Alimentação na tomada. Fica no meio do bolsão do fundo, e o conector entra pela lateral.',
         facts: [],
-        camera: { position: [-0.9, -1.9, -1.9], target: [-0.22, -0.4, -0.5] },
+        camera: { position: [-0.8, -1.9, -1.6], target: [0.18, -0.36, -0.47] },
         action: 'cabos',
       },
       {
@@ -167,7 +167,7 @@ export const DEVICES: Device[] = [
         name: 'Rádio dos sensores',
         what: 'É por onde sensores, sirene e controle conversam com o módulo.',
         facts: [],
-        camera: { position: [-1.2, 1.3, -1.2], target: [-0.3, -0.04, -0.3] },
+        camera: { position: [-1.4, 1.3, -1.2], target: [-0.5, -0.04, -0.3] },
         internal: true,
         explode: [0, 0.75, 0],
       },
@@ -176,7 +176,7 @@ export const DEVICES: Device[] = [
         name: 'Alto-falante',
         what: 'É por ele que a Central Orsegups fala com você no áudio bidirecional.',
         facts: [],
-        camera: { position: [0.9, 1.4, -1.6], target: [0.06, -0.1, -0.45] },
+        camera: { position: [0.9, 1.4, -1.6], target: [0, -0.08, -0.5] },
         internal: true,
         explode: [0, 0.5, 0],
       },

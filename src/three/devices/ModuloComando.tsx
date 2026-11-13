@@ -71,13 +71,17 @@ function lidGeometry() {
 
 // Fundo (pelo vídeo de fábrica). Tudo em coordenadas do corpo, antes do achatamento em Y.
 const Y_BOT = BOTTOM
-const POCKET = { x0: 0.05, x1: 0.48, z0: -0.66, z1: -0.3, d: 0.24 } // bolsão fundo, perto da borda de trás (lado da antena)
+// Visto por baixo, com a antena para cima: o bolsão fica NO MEIO (um nada para a esquerda), encostado na borda de
+// trás; a antena sai ao lado dele, à direita (−X); o furo pequeno fica à esquerda (+X).
+const POCKET = { x0: -0.2, x1: 0.3, z0: -0.76, z1: -0.22, d: 0.24 } // bolsão fundo dos cabos, no meio
 const LABEL = { x0: -0.3, x1: 0.3, z0: 0.0, z1: 0.3 } // rebaixo raso da etiqueta (fica vazio)
-const RJ = { x: 0.3, z: -0.4 } // RJ45 no fundo do bolsão, boca para baixo
+const RJ = { x: 0.0, z: -0.31 } // RJ45 na face funda do bolsão, embaixo da grade, boca para quem olha o fundo
+const GRILLE = { x: (POCKET.x0 + POCKET.x1) / 2, z: -0.565, pitch: 0.054 } // grade de som: hexágono de furos na face funda do bolsão
+const ANT_X = -0.35 // a antena não fica no centro: sai num ressalto ao lado do bolsão
 /** Altura depois do achatamento do corpo (para o que fica fora do grupo achatado). */
 const sq = (y: number) => BOTTOM + (y - BOTTOM) * SQUASH
-const NET_Y = Y_BOT + POCKET.d - 0.2, POW_X = POCKET.x1 - 0.17 // posição encaixada dos plugues
-const JACK = { y: Y_BOT + POCKET.d * 0.5, z: -0.5 } // entrada da fonte na parede esquerda (+X), a meia altura
+const NET_Y = Y_BOT + POCKET.d - 0.2, POW_X = POCKET.x1 - 0.15 // posição encaixada dos plugues
+const JACK = { y: Y_BOT + POCKET.d * 0.5, z: -0.47 } // entrada da fonte na parede esquerda (+X), a meia altura
 
 /** Base cinza: parede lisa no contorno em gota, borda de baixo arredondada e fundo com os dois rebaixos abertos. */
 function baseGeometry() {
@@ -93,7 +97,7 @@ function baseGeometry() {
   wall.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); wall.setIndex(idx); wall.computeVertexNormals()
   // fundo: o contorno com os recortes do bolsão e da etiqueta (no plano x, z)
   const sh = new THREE.Shape()
-  for (let i = 0; i <= 96; i++) { const t = (i / 96) * Math.PI * 2, r = outR(t) * 0.93; i ? sh.lineTo(r * Math.sin(t), r * Math.cos(t)) : sh.moveTo(r * Math.sin(t), r * Math.cos(t)) }
+  for (let i = 0; i <= NT; i++) { const t = (i / NT) * Math.PI * 2, r = outR(t) * 0.93; i ? sh.lineTo(r * Math.sin(t), r * Math.cos(t)) : sh.moveTo(r * Math.sin(t), r * Math.cos(t)) } // os mesmos pontos da parede: sem fresta
   const rect = (r: { x0: number; x1: number; z0: number; z1: number }) => { const h = new THREE.Path(); h.moveTo(r.x0, r.z0); h.lineTo(r.x1, r.z0); h.lineTo(r.x1, r.z1); h.lineTo(r.x0, r.z1); h.closePath(); return h }
   sh.holes.push(rect(POCKET), rect(LABEL))
   const floor = new THREE.ShapeGeometry(sh, 24)
@@ -149,11 +153,14 @@ function build() {
     magnet: smoothLatheY([[0.064, 0.012], [0.064, 0.03], [0.062, 0.044], [0.05, 0.05], [0.001, 0.05]], 32, 16),
     hole: new THREE.CircleGeometry(0.018, 10),
     // cabos e fios
-    coaxA: wire([[-0.42, PCB_Y + 0.045, 0.13], [-0.2, PCB_Y + 0.07, -0.05], [-0.25, PCB_Y + 0.06, -0.4], [-0.42, PCB_Y + 0.03, -0.6]], 0.007),
-    coaxB: wire([[0.0, PCB_Y + 0.05, 0.16], [-0.1, PCB_Y + 0.08, 0.0], [-0.02, PCB_Y + 0.07, -0.12], [-0.12, PCB_Y + 0.05, -0.16]], 0.007),
-    yellow: wire([[-0.25, PCB_Y + 0.02, -0.44], [-0.2, PCB_Y + 0.06, -0.6], [-0.05, PCB_Y + 0.08, -0.72], [0.2, PCB_Y + 0.07, -0.7], [0.33, PCB_Y + 0.05, -0.45], [0.34, PCB_Y + 0.02, -0.25]], 0.009),
-    spkA: wire([[0.0, -0.06, -0.36], [-0.06, 0.0, -0.3], [-0.2, PCB_Y + 0.03, -0.18], [-0.24, PCB_Y + 0.012, -0.1]], 0.007),
-    spkB: wire([[0.06, -0.06, -0.33], [0.0, -0.01, -0.26], [-0.12, PCB_Y + 0.03, -0.14], [-0.2, PCB_Y + 0.012, -0.06]], 0.007),
+    // coaxial do Wi-Fi: rabicho curto até a placa
+    coaxA: wire([[-0.42, PCB_Y + 0.045, 0.13], [-0.5, PCB_Y + 0.07, 0.05], [-0.56, PCB_Y + 0.06, -0.05], [-0.52, PCB_Y + 0.03, -0.12]], 0.007),
+    // coaxial do 4G: do cartão do chip até a rosca da antena, pelo braço da placa ao lado do recorte
+    coaxB: wire([[0.0, PCB_Y + 0.05, 0.16], [-0.16, PCB_Y + 0.085, 0.02], [-0.345, PCB_Y + 0.075, -0.2], [-0.355, PCB_Y + 0.06, -0.5], [ANT_X, PCB_Y + 0.02, -0.69]], 0.007),
+    // antena de fio do rádio dos sensores: acompanha a borda da placa
+    yellow: wire([[-0.52, PCB_Y + 0.02, -0.42], [-0.63, PCB_Y + 0.06, -0.2], [-0.7, PCB_Y + 0.07, 0.05], [-0.66, PCB_Y + 0.06, 0.3], [-0.56, PCB_Y + 0.03, 0.46]], 0.009),
+    spkA: wire([[0.0, -0.03, -0.27], [-0.08, 0.0, -0.2], [-0.2, PCB_Y + 0.03, -0.14], [-0.24, PCB_Y + 0.012, -0.1]], 0.007),
+    spkB: wire([[0.07, -0.03, -0.27], [-0.01, 0.0, -0.19], [-0.13, PCB_Y + 0.03, -0.11], [-0.2, PCB_Y + 0.012, -0.06]], 0.007),
     micA: wire([[0.36, -0.2, -0.26], [0.4, -0.1, -0.2], [0.38, PCB_Y + 0.03, -0.12], [0.33, PCB_Y + 0.012, -0.08]], 0.006),
     micB: wire([[0.39, -0.2, -0.24], [0.44, -0.1, -0.17], [0.42, PCB_Y + 0.03, -0.1], [0.37, PCB_Y + 0.012, -0.05]], 0.006),
     batA: wire([[0.6, PCB_Y + 0.03, -0.02], [0.7, PCB_Y + 0.03, 0.1], [0.74, PCB_Y - 0.04, 0.22]], 0.008),
@@ -167,8 +174,8 @@ const G = () => (cache ??= build())
 
 
 /**
- * Módulo de Comando. Tampa branca em concha (face plana inclinada + saia que se abre para trás),
- * cápsula do LED/190 na frente, base cinza serrilhada com o bolsão dos cabos e a antena atrás.
+ * Módulo de Comando. Tampa branca numa superfície só, cápsula do LED/190 na frente, base cinza em gota com o
+ * bolsão dos cabos no meio da borda de trás e a antena saindo ao lado dele (fora do centro).
  * Por dentro, a placa verde real: cartão do chip 4G, módulo Wi-Fi, rádio dos sensores,
  * alto-falante na caixinha cinza, microfone, LED e botão sob a cápsula, e a bateria por baixo.
  */
@@ -204,24 +211,27 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
     if (!inited.current && fins.current && holes.current && shieldHoles.current) {
       const o = new THREE.Object3D()
       // fendas curtas e estreitas (ventilação) em volta do contorno inteiro, no fundo, perto da borda
-      for (let i = 0; i < 60; i++) {
-        const a = (i / 60) * Math.PI * 2, r = outR(a) * 0.85
-        o.position.set(Math.sin(a) * r, Y_BOT - 0.0015, Math.cos(a) * r); o.rotation.set(0, a, 0); o.scale.setScalar(1)
-        o.updateMatrix(); fins.current.setMatrixAt(i, o.matrix)
-      }
-      // grade de som: 37 furos redondos em hexágono, na parede do fundo do bolsão (vertical, virada para a frente)
       let n = 0
-      const HS = 0.03, rows = [4, 5, 6, 7, 6, 5, 4]
+      for (let i = 0; i < 60; i++) {
+        const a = (i / 60) * Math.PI * 2, r = outR(a) * 0.85, x = Math.sin(a) * r, z = Math.cos(a) * r
+        if (z < -0.5 && x > ANT_X - 0.14 && x < POCKET.x1 + 0.06) continue // atrás do bolsão e do ressalto da antena não há fenda
+        o.position.set(x, Y_BOT - 0.0015, z); o.rotation.set(0, a, 0); o.scale.setScalar(1)
+        o.updateMatrix(); fins.current.setMatrixAt(n++, o.matrix)
+      }
+      fins.current.count = n
+      // grade de som: 37 furos redondos em hexágono, na face funda do bolsão, virados para quem olha o fundo
+      n = 0
+      const HS = GRILLE.pitch, rows = [4, 5, 6, 7, 6, 5, 4]
       rows.forEach((cnt, j) => {
         for (let i = 0; i < cnt; i++) {
-          o.position.set((POCKET.x0 + POCKET.x1) / 2 + (i - (cnt - 1) / 2) * HS, Y_BOT + POCKET.d / 2 + ((j - 3) * HS * 0.866) / SQUASH * 0.72, POCKET.z0 + 0.002)
-          o.rotation.set(0, 0, 0); o.scale.set(0.62, 0.62 / SQUASH * 0.72, 1) // o corpo é achatado em Y: compensa para o furo sair redondo
+          o.position.set(GRILLE.x + (i - (cnt - 1) / 2) * HS, Y_BOT + POCKET.d - 0.002, GRILLE.z + (j - 3) * HS * 0.866)
+          o.rotation.set(Math.PI / 2, 0, 0); o.scale.setScalar(1.15)
           o.updateMatrix(); holes.current.setMatrixAt(n++, o.matrix)
         }
       })
       n = 0
       for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
-        o.position.set(-0.375 + i * 0.05, PCB_Y + 0.0465, -0.375 + j * 0.05); o.rotation.set(-Math.PI / 2, 0, 0); o.scale.setScalar(0.55)
+        o.position.set(-0.595 + i * 0.05, PCB_Y + 0.0465, -0.375 + j * 0.05); o.rotation.set(-Math.PI / 2, 0, 0); o.scale.setScalar(0.55)
         o.updateMatrix(); shieldHoles.current.setMatrixAt(n++, o.matrix)
       }
       for (const m of [fins, holes, shieldHoles]) m.current.instanceMatrix.needsUpdate = true
@@ -325,7 +335,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         {/* ================= antena tipo pá: conector rosqueado e articulação ================= */}
         </group>
         <ClickablePart id="antena">
-          <group position={[0, BOTTOM + (-0.14 - BOTTOM) * SQUASH, -0.8]}>
+          <group position={[ANT_X, BOTTOM + (-0.14 - BOTTOM) * SQUASH, -0.73]}>
             <mesh material={M.gold} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.04]}><cylinderGeometry args={[0.048, 0.048, 0.1, 20]} /></mesh>
             <group ref={antenna}>
               {[0, 1, 2, 3].map((i) => (
@@ -355,21 +365,21 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         <ClickablePart follow="base">
           {/* pés redondos e baixos, perto da borda */}
           {[0, 2.25, -2.25].map((a) => <mesh key={a} geometry={g.foot} material={M.grey} position={[Math.sin(a) * 0.68, Y_BOT - 0.01, Math.cos(a) * 0.68]} />)}
-          {/* furo pequeno perto da borda, à esquerda do bolsão */}
-          <mesh material={M.hole} position={[0.64, Y_BOT - 0.001, -0.36]} rotation={[Math.PI / 2, 0, 0]}><circleGeometry args={[0.022, 14]} /></mesh>
-          {/* ressalto da rosca da antena, na borda, à direita do bolsão */}
-          <RoundedBox args={[0.2, 0.22, 0.16]} radius={0.03} smoothness={3} position={[-0.06, -0.26, -0.74]} material={M.grey} />
+          {/* furo pequeno, à esquerda do bolsão */}
+          <mesh material={M.hole} position={[0.43, Y_BOT - 0.001, -0.5]} rotation={[Math.PI / 2, 0, 0]}><circleGeometry args={[0.022, 14]} /></mesh>
+          {/* ressalto da rosca da antena: bloco de face plana na borda de trás, colado no lado direito do bolsão */}
+          <RoundedBox args={[0.27, 0.341, 0.125]} radius={0.03} smoothness={3} position={[ANT_X + 0.01, -0.2255, -0.7625]} material={M.grey} />
           {/* duas travas cinza, em lados opostos, que prendem a placa */}
           {[-1, 1].map((sx) => (
             <RoundedBox key={sx} args={[0.07, 0.07, 0.2]} radius={0.02} smoothness={3} position={[sx * 0.74, PCB_Y + 0.01, -0.1]} material={M.grey} />
           ))}
         </ClickablePart>
 
-        {/* grade de som: furos em hexágono na parede do fundo do bolsão */}
+        {/* grade de som: furos em hexágono na face funda do bolsão; de baixo, é o que mais aparece */}
         <ClickablePart id="alto-falante">
           <instancedMesh ref={holes} args={[g.hole, M.hole, 37]} />
         </ClickablePart>
-        {/* RJ45: no fundo do bolsão, embaixo da grade, com a boca voltada para quem olha o fundo */}
+        {/* RJ45: na face funda do bolsão, embaixo da grade (perto da parede da frente), com a boca para quem olha o fundo */}
         <ClickablePart id="ethernet">
           <mesh material={M.metal} position={[RJ.x, Y_BOT + POCKET.d - 0.05, RJ.z]}><boxGeometry args={[0.2, 0.1, 0.16]} /></mesh>
           <mesh material={M.hole} position={[RJ.x, Y_BOT + POCKET.d - 0.101, RJ.z]} rotation={[Math.PI / 2, 0, 0]}><planeGeometry args={[0.15, 0.11]} /></mesh>
@@ -377,8 +387,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         </ClickablePart>
         {/* entrada da fonte: jack redondo na parede esquerda do bolsão, a meia altura, voltado para o lado; fenda pequena acima */}
         <ClickablePart id="fonte">
-          <mesh material={M.chip} position={[POCKET.x1 - 0.03, JACK.y, JACK.z]}><boxGeometry args={[0.06, 0.1, 0.11]} /></mesh>
-          <mesh material={M.hole} position={[POCKET.x1 - 0.061, JACK.y, JACK.z]} rotation={[0, -Math.PI / 2, 0]} scale={[1, 1 / SQUASH * 0.72, 1]}><circleGeometry args={[0.026, 16]} /></mesh>
+          <mesh material={M.chip} position={[POCKET.x1 - 0.015, JACK.y, JACK.z]}><boxGeometry args={[0.03, 0.1, 0.11]} /></mesh>
+          <mesh material={M.hole} position={[POCKET.x1 - 0.031, JACK.y, JACK.z]} rotation={[0, -Math.PI / 2, 0]} scale={[1, 1 / SQUASH * 0.72, 1]}><circleGeometry args={[0.026, 16]} /></mesh>
           <mesh material={M.hole} position={[POCKET.x1 - 0.001, JACK.y + 0.085, JACK.z]} rotation={[0, -Math.PI / 2, 0]}><planeGeometry args={[0.07, 0.014]} /></mesh>
         </ClickablePart>
 
@@ -396,7 +406,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
           {/* pinos dourados de teste em fileira, dois parafusos pretos e a etiqueta lisa */}
           {[0, 1, 2, 3, 4, 5].map((i) => <mesh key={i} material={M.gold} position={[-0.6 + i * 0.03, PCB_Y + 0.012, 0.02 - i * 0.012]}><cylinderGeometry args={[0.007, 0.007, 0.03, 6]} /></mesh>)}
           {[[0.02, 0.0], [0.02, -0.12]].map(([x, z], i) => <mesh key={i} material={M.chip} position={[x, PCB_Y + 0.008, z]}><cylinderGeometry args={[0.03, 0.03, 0.016, 12]} /></mesh>)}
-          <mesh material={M.white} position={[-0.47, PCB_Y + 0.002, -0.5]} rotation={[-Math.PI / 2, 0, 0.5]}><planeGeometry args={[0.16, 0.1]} /></mesh>
+          <mesh material={M.white} position={[-0.42, PCB_Y + 0.002, -0.52]} rotation={[-Math.PI / 2, 0, 0.6]}><planeGeometry args={[0.13, 0.08]} /></mesh>
           <mesh material={M.chip} position={[-0.29, PCB_Y + 0.012, -0.05]}><boxGeometry args={[0.09, 0.022, 0.09]} /></mesh>
         </ClickablePart>
 
@@ -431,15 +441,15 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
 
         {/* rádio dos sensores: blindagem quadrada cheia de furinhos, chip ao lado e a antena de fio amarelo */}
         <ClickablePart id="radio">
-          <RoundedBox args={[0.22, 0.045, 0.22]} radius={0.01} smoothness={2} position={[-0.3, PCB_Y + 0.023, -0.3]} material={M.metal} />
+          <RoundedBox args={[0.22, 0.045, 0.22]} radius={0.01} smoothness={2} position={[-0.52, PCB_Y + 0.023, -0.3]} material={M.metal} />
           <instancedMesh ref={shieldHoles} args={[g.hole, M.hole, 16]} />
-          <mesh material={M.chip} position={[-0.47, PCB_Y + 0.012, -0.22]}><boxGeometry args={[0.07, 0.022, 0.07]} /></mesh>
+          <mesh material={M.chip} position={[-0.42, PCB_Y + 0.012, -0.1]}><boxGeometry args={[0.07, 0.022, 0.07]} /></mesh>
           <mesh geometry={g.yellow} material={M.yellow} />
         </ClickablePart>
 
-        {/* alto-falante: caixinha cinza quadrada no recorte da placa, cone preto e ímã cromado */}
+        {/* alto-falante: caixinha cinza no recorte da placa, logo acima da grade do bolsão; cone preto e ímã cromado */}
         <ClickablePart id="speaker">
-          <group position={[0.06, -0.12, -0.45]}>
+          <group position={[GRILLE.x, -0.08, -0.5]}>
             <RoundedBox args={[0.44, 0.15, 0.5]} radius={0.04} smoothness={4} material={M.grey} />
             <mesh geometry={g.cone} material={M.black} position={[0, 0.045, 0]} />
             <mesh geometry={g.magnet} material={M.chrome} position={[0, 0.05, 0]} />
@@ -496,7 +506,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
               </div>
             </Html>
           )}
-          <VoiceWaves on={() => actionTime('audio') >= 0.4} position={[(POCKET.x0 + POCKET.x1) / 2, -0.44, -0.5]} rotation={[-0.5, 0, Math.PI]} />
+          <VoiceWaves on={() => actionTime('audio') >= 0.4} position={[GRILLE.x, -0.44, GRILLE.z]} rotation={[-0.5, 0, Math.PI]} />
           {audioPhase >= 0 && (
             <Html position={[0.5, -1.0, -1.3]} center style={{ pointerEvents: 'none' }}>
               <div className="fx-tag rounded-2xl rounded-bl-none bg-white px-4 py-2 text-sm font-semibold text-[#1E398D] shadow-lg">
