@@ -20,17 +20,18 @@ import { REF_ON } from '../../dev/RefMode'
 const mm = (v: number) => v / 79.07
 const HW = 0.43, HD = mm(39) // meia largura e meia profundidade
 // planta em "U": a frente é um meio-cilindro de raio 34 mm (a largura inteira), laterais retas e traseira
-// plana com cantos de ~6 mm
-const RC = HW, RB = mm(6)
-const Y_TOP = 0.8, TOP_R = mm(7) // topo plano com a borda arredondada (~6–8 mm)
+// plana com cantos de ~15 mm
+const RC = HW, RB = mm(15) // traseira com os cantos bem arredondados (~15 mm na planta)
+const Y_TOP = 0.8, TOP_R = mm(10) // o topo desce para a traseira e as laterais em curva (~10 mm)
 const Y0 = Y_TOP - mm(144) // fundo do aparelho (a altura h da ficha é medida a partir daqui)
 const H = (h: number) => Y0 + mm(h)
 const Y_BASE = H(7) // acima disto é corpo branco; abaixo, a base cinza
 // compartimento das pilhas, na traseira: tampa de ~54 × 76 mm, de h ≈ 64 a 140
-const BAY = { y0: H(64), y1: 0.68, hw: 0.33, floor: HD - 0.24 }
+// a tampa (~54 mm) encaixa DENTRO de um aro do próprio corpo: sobra corpo branco dos lados e em cima
+const BAY = { y0: H(64), y1: 0.645, hw: mm(24.5), floor: HD - 0.24 }
 // pilha AA (50,5 × 14,5 mm): cilindro de ponta reta com o polo + saliente
-const CELL = { r: mm(7.25), len: mm(50.5), y: (H(64) + 0.68) / 2, s: HD - 0.125 }
-const CELL_X = [-0.196, 0, 0.196]
+const CELL = { r: mm(7.25), len: mm(50.5), y: (H(64) + 0.645) / 2, s: HD - 0.125 }
+const CELL_X = [-0.193, 0, 0.193]
 // Cápsula da câmera: pílula de ~30 × 55 mm, mais larga em cima, INCLINADA (o topo sai mais que a base: a
 // câmera olha um pouco para baixo). Tudo dela é medido a partir da base da cápsula.
 const CAP = { bottom: H(70), h: mm(55), hwTop: mm(15), hwBottom: mm(11), tilt: 0.07, z: HD - 0.085 }
@@ -118,19 +119,20 @@ function shellGeometry() {
     cols.push({ cx: fx * (front ? ex : bx), cz: front ? ez : -bz, nx: Math.cos(phi), nz: Math.sin(phi), r: front ? RC : RB, bay, front })
   }
   let frontSide = true
-  const A = 48, C4 = 8, K = 14
+  const A = 48, C4 = 16, K = 12
   // frente: meio-cilindro (dois quartos de volta)
   for (let i = 0; i <= A; i++) col((i / A) * (Math.PI / 2), 1, false)
   for (let i = 0; i <= A; i++) col(Math.PI / 2 + (i / A) * (Math.PI / 2), -1, false)
   frontSide = false
-  // traseira: canto esquerdo, trecho plano (o compartimento das pilhas abre no meio dele) e canto direito;
-  // as paredes do compartimento nascem das amostras duplicadas em ±BAY.hw
-  const fB = BAY.hw / bx
-  for (let i = 0; i <= C4; i++) col(Math.PI + (i / C4) * (Math.PI / 2), -1, false)
-  col(Math.PI * 1.5, -(1 + fB) / 2, false); col(Math.PI * 1.5, -fB, false); col(Math.PI * 1.5, -fB, true)
-  for (let i = 1; i < K; i++) col(Math.PI * 1.5, -fB + (2 * fB * i) / K, true)
-  col(Math.PI * 1.5, fB, true); col(Math.PI * 1.5, fB, false); col(Math.PI * 1.5, (1 + fB) / 2, false)
-  for (let i = 0; i <= C4; i++) col(Math.PI * 1.5 + (i / C4) * (Math.PI / 2), 1, false)
+  // traseira: o compartimento das pilhas abre de x = −BAY.hw a +BAY.hw, que cai nos cantos arredondados
+  // (em φ = π + phiBay e 2π − phiBay); as paredes nascem das amostras duplicadas ali
+  const phiBay = Math.acos((BAY.hw - bx) / RB)
+  const nL = Math.max(2, Math.round((C4 * phiBay) / (Math.PI / 2))), nB = Math.max(2, C4 - nL), span = Math.PI / 2 - phiBay
+  for (let i = 0; i <= nL; i++) col(Math.PI + (i / nL) * phiBay, -1, false)
+  for (let i = 0; i <= nB; i++) col(Math.PI + phiBay + (i / nB) * span, -1, true)
+  for (let i = 1; i < K; i++) col(Math.PI * 1.5, -1 + (2 * i) / K, true)
+  for (let i = 0; i <= nB; i++) col(Math.PI * 1.5 + (i / nB) * span, 1, true)
+  for (let i = 0; i <= nL; i++) col(Math.PI * 2 - phiBay + (i / nL) * phiBay, 1, false)
 
   // `fan`: tampa de cima ou de baixo, em leque: o anel (em `inset`) é puxado para o centro da planta (0..1)
   type Row = { y: number; inset: number; bay: boolean; fan?: number }
@@ -209,12 +211,12 @@ function build() {
 
   // traseira: tampa curva, aba de alavanca no topo, presilhas embaixo e os frisos perto da base (dos dois lados)
   const coverH = BAY.y1 + 0.02 - (BAY.y0 - 0.012)
-  const cover = upright(backBand(-(BAY.hw + 0.012), BAY.hw + 0.012, coverH, 0.006, 0.028), BAY.y0 - 0.012)
+  const cover = upright(backBand(-(BAY.hw + 0.012), BAY.hw + 0.012, coverH, -0.001, 0.028), BAY.y0 - 0.012)
   // linha de junção em volta da tampa (embaixo e dos lados)
   const coverSeam = mergeGeometries([
-    upright(backBand(-(BAY.hw + 0.018), BAY.hw + 0.018, 0.007, 0.0035, 0.01), BAY.y0 - 0.019),
-    upright(backBand(-(BAY.hw + 0.018), -(BAY.hw + 0.011), coverH, 0.0035, 0.01), BAY.y0 - 0.012),
-    upright(backBand(BAY.hw + 0.011, BAY.hw + 0.018, coverH, 0.0035, 0.01), BAY.y0 - 0.012),
+    upright(backBand(-(BAY.hw + 0.016), BAY.hw + 0.016, 0.005, 0.0005, 0.01), BAY.y0 - 0.019),
+    upright(backBand(-(BAY.hw + 0.016), -(BAY.hw + 0.012), coverH, 0.0005, 0.01), BAY.y0 - 0.012),
+    upright(backBand(BAY.hw + 0.012, BAY.hw + 0.016, coverH, 0.0005, 0.01), BAY.y0 - 0.012),
   ])
   const latch = upright(backBand(-0.085, 0.085, 0.045, 0.012, 0.03), BAY.y1 + 0.02)
   const clipL = upright(backBand(-0.25, -0.15, 0.035, 0, 0.022), BAY.y0 - 0.047)
@@ -376,7 +378,8 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
               {/* cabeça de um parafuso pequeno na lateral, junto à base */}
               <mesh material={M.metal} position={[-(HW + 0.002), H(12), -0.15]} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[0.022, 0.022, 0.012, 16]} /></mesh>
               <mesh geometry={g.ribs} material={M.white} />
-              <mesh geometry={g.coverSeam} material={M.partition} />
+              {/* emenda da tampa: sulco fino e sutil, um tom abaixo do branco */}
+              <mesh geometry={g.coverSeam} material={M.whiteRelief} />
               {/* berço preto das pilhas: fundo, divisórias, molas no polo − e contatos no polo + */}
               <mesh material={M.chip} position={[0, CELL.y, -(BAY.floor + 0.012)]}><boxGeometry args={[BAY.hw * 2 - 0.01, BAY.y1 - BAY.y0 - 0.02, 0.012]} /></mesh>
               {[-0.098, 0.098].map((x) => <mesh key={x} material={M.chip} position={[x, CELL.y, -(BAY.floor + 0.05)]}><boxGeometry args={[0.008, CELL.len, 0.09]} /></mesh>)}
