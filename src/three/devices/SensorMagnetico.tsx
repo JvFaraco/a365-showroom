@@ -50,7 +50,7 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
   const spring = useMemo(() => {
     const pts: THREE.Vector3[] = []
     for (let i = 0; i <= 120; i++) { const t = i / 120; pts.push(new THREE.Vector3(Math.cos(t * Math.PI * 14) * 0.045, t * 0.16, Math.sin(t * Math.PI * 14) * 0.045)) }
-    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 180, 0.009, 5)
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 90, 0.009, 4)
   }, [])
   const copper = useMemo(() => new THREE.MeshStandardMaterial({ color: '#b87333', roughness: 0.35, metalness: 0.9 }), [])
   const sceneOn = useActionPhase(['ima', 'choque']) >= 0
@@ -98,18 +98,20 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
                 </Led>
               </group>
             </ClickablePart>
-            {/* placa comprida e estreita: sensor de choque, chave de anti-sabotagem, borne de 2 parafusos,
-                etiqueta lisa e a antena em mola de cobre numa ponta */}
+            {/* placa eletrônica: comprida e estreita (~85 × 18 mm), no comprimento do corpo. Numa ponta, a mola de cobre
+                da antena; na outra, o borne preto de 2 parafusos. Verde liso, sem etiqueta */}
+            <ClickablePart id="placa">
+              <group rotation={DEITA}>
+                <mesh material={M.pcb} position={[BODY.x, 0, -0.1]}><boxGeometry args={[mm(18), mm(85), 0.022]} /></mesh>
+                <mesh geometry={spring} material={copper} position={[BODY.x, 0.68, -0.08]} />
+                <mesh material={M.chip} position={[BODY.x, -0.72, -0.06]}><boxGeometry args={[0.2, 0.16, 0.08]} /></mesh>
+                {[-0.05, 0.05].map((dx) => <mesh key={dx} material={M.metal} position={[BODY.x + dx, -0.72, -0.016]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.026, 0.026, 0.008, 10]} /></mesh>)}
+              </group>
+            </ClickablePart>
+            {/* sensor de choque: um CI pequeno na placa */}
             <ClickablePart id="choque">
               <group rotation={DEITA}>
-                <mesh material={M.pcb} position={[BODY.x, 0, -0.1]}><boxGeometry args={[0.36, 1.62, 0.022]} /></mesh>
-                <mesh material={M.chip} position={[BODY.x, 0.3, -0.08]}><boxGeometry args={[0.13, 0.13, 0.02]} /></mesh>
-                <mesh material={M.metal} position={[BODY.x + 0.1, 0.5, -0.082]}><boxGeometry args={[0.07, 0.05, 0.016]} /></mesh>
-                <mesh material={M.chip} position={[BODY.x - 0.12, 0.68, -0.07]}><boxGeometry args={[0.07, 0.09, 0.04]} /></mesh>
-                <mesh material={M.white} position={[BODY.x, -0.02, -0.1115]} rotation={[0, Math.PI, 0]}><planeGeometry args={[0.3, 0.3]} /></mesh>
-                <mesh material={M.chip} position={[BODY.x - 0.07, -0.72, -0.065]}><boxGeometry args={[0.16, 0.13, 0.07]} /></mesh>
-                {[BODY.x - 0.105, BODY.x - 0.035].map((x) => <mesh key={x} material={M.metal} position={[x, -0.72, -0.028]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.022, 0.022, 0.008, 10]} /></mesh>)}
-                <mesh geometry={spring} material={copper} position={[BODY.x, 0.76, -0.08]} />
+                <mesh material={M.chip} position={[BODY.x, 0.52, -0.08]}><boxGeometry args={[0.12, 0.12, 0.02]} /></mesh>
               </group>
             </ClickablePart>
             {/* bateria cilíndrica presa por duas presilhas metálicas */}

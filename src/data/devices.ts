@@ -345,6 +345,8 @@ export const DEVICES: Device[] = [
     tagline: 'Percebe antes de alguém entrar.',
     inKit365S: false,
     home: { position: [1.0, 0.9, 4.0], target: [0, 0, 0] },
+    // explodido: de lado e de cima, para as camadas (tampa, placa verde, base) aparecerem
+    explodeView: { position: [3.4, 2.0, 2.6], target: [0, 0, 0.3] },
     bottom: -0.52,
     kitScale: 0.72, // real 0,63 × 1,15 de leitura
     parts: [
@@ -356,7 +358,7 @@ export const DEVICES: Device[] = [
         facts: ['Transmite por radiofrequência', 'Tem anti-sabotagem'],
         tip: 'Não instale em portas de ferro nem em estruturas metálicas.',
         camera: { position: [0.6, 0.2, 2.8], target: [0, -0.19, 0.3] },
-        explode: [0, 0, 0.6],
+        explode: [0, 0, 0.75],
       },
       {
         id: 'ima',
@@ -373,7 +375,16 @@ export const DEVICES: Device[] = [
         what: 'Pisca ao detectar.',
         facts: [],
         camera: { position: [-0.6, 0.1, 1.6], target: [-0.31, -0.19, 0.32] },
-        explode: [0, 0, 0.6],
+        explode: [0, 0, 0.75],
+      },
+      {
+        id: 'placa',
+        name: 'Placa eletrônica',
+        what: 'Lê o ímã e avisa a central pelo rádio.',
+        facts: [],
+        camera: { position: [0.6, 0.4, 2.4], target: [0, -0.19, 0] },
+        internal: true,
+        explode: [0, 0, 0.32],
       },
       {
         id: 'choque',
@@ -383,6 +394,7 @@ export const DEVICES: Device[] = [
         camera: { position: [-0.5, 0.5, 2.2], target: [-0.28, -0.23, 0] },
         internal: true,
         action: 'choque',
+        explode: [0, 0, 0.32],
       },
       {
         id: 'bateria',
@@ -391,6 +403,7 @@ export const DEVICES: Device[] = [
         facts: ['Dura até 2 anos, conforme o uso'],
         camera: { position: [0.5, 0.5, 2.2], target: [0.02, -0.23, 0] },
         internal: true,
+        explode: [0, 0, 0.32],
       },
     ],
   },
