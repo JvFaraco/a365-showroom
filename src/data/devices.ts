@@ -401,7 +401,7 @@ export const DEVICES: Device[] = [
     tagline: 'Até 110 dB de alerta.',
     inKit365S: true,
     home: { position: [1.5, 0.5, 3.7], target: [0, 0, 0] },
-    bottom: -1.15,
+    bottom: -1.03,
     kitScale: 0.81, // 64 mm/un: tamanho real
     parts: [
       {
@@ -418,7 +418,7 @@ export const DEVICES: Device[] = [
         what: 'Indica o status.',
         facts: [],
         tip: 'Instale com o LED voltado para o chão.',
-        camera: { position: [0.9, -1.4, 1.6], target: [0.4, -0.76, 0.24] },
+        camera: { position: [0.3, -1.6, 1.8], target: [0, -0.86, 0.1] },
         explode: [0, 0, 0.6],
       },
       {

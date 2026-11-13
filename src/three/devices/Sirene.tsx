@@ -12,7 +12,7 @@ import { actionTau, actionTime, useShowroom } from '../../store/showroomStore'
 import { SoundWaves } from '../fx/SoundWaves'
 import { beep } from '../../ui/audio'
 
-const LED_A = (-62 * Math.PI) / 180 // posição angular do LED na borda (embaixo, à direita)
+const LED_A = -Math.PI / 2 // LED na borda da cúpula, centralizado embaixo (às 6 horas): fica voltado para o chão
 const LIFT = 1.9 // quanto a sirene sobe para sair do suporte
 // Ficha (1 unidade = 64 mm): cúpula de 128 mm de diâmetro; 60 mm de projeção da parede: a cúpula (~36)
 // por cima de uma base traseira (~32), com sobreposição.
@@ -70,12 +70,6 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
   const slit = useMemo(() => stadiumGeometry(15 / 64, 8 / 64, 0.008, 0.003), []) // guia de luz do LED: ~8 × 15 mm
   // tampa do tamper: disco em degraus (anéis concêntricos) com o miolo abaulado, virado para trás
   const tamperCap = useMemo(() => smoothLatheZ([[0.31, 0.0], [0.305, -0.03], [0.28, -0.04], [0.225, -0.042], [0.21, -0.07], [0.13, -0.075], [0.1, -0.1], [0.04, -0.115], [0.001, -0.118]], 64, 48), [])
-  const tail = useMemo(() => {
-    const sh = new THREE.Shape()
-    // cauda pequena, embaixo (a sirene vai na parede com a cauda e o LED para o chão)
-    sh.moveTo(0.34, -0.86); sh.quadraticCurveTo(0.2, -1.0, 0.15, -1.08); sh.quadraticCurveTo(0, -1.13, -0.15, -1.08); sh.quadraticCurveTo(-0.2, -1.0, -0.34, -0.86); sh.closePath()
-    return new THREE.ExtrudeGeometry(sh, { depth: 0.34, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 4, curveSegments: 16 })
-  }, [])
   const piezo = useMemo(() => smoothLatheZ([[0.04, 0.06], [0.2, 0.06], [0.225, 0.05], [0.23, 0.03], [0.23, -0.04], [0.22, -0.05], [0.001, -0.05]], 48, 24), [])
   const board = useMemo(() => {
     const sh = new THREE.Shape()
@@ -135,7 +129,7 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
             <LogoGroove r={0.26} position={[0, 0.02, 0.304]} />
           </group>
         </ClickablePart>
-        {/* LED pequeno no chanfro da frente, do lado de baixo (fica voltado para o chão): azul; vermelho ao tocar */}
+        {/* LED na borda da cúpula, centralizado embaixo: azul; vermelho ao tocar */}
         <ClickablePart id="led">
           <group rotation={[0, 0, LED_A + Math.PI / 2]}>
             <group position={[0, -0.86, domeZ(0.86) + 0.004]} rotation={[0.74, 0, 0]}>
@@ -147,10 +141,9 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
           </group>
         </ClickablePart>
 
-        {/* base traseira, com a cauda pequena embaixo: fecha a sirene por trás; tem os rasgos do encaixe e os ganchos */}
+        {/* base traseira: fecha a sirene por trás; tem os rasgos do encaixe e os ganchos. Sem cauda: de frente, o contorno é um círculo limpo */}
         <ClickablePart follow="corpo" explode={[0, 0, -0.5]}>
           <mesh geometry={baseWall} material={whiteDS} castShadow />
-          <mesh geometry={tail} material={M.white} position={[0, 0, BACK + 0.04]} />
           <mesh material={M.white} position={[0, 0, BACK + 0.027]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.94, 0.94, 0.05, 64]} /></mesh>
           <mesh material={M.grey} position={[-0.03, 0.45, BACK]}><boxGeometry args={[0.98, 0.44, 0.006]} /></mesh>
           <mesh material={M.white} position={[-0.03, 0.7, BACK - 0.03]}><boxGeometry args={[0.2, 0.08, 0.06]} /></mesh>
