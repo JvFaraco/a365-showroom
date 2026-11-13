@@ -158,6 +158,8 @@ const baseR = (t: number, y: number) => {
   return (lerpTable(BASE_ARCH, h) + w * (lerpTable(BASE_FOOT, h) - lerpTable(BASE_ARCH, h))) / 80
 }
 const FEET: [number, number][] = [[0, 0.675], [0.65, -0.45], [-0.65, -0.45]] // pés: um atrás do apoio da frente e dois sob os apoios de trás
+// cartão do modem (pela foto da placa aberta): ~51 × 30 mm, na frente e para o lado de +X, inteiro dentro da placa
+const MODEM = { x0: -0.2, x1: 0.42, z0: 0.17, z1: 0.54 }
 const ANT_X = -0.35 // a antena não fica no centro: sai num ressalto ao lado do bolsão, sob o arco de trás da tampa
 /** Altura depois do achatamento do corpo (para o que fica fora do grupo achatado). */
 const sq = (y: number) => BOTTOM + (y - BOTTOM) * SQUASH
@@ -321,9 +323,10 @@ function build() {
     hole: new THREE.CircleGeometry(0.018, 10),
     // cabos e fios
     // coaxial do Wi-Fi: rabicho curto até a placa
-    coaxA: wire([[-0.42, PCB_Y + 0.045, 0.5], [-0.44, PCB_Y + 0.07, 0.58], [-0.42, PCB_Y + 0.08, 0.66], [-0.38, PCB_Y + 0.14, 0.7]], 0.007),
+    coaxA: wire([[-0.49, PCB_Y + 0.045, 0.5], [-0.47, PCB_Y + 0.07, 0.56], [-0.42, PCB_Y + 0.08, 0.62], [-0.36, PCB_Y + 0.14, 0.66]], 0.007),
     // coaxial do 4G: do cartão do chip até a rosca da antena, pelo braço da placa ao lado do recorte
-    coaxB: wire([[0.0, PCB_Y + 0.05, 0.16], [-0.16, PCB_Y + 0.085, 0.02], [-0.345, PCB_Y + 0.075, -0.2], [-0.355, PCB_Y + 0.06, -0.45], [ANT_X, PCB_Y + 0.02, -0.61]], 0.007),
+    // coaxial do conector MAIN do modem até a antena externa, por cima do módulo Wi-Fi
+    coaxB: wire([[MODEM.x0 + 0.06, PCB_Y + 0.06, 0.445], [-0.22, PCB_Y + 0.09, 0.32], [-0.36, PCB_Y + 0.085, 0.08], [-0.4, PCB_Y + 0.075, -0.2], [-0.37, PCB_Y + 0.06, -0.45], [ANT_X, PCB_Y + 0.02, -0.61]], 0.007),
     // antena de fio do rádio dos sensores: acompanha a borda da placa
     // antena do rádio: fio amarelo soldado atrás do rádio, que sobe pela borda de trás, por cima da caixinha do alto-falante
     yellow: wire([[-0.43, PCB_Y + 0.012, -0.45], [-0.36, PCB_Y + 0.04, -0.6], [-0.18, 0.075, -0.64], [0.06, 0.08, -0.64], [0.2, 0.075, -0.6], [0.25, 0.07, -0.52], [0.24, 0.062, -0.45]], 0.009),
@@ -614,33 +617,35 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
           <mesh material={M.wireBlue} position={[0.07, PCB_Y + 0.04, CAPSULE_Z - 0.03]}><cylinderGeometry args={[0.026, 0.028, 0.03, 16]} /></mesh>
         </ClickablePart>
 
-        {/* cartão do chip 4G: plaquinha espetada num slot preto, com o suporte metálico e o SIM */}
+        {/* cartão do modem 4G (mini PCIe, ~51 × 30 mm): espetado no slot preto do lado de +X, preso pela presilha metálica na
+            outra ponta; o SIM no suporte metálico e os três conectores dourados (AUX, GNSS, MAIN) perto da presilha.
+            Posição e tamanho pela foto da placa aberta, na escala da placa (120 mm de diâmetro, pelos encaixes da base) */}
         <ClickablePart id="chip-4g">
-          <mesh material={M.pcbDark} position={[0.2, PCB_Y + 0.045, 0.35]}><boxGeometry args={[0.6, 0.012, 0.4]} /></mesh>
-          <RoundedBox args={[0.07, 0.05, 0.42]} radius={0.01} smoothness={2} position={[0.535, PCB_Y + 0.03, 0.35]} material={M.chip} />
-          <mesh material={M.white} position={[0.24, PCB_Y + 0.056, 0.4]}><boxGeometry args={[0.26, 0.008, 0.2]} /></mesh>
-          <mesh material={M.metal} position={[0.2, PCB_Y + 0.064, 0.4]}><boxGeometry args={[0.06, 0.008, 0.21]} /></mesh>
-          <mesh material={M.metal} position={[0.2, PCB_Y + 0.064, 0.4]}><boxGeometry args={[0.2, 0.008, 0.035]} /></mesh>
-          {[0, 1, 2].map((i) => <mesh key={i} material={M.gold} position={[-0.03, PCB_Y + 0.056, 0.22 + i * 0.1]}><cylinderGeometry args={[0.017, 0.017, 0.014, 10]} /></mesh>)}
+          <mesh material={M.pcbDark} position={[(MODEM.x0 + MODEM.x1) / 2, PCB_Y + 0.045, (MODEM.z0 + MODEM.z1) / 2]}><boxGeometry args={[MODEM.x1 - MODEM.x0, 0.012, MODEM.z1 - MODEM.z0]} /></mesh>
+          <RoundedBox args={[0.05, 0.05, MODEM.z1 - MODEM.z0 + 0.03]} radius={0.01} smoothness={2} position={[MODEM.x1 + 0.025, PCB_Y + 0.03, (MODEM.z0 + MODEM.z1) / 2]} material={M.chip} />
+          <mesh material={M.white} position={[0.215, PCB_Y + 0.056, 0.355]}><boxGeometry args={[0.18, 0.008, 0.3]} /></mesh>
+          <mesh material={M.metal} position={[0.215, PCB_Y + 0.064, 0.355]}><boxGeometry args={[0.045, 0.008, 0.31]} /></mesh>
+          <mesh material={M.metal} position={[0.215, PCB_Y + 0.064, 0.355]}><boxGeometry args={[0.18, 0.008, 0.03]} /></mesh>
+          {[0, 1, 2].map((i) => <mesh key={i} material={M.gold} position={[MODEM.x0 + 0.06, PCB_Y + 0.056, 0.245 + i * 0.1]}><cylinderGeometry args={[0.015, 0.015, 0.014, 10]} /></mesh>)}
           <mesh geometry={g.coaxB} material={M.brown} />
           {/* presilha metálica na ponta do cartão (o lado oposto ao slot): uma base e duas travas que seguram os cantos */}
-          <mesh material={M.metal} position={[-0.125, PCB_Y + 0.012, 0.35]}><boxGeometry args={[0.022, 0.024, 0.44]} /></mesh>
-          {[0.17, 0.53].map((z) => (
+          <mesh material={M.metal} position={[MODEM.x0 - 0.022, PCB_Y + 0.012, (MODEM.z0 + MODEM.z1) / 2]}><boxGeometry args={[0.02, 0.024, MODEM.z1 - MODEM.z0 + 0.04]} /></mesh>
+          {[MODEM.z0 + 0.02, MODEM.z1 - 0.02].map((z) => (
             <group key={z}>
-              <mesh material={M.metal} position={[-0.125, PCB_Y + 0.033, z]}><boxGeometry args={[0.014, 0.05, 0.03]} /></mesh>
-              <mesh material={M.metal} position={[-0.108, PCB_Y + 0.057, z]} rotation={[0, 0, -0.25]}><boxGeometry args={[0.05, 0.01, 0.03]} /></mesh>
+              <mesh material={M.metal} position={[MODEM.x0 - 0.022, PCB_Y + 0.033, z]}><boxGeometry args={[0.012, 0.05, 0.028]} /></mesh>
+              <mesh material={M.metal} position={[MODEM.x0 - 0.006, PCB_Y + 0.057, z]} rotation={[0, 0, -0.25]}><boxGeometry args={[0.045, 0.009, 0.028]} /></mesh>
             </group>
           ))}
         </ClickablePart>
 
         {/* módulo Wi-Fi / rede: blindagem prateada, etiqueta lisa, conector dourado, coaxial e LEDs verdes */}
         <ClickablePart id="wifi">
-          <RoundedBox args={[0.26, 0.05, 0.42]} radius={0.012} smoothness={2} position={[-0.31, PCB_Y + 0.026, 0.32]} material={M.metal} />
-          <mesh material={M.white} position={[-0.27, PCB_Y + 0.052, 0.4]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.1, 0.07]} /></mesh>
-          <mesh material={M.wireBlue} position={[-0.46, PCB_Y + 0.012, 0.3]}><boxGeometry args={[0.035, 0.02, 0.3]} /></mesh>
-          <mesh material={M.gold} position={[-0.42, PCB_Y + 0.045, 0.5]}><cylinderGeometry args={[0.017, 0.017, 0.016, 10]} /></mesh>
+          <RoundedBox args={[0.26, 0.05, 0.42]} radius={0.012} smoothness={2} position={[-0.4, PCB_Y + 0.026, 0.32]} material={M.metal} />
+          <mesh material={M.white} position={[-0.36, PCB_Y + 0.052, 0.4]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.1, 0.07]} /></mesh>
+          <mesh material={M.wireBlue} position={[-0.545, PCB_Y + 0.012, 0.28]}><boxGeometry args={[0.035, 0.02, 0.3]} /></mesh>
+          <mesh material={M.gold} position={[-0.49, PCB_Y + 0.045, 0.5]}><cylinderGeometry args={[0.017, 0.017, 0.016, 10]} /></mesh>
           {[0, 1].map((i) => (
-            <Led key={i} sample={(t, o) => { o.color = '#27d455'; o.on = (t + i * 0.37) % 0.9 < 0.6 ? 1 : 0.15 }} boost={2.5} position={[-0.46, PCB_Y + 0.026, 0.42 + i * 0.05]}><boxGeometry args={[0.022, 0.01, 0.022]} /></Led>
+            <Led key={i} sample={(t, o) => { o.color = '#27d455'; o.on = (t + i * 0.37) % 0.9 < 0.6 ? 1 : 0.15 }} boost={2.5} position={[-0.545, PCB_Y + 0.026, 0.38 + i * 0.05]}><boxGeometry args={[0.022, 0.01, 0.022]} /></Led>
           ))}
           <mesh geometry={g.coaxA} material={M.brown} />
         </ClickablePart>
