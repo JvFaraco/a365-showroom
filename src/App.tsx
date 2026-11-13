@@ -1,18 +1,14 @@
-import { Suspense, lazy, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState, type ComponentType } from 'react'
 import { MotionConfig } from 'framer-motion'
 import { Canvas } from '@react-three/fiber'
 import { AdaptiveDpr, PerformanceMonitor } from '@react-three/drei'
-import { Bloom, EffectComposer, N8AO, Outline, SMAA, Selection, ToneMapping, Vignette } from '@react-three/postprocessing'
-import { KernelSize, ToneMappingMode } from 'postprocessing'
+import { Selection } from '@react-three/postprocessing'
 import { useShowroom } from './store/showroomStore'
 import { CameraRig } from './three/CameraRig'
 import { Stage } from './three/Stage'
 import { Intro } from './three/scenes/Intro'
-import { Showroom, ShowroomDevices, Warmup } from './three/scenes/Showroom'
-import { Network } from './three/scenes/Network'
-import { InAction } from './three/scenes/InAction'
-import { Outro } from './three/scenes/Outro'
-import { Loader, UI } from './ui/Overlays'
+import { Boot, Showroom, ShowroomDevices } from './three/scenes/Showroom'
+import { UI } from './ui/Overlays'
 import { PresenterMode } from './ui/PresenterMode'
 import { REF_ON, RefCamera, RefOverlay } from './dev/RefMode'
 
@@ -20,42 +16,79 @@ const Q = typeof location !== 'undefined' ? location.search : ''
 // ?hq: mantém reflexo e pós-processamento completos mesmo se o FPS cair
 const FORCE_HQ = Q.includes('hq')
 // ?debug=1 (só em desenvolvimento): FPS, draw calls e triângulos
-const DEBUG = import.meta.env.DEV && Q.includes('debug')
-const Perf = DEBUG ? lazy(() => import('r3f-perf').then((m) => ({ default: m.Perf }))) : null
+// ?debug=1: programas de shader e triângulos (vale também no build, para medir na máquina da apresentação);
+// o painel do r3f-perf (FPS, draw calls) só entra em desenvolvimento
+const DEBUG = Q.includes('debug')
+const Perf = DEBUG && import.meta.env.DEV ? lazy(() => import('r3f-perf').then((m) => ({ default: m.Perf }))) : null
 const MAX_DPR = typeof window !== 'undefined' ? Math.min(2, window.devicePixelRatio || 1) : 1
+
+type DebugGL = { info: { programs: unknown[] | null } }
+type DebugNode = { visible: boolean; children: DebugNode[]; isMesh?: boolean; count?: number; geometry?: { index: { count: number } | null; attributes: { position?: { count: number } } } }
+/** Triângulos dos objetos visíveis da cena (conta a geometria; não depende de quantos passes o render faz). */
+function visibleTriangles(root: DebugNode): number {
+  if (!root.visible) return 0
+  let n = 0
+  if (root.isMesh && root.geometry) n += ((root.geometry.index?.count ?? root.geometry.attributes.position?.count ?? 0) / 3) * (root.count ?? 1)
+  for (const c of root.children) n += visibleTriangles(c)
+  return n
+}
+/** `?debug=1`: programas de shader (cada combinação de flags de material é um a mais) e triângulos visíveis. */
+function ProgramCount() {
+  const el = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const t = setInterval(() => {
+      const w = window as unknown as { __gl?: DebugGL; __scene?: DebugNode }
+      const tris = w.__scene ? Math.round(visibleTriangles(w.__scene)) : 0
+      ;(window as unknown as { __debug?: object }).__debug = { programs: w.__gl?.info.programs?.length ?? 0, triangles: tris }
+      if (el.current) el.current.textContent = `programas de shader: ${w.__gl?.info.programs?.length ?? '…'} · triângulos visíveis: ${tris.toLocaleString('pt-BR')}`
+    }, 500)
+    return () => clearInterval(t)
+  }, [])
+  return <div ref={el} className="pointer-events-none fixed bottom-1 left-2 z-50 font-mono text-xs text-white/80" />
+}
+
+// Divisão de código: o pós-processamento e as cenas "Em ação" e "Encerramento" saem do pacote inicial.
+// O import é dinâmico e quem avisa a chegada é o store (atualização síncrona). Não usamos React.lazy aqui:
+// dentro do Canvas, com os quadros pesados da carga, o Suspense não retomava a renderização.
+type ChunkName = 'PostFX' | 'InAction' | 'Outro'
+const chunkCache: Partial<Record<ChunkName, ComponentType>> = {}
+const pending: Partial<Record<ChunkName, Promise<void>>> = {}
+const LOADERS: Record<ChunkName, () => Promise<ComponentType>> = {
+  PostFX: () => import('./three/PostFX').then((m) => m.default),
+  InAction: () => import('./three/scenes/InAction').then((m) => m.InAction),
+  Outro: () => import('./three/scenes/Outro').then((m) => m.Outro),
+}
+const loadChunk = (name: ChunkName) => (pending[name] ??= LOADERS[name]().then((C) => {
+  chunkCache[name] = C
+  useShowroom.setState((s) => ({ chunks: s.chunks + 1 }))
+}))
+if (typeof window !== 'undefined') {
+  // o pós-processamento começa a baixar junto com o resto; as duas cenas, em tempo ocioso depois da carga
+  void loadChunk('PostFX')
+  const un = useShowroom.subscribe((s) => {
+    if (!s.ready) return
+    un()
+    const idle = (window as unknown as { requestIdleCallback?: (f: () => void) => void }).requestIdleCallback ?? ((f: () => void) => setTimeout(f, 800))
+    idle(() => { void loadChunk('InAction'); void loadChunk('Outro') })
+  })
+}
+/** Mostra o componente de um pacote assim que ele chega (e pede o pacote, se ninguém pediu ainda). */
+function Chunk({ name }: { name: ChunkName }) {
+  useShowroom((s) => s.chunks)
+  const C = chunkCache[name]
+  if (!C) void loadChunk(name)
+  return C ? <C /> : null
+}
 
 function Scenes() {
   const scene = useShowroom((s) => s.scene)
   switch (scene) {
     case 'intro': return <Intro />
     case 'showroom': return <Showroom />
-    case 'network': return <Network />
-    case 'inaction': return <InAction />
-    case 'outro': return <Outro />
+    // cenas carregadas à parte: o código chega em segundo plano logo depois da carga
+    case 'inaction': return <Chunk name="InAction" />
+    case 'outro': return <Chunk name="Outro" />
   }
-}
-
-/**
- * Pós-processamento: AO em meia resolução (sulcos e aletas), bloom só nos emissivos (LEDs, flash,
- * anel de 5 s), contorno do hover, vinheta leve, ACES e SMAA. Sem DOF. Encolhe conforme `quality`.
- */
-function PostFX() {
-  const quality = useShowroom((s) => s.quality)
-  const ao = <N8AO halfRes quality="performance" aoRadius={0.22} distanceFalloff={0.6} intensity={1.7} color="#05070f" />
-  const bloom = <Bloom mipmapBlur luminanceThreshold={1.2} luminanceSmoothing={0.12} intensity={0.85} radius={0.7} />
-  const outline = <Outline blur kernelSize={KernelSize.VERY_SMALL} edgeStrength={3.2} visibleEdgeColor={0x6f9bff} hiddenEdgeColor={0x24409c} xRay={false} />
-  const tone = <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-  if (quality >= 3) return <EffectComposer key="q3" multisampling={0} autoClear={false}>{bloom}{outline}{tone}</EffectComposer>
-  if (quality === 2) return (
-    <EffectComposer key="q2" multisampling={0} autoClear={false}>
-      {bloom}{outline}<Vignette eskil={false} offset={0.25} darkness={0.7} />{tone}<SMAA />
-    </EffectComposer>
-  )
-  return (
-    <EffectComposer key="q0" multisampling={0} autoClear={false}>
-      {ao}{bloom}{outline}<Vignette eskil={false} offset={0.25} darkness={0.7} />{tone}<SMAA />
-    </EffectComposer>
-  )
 }
 
 export default function App() {
@@ -76,6 +109,9 @@ export default function App() {
           eventSource={container} eventPrefix="client"
           dpr={dpr} camera={{ fov: 32, near: 0.05, far: 120, position: [0, 2.6, 15] }}
           gl={{ antialias: false, powerPreference: 'high-performance' }}
+          // em produção, o three não confere erro de shader: essa conferência (getProgramParameter/getShaderInfoLog)
+          // obriga a esperar cada compilação e anula o compileAsync. Em `npm run dev` continua ligada.
+          onCreated={({ gl }) => { gl.debug.checkShaderErrors = import.meta.env.DEV }}
           aria-label="Showroom 3D dos equipamentos do Alarme 365"
         >
           <Suspense fallback={null}>
@@ -85,8 +121,8 @@ export default function App() {
               <ShowroomDevices />
               <Scenes />
               {REF_ON ? <RefCamera /> : <CameraRig />}
-              <PostFX />
-              <Warmup />
+              <Chunk name="PostFX" />
+              <Boot />
             </Selection>
             {Perf && <Perf position="bottom-right" />}
           </Suspense>
@@ -97,7 +133,7 @@ export default function App() {
       {/* a camada 2D respeita prefers-reduced-motion também nas animações do framer-motion */}
       <MotionConfig reducedMotion="user">{REF_ON ? <RefOverlay /> : <UI />}</MotionConfig>
       <PresenterMode />
-      <Loader />
+      {DEBUG && <ProgramCount />}
     </main>
   )
 }

@@ -3,7 +3,7 @@ import { DEVICES, DEVICE_BY_ID, getPart, hasInternal, type ActionId, type Device
 import { ARM_TO_LED, type LedStateId } from '../data/ledStates'
 import { ACTIONS } from '../data/actions'
 
-export type Scene = 'intro' | 'showroom' | 'network' | 'inaction' | 'outro'
+export type Scene = 'intro' | 'showroom' | 'inaction' | 'outro'
 export type View = 'normal' | 'exploded' | 'xray' | 'manual'
 export type ArmState = 'disarmed' | 'armed' | 'partial'
 
@@ -40,6 +40,8 @@ type State = {
   quality: 0 | 1 | 2 | 3
   ready: boolean // aparelhos montados e shaders pré-compilados
   warm: boolean // aquecimento: tudo visível e selecionado por alguns frames, atrás do carregamento
+  mounted: number // carga fatiada: quantos aparelhos já foram montados (um por quadro)
+  chunks: number // sobe a cada pacote de código que chega (pós-processamento, cenas carregadas à parte)
   listOpen: boolean
   resetTick: number
 
@@ -81,6 +83,8 @@ export const useShowroom = create<State>((set, get) => ({
   quality: 0,
   ready: false,
   warm: true,
+  mounted: 0,
+  chunks: 0,
   listOpen: typeof window !== 'undefined' && window.innerWidth >= 1024,
   resetTick: 0,
 

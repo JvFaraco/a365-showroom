@@ -87,3 +87,20 @@ export function partCenter(device: DeviceId, partId: string, k = 0, out = C): TH
 export function warmBounds() {
   for (const d of Object.keys(entries) as DeviceId[]) deviceBox(d, 0)
 }
+
+const PB = new THREE.Box3()
+const PED: Partial<Record<DeviceId, number>> = {}
+/** Raio do pedestal: acompanha a pegada do aparelho (em repouso), para o anel não sobrar na tela. */
+export function pedestalRadius(device: DeviceId): number {
+  const hit = PED[device]
+  if (hit) return hit
+  deviceBox(device, 0, PB)
+  if (PB.isEmpty()) return 1.75
+  // a largura manda; a profundidade pesa menos (suporte de parede e antena saem para trás, no ar)
+  const foot = Math.max(Math.abs(PB.min.x), Math.abs(PB.max.x), 0.6 * Math.max(Math.abs(PB.min.z), Math.abs(PB.max.z)))
+  return (PED[device] = Math.min(1.75, Math.max(0.8, foot * 1.18 + 0.2)))
+}
+
+/** Carga fatiada: aparelhos cujos shaders já foram compilados. Só eles são desenhados durante a carga,
+ *  para o render nunca esbarrar num programa ainda em compilação (o que travaria o quadro). */
+export const compiledDevices = new Set<string>()

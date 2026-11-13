@@ -1,23 +1,29 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { useFrame, useThree } from '@react-three/fiber'
+import { useThree } from '@react-three/fiber'
 import { CameraControls } from '@react-three/drei'
 import type CameraControlsImpl from 'camera-controls'
 import { ACTIONS } from '../data/actions'
 import { DEVICE_BY_ID, getPart, type Vec3 } from '../data/devices'
-import { now, useShowroom, type Scene } from '../store/showroomStore'
+import { useShowroom, type Scene } from '../store/showroomStore'
 import { reducedMotion } from './common/util'
-import { deviceBox, partBox } from './common/registry'
+import { deviceBox, partBox, pedestalRadius } from './common/registry'
 
-const SCENE_CAM: Record<Exclude<Scene, 'showroom'>, { from?: Vec3; position: Vec3; target: Vec3 }> = {
-  intro: { from: [0, 2.6, 15], position: [0, 1.5, 9.2], target: [0, 0.85, 0] },
-  outro: { from: [0, 4.5, 13], position: [0, 1.4, 9.2], target: [0, 0.9, 0] },
-  network: { position: [0, 3.8, 14.5], target: [0, 1.2, 0] },
+type SceneCam = { from?: Vec3; position: Vec3; target: Vec3; portrait?: { from?: Vec3; position: Vec3; target: Vec3 } }
+const SCENE_CAM: Record<Exclude<Scene, 'showroom'>, SceneCam> = {
+  // em retrato o kit fica em duas fileiras (ver KIT_LAYOUT_PORTRAIT) e a câmera olha um pouco de cima
+  intro: { from: [0, 2.6, 16], position: [0, 1.5, 10.2], target: [0, 0.8, 0], portrait: { from: [0, 7, 25], position: [0, 4.8, 21.5], target: [0, 0.7, 0] } },
+  outro: { from: [0, 4.5, 14], position: [0, 1.4, 10.2], target: [0, 0.85, 0], portrait: { from: [0, 8, 24], position: [0, 4.8, 21.5], target: [0, 0.7, 0] } },
   inaction: { position: [0.6, 3.4, 9.6], target: [0, 1.25, -0.6] },
 }
 
-// em retrato (celular) as cenas com o kit inteiro recuam o bastante para os 7 aparelhos caberem
+// em retrato (celular) as cenas largas recuam o bastante para tudo caber
 const PORTRAIT_Z = 3.0
+const sceneCam = (scene: Exclude<Scene, 'showroom'>, portrait: boolean) => {
+  const sc = SCENE_CAM[scene]
+  if (!portrait) return sc
+  return sc.portrait ?? { ...sc, position: [sc.position[0], sc.position[1] * 1.3, sc.position[2] * PORTRAIT_Z] as Vec3 }
+}
 const PART_FILL = 0.62 // a parte ocupa no máximo ~45% da área livre (0,62² ≈ 0,4)
 const HOME_FILL = 0.86
 const BOX = new THREE.Box3(), DBOX = new THREE.Box3(), SPH = new THREE.Sphere()
@@ -27,24 +33,25 @@ const DIR = new THREE.Vector3(), POS = new THREE.Vector3(), TGT = new THREE.Vect
 /** Área livre da tela (px): entre a barra de cima, o dock, a lista de partes e o card. */
 function freeRect(w: number, h: number, withCard: boolean, listOpen: boolean) {
   const desktop = w >= 768
-  const top = desktop ? 150 : 165
-  const bottom = desktop ? h - 125 : withCard ? h * 0.46 : h - 110
+  const top = desktop ? 150 : 190
+  // embaixo ficam o dock e, acima dele, a dica de uso: a área livre termina antes dos dois
+  const bottom = desktop ? h - 152 : withCard ? h * 0.46 : h - 146
   const left = desktop && listOpen && w >= 1024 ? 285 : 12
   const right = desktop && withCard ? w - 400 : w - 12
   return { cx: (left + right) / 2, cy: (top + bottom) / 2, w: Math.max(120, right - left), h: Math.max(120, bottom - top) }
 }
 
 /**
- * Câmera do demo: órbita livre (arrastar / roda / pinça), voo até a parte selecionada, reset com
- * duplo clique e auto-rotate depois de 4 s ocioso. O enquadramento é calculado pelo bounding box
- * real da parte (com margem) e centralizado na área livre da tela; a câmera nunca fica dentro
- * da caixa do aparelho.
+ * Câmera do demo: órbita livre (arrastar / roda / pinça), voo até a parte selecionada e reset com
+ * duplo clique. Não há giro automático: a câmera só gira quando alguém arrasta. O enquadramento é
+ * calculado pelo bounding box real da parte (com margem) e centralizado na área livre da tela; na
+ * vista inteira o pedestal também entra na conta, para o anel não invadir o dock nem a dica de uso.
+ * A câmera nunca fica dentro da caixa do aparelho.
  */
 export function CameraRig() {
   const ref = useRef<CameraControlsImpl>(null)
   const size = useThree((s) => s.size)
   const gl = useThree((s) => s.gl)
-  const lastInput = useRef(now())
   const scene = useShowroom((s) => s.scene)
   const device = useShowroom((s) => s.device)
   const part = useShowroom((s) => s.part)
@@ -64,10 +71,9 @@ export function CameraRig() {
     const anim = animate && !reducedMotion()
     c.smoothTime = 0.32
     if (s.scene !== 'showroom') {
-      const sc = SCENE_CAM[s.scene]
-      const p = portrait ? [sc.position[0], sc.position[1] * 1.3, sc.position[2] * PORTRAIT_Z] : sc.position
+      const sc = sceneCam(s.scene, portrait)
       void c.setFocalOffset(0, 0, 0, anim)
-      void c.setLookAt(p[0], p[1], p[2], sc.target[0], sc.target[1], sc.target[2], anim)
+      void c.setLookAt(sc.position[0], sc.position[1], sc.position[2], sc.target[0], sc.target[1], sc.target[2], anim)
       return
     }
     const d = DEVICE_BY_ID[s.device]
@@ -110,8 +116,21 @@ export function CameraRig() {
         dist = Math.max(fitBox(box, TGT, DIR, PART_FILL), SPH.radius * 2.2, 0.85)
       } else if (!DBOX.isEmpty()) {
         DBOX.getCenter(TGT)
-        DIR.fromArray(d.home.position).sub(new THREE.Vector3().fromArray(d.home.target)).normalize()
+        // na vista explodida, o aparelho pode pedir um ângulo próprio (a fila de peças vista de lado)
+        const hv = s.view === 'exploded' && d.explodeView ? d.explodeView : d.home
+        DIR.fromArray(hv.position).sub(new THREE.Vector3().fromArray(hv.target)).normalize()
         dist = fitBox(DBOX, TGT, DIR, HOME_FILL)
+        // o pedestal (disco sob o aparelho) também precisa caber na área livre
+        const r = pedestalRadius(s.device), py = d.bottom - 0.2
+        const tv = tanHalf * (free.h / H) * 0.98, th = tanHalf * (W / H) * (free.w / W) * 0.98
+        RIGHT.crossVectors(UPV, DIR)
+        if (RIGHT.lengthSq() < 1e-6) RIGHT.set(1, 0, 0)
+        RIGHT.normalize(); UP2.crossVectors(DIR, RIGHT)
+        for (let i = 0; i < 16; i++) {
+          const a = (i / 16) * Math.PI * 2
+          V.set(Math.cos(a) * r, py, Math.sin(a) * r).sub(TGT)
+          dist = Math.max(dist, V.dot(DIR) + Math.max(Math.abs(V.dot(RIGHT)) / th, Math.abs(V.dot(UP2)) / tv))
+        }
       } else {
         TGT.fromArray(d.home.target); DIR.fromArray(d.home.position).sub(TGT)
         dist = DIR.length() * 1.45; DIR.normalize()
@@ -136,14 +155,12 @@ export function CameraRig() {
     const c = ref.current
     if (!c) return
     if (scene !== 'showroom') {
-      const sc = SCENE_CAM[scene]
+      const sc = sceneCam(scene, size.width / size.height < 0.8)
       if (sc.from && !reducedMotion()) {
         void c.setFocalOffset(0, 0, 0, false)
         void c.setLookAt(sc.from[0], sc.from[1], sc.from[2], sc.target[0], sc.target[1], sc.target[2], false)
         c.smoothTime = 1.1
-        const portrait = size.width / size.height < 0.8
-        const p = portrait ? [sc.position[0], sc.position[1] * 1.3, sc.position[2] * PORTRAIT_Z] : sc.position
-        void c.setLookAt(p[0], p[1], p[2], sc.target[0], sc.target[1], sc.target[2], true)
+        void c.setLookAt(sc.position[0], sc.position[1], sc.position[2], sc.target[0], sc.target[1], sc.target[2], true)
         return
       }
     }
@@ -152,28 +169,13 @@ export function CameraRig() {
 
   useEffect(() => { fly() }, [device, part, view, actionId, resetTick, listOpen, ready, size.width, size.height]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // duplo clique: reset da vista; qualquer entrada zera o relógio do auto-rotate
+  // duplo clique: reset da vista
   useEffect(() => {
     const el = gl.domElement.parentElement?.parentElement ?? gl.domElement
-    const touch = () => { lastInput.current = now() }
-    const dbl = () => { touch(); fly() }
+    const dbl = () => fly()
     el.addEventListener('dblclick', dbl)
-    el.addEventListener('pointerdown', touch)
-    el.addEventListener('pointermove', touch)
-    el.addEventListener('wheel', touch, { passive: true })
-    window.addEventListener('keydown', touch)
-    return () => {
-      el.removeEventListener('dblclick', dbl); el.removeEventListener('pointerdown', touch)
-      el.removeEventListener('pointermove', touch); el.removeEventListener('wheel', touch); window.removeEventListener('keydown', touch)
-    }
+    return () => el.removeEventListener('dblclick', dbl)
   }, [gl]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useFrame((_, dt) => {
-    const c = ref.current
-    if (!c) return
-    const s = useShowroom.getState()
-    if (s.scene === 'showroom' && !s.part && !s.action && now() - lastInput.current > 4 && !reducedMotion()) void c.rotate(dt * 0.22, 0, false)
-  })
 
   return <CameraControls ref={ref} makeDefault minDistance={0.8} maxDistance={scene === 'showroom' ? 14 : 30} dollySpeed={0.6} smoothTime={0.32} draggingSmoothTime={0.12} />
 }

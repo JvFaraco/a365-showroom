@@ -24,13 +24,13 @@ export function DeviceDock() {
         {DEVICES.map((d, i) => (
           <li key={d.id}>
             <button
-              aria-label={`${i + 1}. ${d.name}`} aria-current={device === d.id}
+              aria-label={`${i + 1}. ${d.name}`} title={d.name} aria-current={device === d.id}
               onClick={() => { beep(); useShowroom.getState().setDevice(d.id) }}
-              className={`relative flex w-[4.6rem] flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-xs transition-colors duration-fast ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-accent active:scale-[.98] md:w-24 ${device === d.id ? 'text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
+              className={`relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-xs sm:h-auto sm:w-[4.6rem] transition-colors duration-fast ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-accent active:scale-[.98] md:w-24 ${device === d.id ? 'text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
               {/* o destaque azul desliza de um aparelho para o outro */}
               {device === d.id && <motion.span layoutId="dock-ativo" className="absolute inset-0 rounded-xl bg-brand-light shadow-lg shadow-brand/50" transition={{ type: 'spring', visualDuration: 0.25, bounce: 0.15 }} />}
               <svg viewBox="0 0 32 32" className="relative h-7 w-7 md:h-8 md:w-8" aria-hidden>{ICON[d.id]}</svg>
-              <span className="relative leading-tight">{d.short}</span>
+              <span className="relative hidden leading-tight sm:inline">{d.short}</span>
               <span className="kbd relative hidden opacity-70 md:inline">{i + 1}</span>
             </button>
           </li>

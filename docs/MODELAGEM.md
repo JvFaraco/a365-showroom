@@ -4,7 +4,7 @@ Todos os modelos são procedurais (three.js). As proporções vêm das fotos de 
 
 Materiais: plástico branco acetinado #F1F2F4 com verniz leve e micro-textura (`white`), cinza-azulado fosco #8A93A3 (`grey`), preto soft-touch #1A1C20 (`black`), cromado (`chrome`), placa verde com textura de trilhas (`pcb`), linhas de partição (`partition`), logo em sulcos (`logoGroove`) e LEDs emissivos com bloom. Nenhuma marca de fornecedor, número de série ou QR legível: etiquetas são retângulos lisos.
 
-## Módulo de Comando (face de raio 0,9, eixo vertical, frente em +Z)
+## Módulo de Comando (planta de 144 × 145 mm, 38 mm de altura; 1 un = 80 mm; frente em +Z)
 
 | part.id | Como é modelada |
 |---|---|
@@ -26,31 +26,34 @@ Materiais: plástico branco acetinado #F1F2F4 com verniz leve e micro-textura (`
 
 Vista explodida, de cima para baixo: cúpula; placa (com o cartão do chip um pouco acima); caixinha do alto-falante; bateria; base cinza, que fica parada com a antena.
 
-## Fotossensor (0,8 × 1,95 × 0,5, frente em +Z)
+## Fotossensor (68 × 144 × 94 mm com base e placa de fixação; 1 un = 79 mm; frente em +Z)
+
+O corpo (68 × 137 × 78 mm, mais fundo que largo) é uma casca gerada como superfície paramétrica (volta do contorno × altura): frente e laterais arredondadas, traseira mais plana, topo de borda arredondada. O capuz e o rebaixo do PIR (de ~20 a 64 mm de altura, ~61 mm de boca, fundo ~16 mm atrás da frente) são escavados na própria casca, com fundo e paredes; só a cápsula da câmera é saliente. O compartimento das pilhas também é aberto na casca. A casca sai em duas metades (frente e corpo traseiro), que se separam na vista explodida.
 
 | part.id | Como é modelada |
 |---|---|
-| `camera` | Lente em cilindros concêntricos, no módulo oval em relevo (extrusão em forma de estádio). |
+| `camera` | Lente em cilindros concêntricos, na cápsula em pílula (um pouco mais larga em cima), dentro do corte do capuz. |
 | `flash` | Janela escura com o emissor branco. |
 | `led` | Ponto emissivo abaixo do flash. |
-| `pir` | Janela fosca levemente curva, com anéis de Fresnel sutis, no capuz trapezoidal que desce até a base. |
-| `base` | `RoundedBox` cinza-claro, como no aparelho real. |
-| `suporte` | Esfera do pivô, braço curto e placa de parede com parafusos. |
+| `pir` | Janela leitosa levemente curva, com faixas de Fresnel discretas, no fundo do rebaixo de baixo (atrás da linha do corpo). A faixa em trapézio é a rampa de cima desse rebaixo. |
+| `base` | Faixa cinza fosca, recuada, com o fundo arredondado. |
+| `suporte` | Trilhos cinza em Λ (mais próximos no alto) da placa de fixação na parede (~31 × 67 mm, ~11 mm de espessura), com os pés na altura da base. O sensor inclina no eixo horizontal do pé. |
+| `placas` (i) | Armação interna com a placa da câmera em cima, a placa do PIR no meio e a antena em mola embaixo (pelas fotos e vídeos; sem etiquetas). |
 | `tampa-traseira` | Cobre a metade de cima da traseira (o compartimento das pilhas): trava no topo, duas abas embaixo, nervuras e etiqueta lisa por dentro. |
-| `pilhas` (i) | 3 pilhas AA na vertical, com polaridades alternadas, num berço preto com mola e contato; pino do anti-sabotagem ao lado. Sem marca. |
-| `fixacao` (i) | Peça cinza-clara na metade de baixo da traseira: trapézio com canal em cunha e parafuso de trava. O suporte articulado prende nela. |
+| `pilhas` (i) | 3 pilhas AA na vertical, nas proporções reais (50,5 × 14,5 mm), com polaridades alternadas, num berço preto com mola e contato; pino do anti-sabotagem no alto. Sem marca. Não saem do compartimento. |
+| `fixacao` | Placa cinza entre os trilhos, num nível mais fundo, com o entalhe retangular no alto e um parafuso perto de baixo. |
 
-## Sensor Magnético (frente em +Z)
+## Sensor Magnético (corpo 93 × 25 × 28 mm, ímã 92 × 12 × 15 mm, vão de 7 mm; 1 un = 49,5 mm; frente em +Z)
 
 | part.id | Como é modelada |
 |---|---|
 | `corpo` | Barra alta em `RoundedBox` de chanfro macio, na proporção ~94 × 31 × 23, com linha de partição da tampa, marca de alinhamento e logo em sulco fino. |
-| `ima` | Barra mais fina e curta, paralela e colada ao corpo. |
+| `ima` | Barra fina e longa (quase o comprimento do corpo, metade da altura e da profundidade), paralela e alinhada, com vão de poucos milímetros. Na cena da porta fica no batente; o corpo vai na folha. |
 | `led` | Fenda escura com LED emissivo. |
 | `choque` (i) | Placa verde comprida e estreita: chip do sensor, chave de anti-sabotagem, borne de 2 parafusos, etiqueta lisa e antena em mola de cobre na ponta. |
 | `bateria` (i) | Bateria cilíndrica presa por duas presilhas metálicas. |
 
-## Sirene (raio 1, face em +Z)
+## Sirene (128 mm de diâmetro, 60 mm de projeção; 1 un = 64 mm; face em +Z)
 
 A traseira é uma placa branca plana, sem tampa extra: é o suporte que cobre essa face. Por isso bateria, placa, elemento sonoro e tamper ficam na traseira e são partes internas.
 
@@ -58,20 +61,20 @@ A traseira é uma placa branca plana, sem tampa extra: é o suporte que cobre es
 |---|---|
 | `corpo` | `LatheGeometry` de perfil suave: face plana, chanfro largo e lateral levemente cônica; linha de partição e logo em sulcos finos. |
 | `led` | Fenda na borda de baixo da face, virada para o chão. |
-| `suporte` | Prato de parede: aro em `LatheGeometry`, fundo extrudado com furo grande e recortes, canal vertical, abas da baioneta e parafusos. |
-| `tamper` (i) | Alavanca de gatilho numa guia em U, na traseira. O suporte a mantém pressionada; ela salta quando a sirene sai do suporte. |
+| `suporte` | Prato de parede: aro aberto em cima (é por onde a sirene desce), fundo extrudado com furo grande e recortes, canal vertical, travas e parafusos. A sirene não gira: desce na vertical e trava com um clique. |
+| `tamper` (i) | Botão circular em degraus no centro da traseira. O suporte o mantém pressionado; ele salta quando a sirene sai do suporte. |
 | `elemento-sonoro` (i) | Por dentro, pastilha branca redonda com furo no centro (`LatheGeometry`), ligada à placa por dois fios brancos; na traseira, o círculo em relevo com anéis concêntricos. |
 | `bateria` (i) | Cilindro preto deitado, com etiqueta laranja, num nicho no alto da traseira, preso por uma trava. |
 | `placa` (i) | Placa verde em cunha por dentro, com chips, pontos de teste e antena de fio preto; o trecho com o conector branco de 2 fios aparece na traseira, ao lado da bateria. |
 
 A traseira também tem os furos quadrados e os ganchos em "L" do encaixe, e a etiqueta como um retângulo liso.
 
-## Controle Remoto (raio 0,9, frente em +Z)
+## Controle Remoto (45 × 51 × 13 mm; 1 un = 25,9 mm; frente em +Z)
 
 | part.id | Como é modelada |
 |---|---|
 | `btn-panico`, `btn-desarmar`, `btn-armar`, `btn-parcial` | Setores de anel extrudados, em cruz, com o ícone em textura. |
-| `btn-central` | Cilindro com o logo em relevo. |
+| centro (sem `id`) | Disco fixo, modelado com o corpo; não é botão. Logo em baixo-relevo discreto (a confirmar). |
 | `led` | Fenda no topo. |
 | `corpo` | Um só bloco em gota (extrusão com chanfro), preto soft-touch, com o filete azul em volta. Atrás, o aro grosso com a cavidade da bateria. |
 | `argola` | O furo na ponta do bloco, com a borda chanfrada. |

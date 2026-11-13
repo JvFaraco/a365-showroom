@@ -39,11 +39,12 @@ function isInternalObject(o: THREE.Object3D | null) {
  * Sem `id` e com `follow`, é carcaça não clicável que acompanha a parte `follow`.
  * Na troca por .glb, basta envolver o nó de mesmo nome com este componente.
  */
-export function ClickablePart({ id, follow, internal: internalProp, children }: { id?: string; follow?: string; internal?: boolean; children: ReactNode }) {
+export function ClickablePart({ id, follow, internal: internalProp, explode: explodeProp, children }: { id?: string; follow?: string; internal?: boolean; explode?: [number, number, number]; children: ReactNode }) {
   const { deviceId, interactive } = useDeviceCtx()
   const data = getPart(deviceId, id ?? follow)
   const internal = internalProp ?? !!data?.internal
-  const explode = data?.explode
+  // carcaças (`follow`) podem ter o próprio deslocamento na vista explodida
+  const explode = explodeProp ?? data?.explode
   const group = useRef<THREE.Group>(null!)
   const tracked = useRef<Tracked[]>([])
   const fade = useRef({ v: 1, f: 0, applied: -1, fApplied: -1, sel: false })

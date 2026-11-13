@@ -8,7 +8,8 @@ import { DEVICE_COMPONENTS } from '../devices'
 import { ManualPins, PartCallout } from '../parts/PartCallout'
 import { explodeAmt, reducedMotion } from '../common/util'
 import { fxBasic } from '../common/materials'
-import { deviceRoots, partCenter, warmBounds } from '../common/registry'
+import { compiledDevices, deviceRoots, partCenter, warmBounds } from '../common/registry'
+import { boot, bootWantsShowroom } from '../../boot'
 
 const easeOut = (x: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3)
 const UP = new THREE.Vector3(0, 1, 0)
@@ -70,11 +71,12 @@ function HoldDriver() {
 }
 
 /**
- * Os 7 aparelhos do showroom ficam sempre montados. Trocar de aparelho só muda `visible` e anima
+ * Os 7 aparelhos do showroom ficam sempre montados (na carga entram um por quadro, ver Boot). Trocar de aparelho só muda `visible` e anima
  * a posição (o atual sai; o novo desliza, gira e pousa): nada é desmontado nem recompilado.
  */
 export function ShowroomDevices() {
   const device = useShowroom((s) => s.device)
+  const mounted = useShowroom((s) => s.mounted)
   const slots = useRef<Partial<Record<DeviceId, THREE.Group | null>>>({})
   const tr = useRef<{ cur: DeviceId; prev: DeviceId | null; t0: number }>({ cur: device, prev: null, t0: now() - 5 })
   if (tr.current.cur !== device) tr.current = { cur: device, prev: tr.current.cur, t0: now() }
@@ -88,7 +90,7 @@ export function ShowroomDevices() {
     for (const d of DEVICES) {
       const g = slots.current[d.id]
       if (!g) continue
-      if (s.warm) { g.visible = true; g.position.set(0, 0, 0); g.rotation.y = 0; g.scale.setScalar(1); continue }
+      if (s.warm) { g.visible = compiledDevices.has(d.id); g.position.set(0, 0, 0); g.rotation.y = 0; g.scale.setScalar(1); continue }
       if (d.id === cur) {
         const k = easeOut(t / 0.95)
         g.visible = on
@@ -107,7 +109,7 @@ export function ShowroomDevices() {
 
   return (
     <>
-      {DEVICES.map((d) => {
+      {DEVICES.slice(0, mounted).map((d) => {
         const C = DEVICE_COMPONENTS[d.id]
         return (
           <group key={d.id} ref={(g) => { slots.current[d.id] = g; if (g) deviceRoots[d.id] = g; }} visible={false}>
@@ -119,25 +121,62 @@ export function ShowroomDevices() {
   )
 }
 
+const frame = () => new Promise<void>((r) => requestAnimationFrame(() => r()))
+/** O pós-processamento é carregado à parte; avisa aqui quando montou, para o aquecimento esperar por ele. */
+export const postFx = { ready: false }
+
 /**
- * Aquecimento, atrás da tela de carregamento: por alguns frames os 7 aparelhos ficam visíveis e
- * selecionados (texturas sobem para a GPU; o contorno do hover compila), `gl.compile` fecha os
- * shaders e as caixas de todas as partes são calculadas. Depois disso nenhum clique compila nada.
+ * Carga fatiada, atrás da tela de carregamento. Em vez de montar a cena inteira e chamar um `gl.compile`
+ * único (uma tarefa de segundos, que congelava tudo), cada aparelho entra num quadro e tem os shaders
+ * compilados com `compileAsync` (em paralelo, onde houver KHR_parallel_shader_compile), começando pelo da
+ * tela inicial. No fim, alguns quadros com tudo visível e selecionado sobem as texturas para a GPU e
+ * fecham o contorno do hover; as caixas de todas as partes são calculadas. Depois disso nenhum clique
+ * compila nada.
  */
-export function Warmup() {
+export function Boot() {
   const gl = useThree((s) => s.gl)
   const scene = useThree((s) => s.scene)
   const camera = useThree((s) => s.camera)
-  const frames = useRef(0)
-  useFrame(() => {
-    const s = useShowroom.getState()
-    if (s.ready) return
-    frames.current++
-    if (frames.current === 3) { warmBounds(); gl.compile(scene, camera) }
-    if (frames.current === 6) s.set({ warm: false })
-    if (frames.current === 9) s.set({ ready: true })
-  })
-  useEffect(() => { ;(window as unknown as { __gl: unknown }).__gl = gl }, [gl])
+  useEffect(() => {
+    ;(window as unknown as { __gl: unknown; __scene: unknown }).__gl = gl
+    ;(window as unknown as { __scene: unknown }).__scene = scene
+    let dead = false
+    const st = useShowroom.getState
+    const n = DEVICES.length
+    ;(async () => {
+      for (let i = st().mounted; i < n; i++) {
+        if (dead) return
+        const id = DEVICES[i].id
+        boot.set(0.2 + (0.7 * i) / n, `Aparelhos: ${DEVICES[i].short} (${i + 1} de ${n})`)
+        st().set({ mounted: i + 1 })
+        await frame() // o React monta o aparelho (no showroom e no kit da abertura)
+        // shaders deste aparelho, nas duas instâncias; cada material é preparado uma vez só, aqui
+        // enquanto compila, o aparelho fica invisível: o render não toca num programa ainda não pronto
+        for (const root of [deviceRoots[id], scene.getObjectByName(`kit:${id}`)]) {
+          if (!root || dead) continue
+          try { await gl.compileAsync(root, camera, scene) } catch { /* segue: o render compila */ }
+        }
+        compiledDevices.add(id)
+      }
+      boot.set(0.92, 'Materiais')
+      // o pós-processamento chega num pacote à parte: espera só um instante por ele, sem segurar a carga
+      for (let k = 0; k < 20 && !postFx.ready && !dead; k++) await frame()
+      boot.set(0.97, 'Preparando')
+      // dois quadros com tudo visível e selecionado: sobem as texturas e fecha o contorno do hover
+      await frame(); await frame()
+      if (dead) return
+      warmBounds()
+      st().set({ warm: false })
+      await frame()
+      if (dead) return
+      st().set({ ready: true })
+      // se a pessoa já clicou no botão da imagem de abertura, entra direto no showroom
+      if (bootWantsShowroom()) st().setScene('showroom')
+      boot.set(1)
+      boot.done()
+    })()
+    return () => { dead = true }
+  }, [gl, scene, camera])
   return null
 }
 

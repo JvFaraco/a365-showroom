@@ -6,6 +6,7 @@ import { easing } from 'maath'
 import { DEVICE_BY_ID } from '../data/devices'
 import { actionTime, useShowroom } from '../store/showroomStore'
 import { REF_ON } from '../dev/RefMode'
+import { pedestalRadius } from './common/registry'
 
 const DARK = new Set(['controle', 'app'])
 // constante fora do componente: o material refletor recria seus render targets quando `blur` muda de identidade
@@ -16,15 +17,16 @@ function glowTexture() {
   c.width = c.height = 128
   const ctx = c.getContext('2d')!
   const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64)
-  g.addColorStop(0, 'rgba(190,210,255,1)'); g.addColorStop(0.55, 'rgba(120,150,255,0.35)'); g.addColorStop(1, 'rgba(80,110,255,0)')
+  g.addColorStop(0, 'rgba(235,238,245,1)'); g.addColorStop(0.55, 'rgba(200,206,220,0.3)'); g.addColorStop(1, 'rgba(180,188,205,0)')
   ctx.fillStyle = g; ctx.fillRect(0, 0, 128, 128)
   return new THREE.CanvasTexture(c)
 }
 
 /**
  * Estúdio de produto, montado uma vez e mantido em todas as cenas: softbox grande acima e à esquerda
- * (key), fill frontal fraco e dois rim lights atrás com um leve azul da marca; chão espelhado sutil;
- * no showroom, pedestal com sombra de contato assada uma vez por aparelho.
+ * (key), fill frontal fraco e dois rim lights atrás; reflexo do piso discreto; no showroom, um pedestal
+ * neutro e fosco com sombra de contato assada uma vez por aparelho. O ambiente (HDRI de estúdio) é
+ * gerado no carregamento com Lightformers: vai dentro do build e funciona sem internet.
  */
 export function Stage() {
   const quality = useShowroom((s) => s.quality)
@@ -38,10 +40,12 @@ export function Stage() {
   const rimB = useRef<THREE.DirectionalLight>(null!)
   const amb = useRef<THREE.AmbientLight>(null!)
   const room = useRef<THREE.PointLight>(null!)
+  const ped = useRef<THREE.Group>(null!)
   const warm = useShowroom((s) => s.warm)
-  const dim = useRef({ v: 1, rim: 1, glow: 0.12, room: 0 })
-  const ringMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1E398D', emissive: '#2f66ff', emissiveIntensity: 1.3, toneMapped: false }), [])
-  const pedMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#0d1226', roughness: 0.35, metalness: 0.6 }), [])
+  const dim = useRef({ v: 1, rim: 1, glow: 0.12, room: 0, ped: 1 })
+  // pedestal: disco neutro, fosco e discreto (sem aro luminoso); só um chanfro um pouco mais claro na borda
+  const ringMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2a2d35', roughness: 0.8 }), [])
+  const pedMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#17191f', roughness: 0.85, metalness: 0 }), [])
   const glowMat = useMemo(() => new THREE.MeshBasicMaterial({ map: glowTexture(), transparent: true, opacity: 0.12, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending }), [])
 
   // sombra de contato: assada uma vez, depois que o aparelho pousa (nunca a cada frame)
@@ -68,11 +72,14 @@ export function Stage() {
     key.current.intensity = 1.25 * d.v
     amb.current.intensity = 0.16 * d.v
     rimW.current.intensity = 1.1 * d.rim * d.v
-    rimB.current.intensity = 1.5 * d.rim * d.v
+    rimB.current.intensity = 1.2 * d.rim * d.v
     glowMat.opacity = d.glow * d.v
     // luz do cômodo da cena "Em ação": existe sempre (intensidade 0 fora dela), para o número de luzes nunca mudar
     easing.damp(d, 'room', scene === 'inaction' ? 40 : 0, 0.3, dt)
     room.current.intensity = d.room
+    // o pedestal acompanha a pegada do aparelho (modelado com raio 1,75)
+    easing.damp(d, 'ped', pedestalRadius(device) / 1.75, 0.18, dt)
+    ped.current.scale.set(d.ped, 1, d.ped)
   })
 
   return (
@@ -84,7 +91,7 @@ export function Stage() {
       <directionalLight position={[2, 1.5, 7]} intensity={0.25} color="#ffffff" />
       <directionalLight ref={rimW} position={[5.5, 3.2, -6]} intensity={1.1} color="#e9efff" />
       <pointLight ref={room} position={[0, 3.1, 1]} intensity={0} distance={12} color="#cfd8ff" />
-      <directionalLight ref={rimB} position={[-6, 2.6, -5.5]} intensity={1.5} color="#6e8dff" />
+      <directionalLight ref={rimB} position={[-6, 2.6, -5.5]} intensity={1.2} color="#b9c6ee" />
       <Environment resolution={256} frames={1} background={false}>
         <color attach="background" args={['#04050b']} />
         {/* key: softbox retangular grande, acima e à esquerda */}
@@ -93,7 +100,7 @@ export function Stage() {
         <Lightformer form="rect" intensity={0.35} position={[2, 1, 8]} scale={[8, 5, 1]} rotation={[0, Math.PI, 0]} />
         {/* dois rim lights atrás, com um levíssimo tom azul da marca */}
         <Lightformer form="rect" intensity={1.5} color="#dfe7ff" position={[7, 2.5, -4]} scale={[3, 7, 1]} rotation={[0, -Math.PI / 2.6, 0]} />
-        <Lightformer form="rect" intensity={1.5} color="#8ea6ff" position={[-7, 2.5, -4]} scale={[3, 7, 1]} rotation={[0, Math.PI / 2.6, 0]} />
+        <Lightformer form="rect" intensity={1.4} color="#cfd8f2" position={[-7, 2.5, -4]} scale={[3, 7, 1]} rotation={[0, Math.PI / 2.6, 0]} />
         <Lightformer form="rect" intensity={0.25} position={[0, -4, 0]} scale={[10, 10, 1]} rotation={[-Math.PI / 2, 0, 0]} />
       </Environment>
 
@@ -103,14 +110,16 @@ export function Stage() {
           {quality >= 3 ? (
             <meshStandardMaterial color="#05070d" roughness={1} metalness={0} envMapIntensity={0.2} />
           ) : (
-            <MeshReflectorMaterial mirror={0.4} blur={REFLECT_BLUR} resolution={512} mixBlur={1} mixStrength={3.2} roughness={0.95}
+            <MeshReflectorMaterial mirror={0.3} blur={REFLECT_BLUR} resolution={512} mixBlur={1} mixStrength={1.5} roughness={0.95}
               depthScale={1} minDepthThreshold={0.4} maxDepthThreshold={1.3} color="#060913" metalness={0.4} />
           )}
         </mesh>
         <group position={[0, floorY, 0]} visible={showroom || warm}>
-          <mesh material={pedMat} position={[0, 0.06, 0]} raycast={() => null}><cylinderGeometry args={[1.75, 1.85, 0.12, 96]} /></mesh>
-          <mesh material={ringMat} position={[0, 0.121, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}><ringGeometry args={[1.67, 1.7, 128]} /></mesh>
-          <mesh material={glowMat} position={[0, 0.123, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}><circleGeometry args={[1.6, 48]} /></mesh>
+          <group ref={ped}>
+            <mesh material={pedMat} position={[0, 0.06, 0]} raycast={() => null}><cylinderGeometry args={[1.75, 1.8, 0.12, 128]} /></mesh>
+            <mesh material={ringMat} position={[0, 0.121, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}><ringGeometry args={[1.71, 1.75, 128]} /></mesh>
+            <mesh material={glowMat} position={[0, 0.123, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}><circleGeometry args={[1.6, 48]} /></mesh>
+          </group>
           {/* um único ContactShadows, sempre montado: `frames` sobe de 1 em 1, e cada passo assa a sombra
               exatamente mais uma vez (no aquecimento e depois que cada aparelho pousa) */}
           {quality < 3 && (

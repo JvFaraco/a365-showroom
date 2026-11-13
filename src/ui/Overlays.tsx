@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useProgress } from '@react-three/drei'
 import { IA_DURATION, IA_STEPS } from '../data/inAction'
 import { DEVICE_BY_ID, SLOGAN, getPart } from '../data/devices'
 import { actionTau, ia, useShowroom, type Scene } from '../store/showroomStore'
@@ -8,6 +7,7 @@ import type { ActionId } from '../data/devices'
 import { Breadcrumb } from './Breadcrumb'
 import { DeviceDock } from './DeviceDock'
 import { PartCard, CalloutLine } from './PartCard'
+import { ManualLayer } from './ManualLayer'
 import { PartList } from './PartList'
 import { ViewToggles } from './ViewToggles'
 import { Fullscreen, OrsegupsLogo, Pause, Play, Sound } from './icons'
@@ -15,30 +15,9 @@ import { beep } from './audio'
 
 const SCENES: { id: Scene; label: string }[] = [
   { id: 'showroom', label: 'Showroom' },
-  { id: 'network', label: 'Sistema conectado' },
   { id: 'inaction', label: 'Em ação' },
   { id: 'outro', label: 'Encerramento' },
 ]
-
-/** Carregamento: o logo é desenhado com o traço animado enquanto a cena prepara. */
-export function Loader() {
-  const { active } = useProgress()
-  const ready = useShowroom((s) => s.ready)
-  const [minDone, setMinDone] = useState(false)
-  useEffect(() => { const t = setTimeout(() => setMinDone(true), 1700); return () => clearTimeout(t) }, [])
-  return (
-    <AnimatePresence>
-      {(active || !minDone || !ready) && (
-        <motion.div exit={{ opacity: 0 }} transition={{ duration: 0.6 }} className="fixed inset-0 z-50 grid place-items-center bg-ink" role="status" aria-label="Carregando">
-          <div className="flex flex-col items-center gap-4">
-            <OrsegupsLogo size={120} draw />
-            <div className="font-title text-sm tracking-[0.3em] text-white/70">ALARME 365</div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
-}
 
 function TopBar() {
   const scene = useShowroom((s) => s.scene)
@@ -52,17 +31,26 @@ function TopBar() {
   }
   return (
     <header className="pointer-events-none fixed inset-x-0 top-0 z-30 flex items-center justify-between gap-2 p-3 md:p-5">
-      <button className="pointer-events-auto flex items-center gap-2" aria-label="Alarme 365: voltar à abertura" onClick={() => useShowroom.getState().setScene('intro')}>
+      <button className="pointer-events-auto flex shrink-0 items-center gap-2" aria-label="Alarme 365: voltar à abertura" onClick={() => useShowroom.getState().setScene('intro')}>
         <OrsegupsLogo size={34} />
         <span className="hidden font-title text-lg font-bold tracking-wide sm:inline">Alarme 365</span>
       </button>
-      <nav aria-label="Cenas" className="glass pointer-events-auto flex max-w-[62vw] gap-1 overflow-x-auto rounded-full p-1">
+      {/* telas largas: abas; telas estreitas: as quatro cenas num seletor compacto (as abas não cabem em 390 px) */}
+      <nav aria-label="Cenas" className="glass pointer-events-auto hidden min-w-0 gap-1 overflow-x-auto rounded-full p-1 lg:flex">
         {SCENES.map((s) => (
           <button key={s.id} aria-current={scene === s.id} onClick={() => { beep(); useShowroom.getState().setScene(s.id) }}
-            className={`btn whitespace-nowrap !border-transparent !px-3 !py-1.5 ${scene === s.id ? 'btn-on' : '!bg-transparent text-white/75'}`}>{s.label}</button>
+            className={`btn shrink-0 whitespace-nowrap !border-transparent !px-3 !py-1.5 ${scene === s.id ? 'btn-on' : '!bg-transparent text-white/75'}`}>{s.label}</button>
         ))}
       </nav>
-      <div className="pointer-events-auto flex gap-1">
+      <label className="glass pointer-events-auto relative flex min-w-0 flex-1 items-center rounded-full sm:max-w-xs lg:hidden">
+        <span className="sr-only">Cena</span>
+        <select value={scene} onChange={(e) => { beep(); useShowroom.getState().setScene(e.target.value as Scene) }}
+          className="scene-select min-h-[2.75rem] w-full min-w-0 appearance-none truncate rounded-full bg-transparent py-2 pl-4 pr-9 text-sm font-semibold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+          {SCENES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+        </select>
+        <svg viewBox="0 0 16 16" className="pointer-events-none absolute right-3.5 h-3.5 w-3.5 text-white/80" aria-hidden><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      </label>
+      <div className="pointer-events-auto flex shrink-0 gap-1">
         <button className="btn glass !p-2.5" aria-label={sound ? 'Desligar o som' : 'Ligar o som'} aria-pressed={sound} onClick={() => set({ sound: !sound })}><Sound size={18} on={sound} /></button>
         <button className={`btn glass !p-2.5 ${presenter ? 'btn-on' : ''}`} aria-label="Modo apresentação (P)" title="Modo apresentação (P)" aria-pressed={presenter} onClick={togglePresenter}><Fullscreen size={18} /></button>
       </div>
@@ -90,7 +78,7 @@ function HoverTag() {
   )
 }
 
-// avisos das micro-animações: aparecem como toast abaixo do breadcrumb (nunca por cima da navegação)
+// avisos das micro-animações: toast centralizado logo abaixo da barra de modos, por cima da lista de Partes
 const TOASTS: Partial<Record<ActionId, { at: number; text: string }>> = {
   tamper: { at: 0.6, text: 'Sirene aberta: o sistema não arma' },
   'tampa-foto': { at: 2.7, text: 'Tampa aberta: o sistema avisa a Central' },
@@ -108,9 +96,11 @@ function ActionToast() {
   }, [id, cfg])
   if (!cfg) return null
   return (
-    <div ref={el} role="status" className="pointer-events-none fixed left-3 top-[10rem] z-20 flex items-center gap-2 rounded-full bg-alert px-4 py-1.5 text-sm font-bold text-white shadow-lg transition-opacity duration-200 md:left-36 md:top-[9.4rem]" style={{ opacity: 0 }}>
-      <span className="inline-block h-2.5 w-2.5 rounded-full bg-white" style={{ animation: 'blink 0.6s steps(2) infinite' }} />
-      {cfg.text}
+    <div className="pointer-events-none fixed inset-x-0 top-[11.9rem] z-40 flex justify-center px-3 md:top-[10.2rem]">
+      <div ref={el} role="status" className="flex max-w-full items-center gap-2 rounded-full bg-alert px-4 py-1.5 text-sm font-bold text-white shadow-lg shadow-black/40 transition-opacity duration-200" style={{ opacity: 0 }}>
+        <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-white" style={{ animation: 'blink 0.6s steps(2) infinite' }} />
+        {cfg.text}
+      </div>
     </div>
   )
 }
@@ -123,20 +113,24 @@ function ShowroomUI() {
   return (
     <>
       <h1 className="sr-only">Alarme 365: showroom dos equipamentos</h1>
-      <div className="pointer-events-none fixed left-14 right-3 top-[7rem] z-20 sm:left-[7.5rem] md:left-36 md:right-auto md:top-24 md:max-w-[42vw]"><Breadcrumb /></div>
+      <div className="pointer-events-none fixed left-3 right-3 top-[8.1rem] z-20 md:left-36 md:right-auto md:top-24 md:max-w-[42vw]"><Breadcrumb /></div>
       <div className="pointer-events-none fixed right-3 top-[4.5rem] z-20 flex md:right-5 md:top-24"><ViewToggles /></div>
       <PartList />
       <PartCard />
       <CalloutLine />
+      <ManualLayer />
       <HoverTag />
       <ActionToast />
       <DeviceDock />
       {!part && (
-        <p className="pointer-events-none fixed inset-x-0 bottom-[5.8rem] z-10 px-4 text-center text-[0.8em] text-white/65 md:bottom-[7.2rem]">
+        <p className="pointer-events-none fixed inset-x-0 bottom-[5.4rem] z-10 px-4 text-center text-[0.8em] text-white/70 md:bottom-[7.2rem]">
           {view === 'manual' ? 'Clique num número para ver a parte de perto.'
             : view === 'exploded' ? 'Aparelho explodido: as partes internas também são clicáveis.'
             : view === 'xray' ? 'Raio-X: clique numa parte interna.'
-            : `Arraste para girar · role para aproximar · clique numa parte do ${DEVICE_BY_ID[device].short.toLowerCase()} · duplo clique reseta`}
+            : <>
+                <span className="hint-mouse">Arraste para girar · role para aproximar · clique numa parte do {DEVICE_BY_ID[device].short.toLowerCase()} · duplo clique reseta</span>
+                <span className="hint-touch">Arraste para girar · pinça para aproximar · toque numa parte</span>
+              </>}
         </p>
       )}
       {presenter && !part && (
@@ -146,14 +140,19 @@ function ShowroomUI() {
   )
 }
 
+// na primeira vez (logo depois da carga) o título e o botão já estão no lugar, iguais aos da imagem de abertura;
+// a entrada animada fica para quando a pessoa volta à abertura
+let introSeen = false
 function IntroUI() {
+  const first = !introSeen
+  useEffect(() => { introSeen = true }, [])
   return (
     <div className="pointer-events-none fixed inset-0 z-20 flex flex-col items-center justify-between py-[9vh] text-center">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.6, duration: 0.9 }}>
+      <motion.div initial={first ? false : { opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.6, duration: 0.9 }}>
         <h1 className="font-title text-[clamp(2.6rem,8vw,6rem)] font-bold leading-none tracking-tight text-white drop-shadow-[0_4px_30px_rgba(61,102,224,.7)]">Alarme <span className="text-accent">365</span></h1>
         <p className="mt-3 font-title text-[clamp(1rem,2.4vw,1.7rem)] text-white/85">{SLOGAN}</p>
       </motion.div>
-      <motion.button initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 3.6, duration: 0.6 }}
+      <motion.button initial={first ? false : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 3.6, duration: 0.6 }}
         className="btn btn-primary pointer-events-auto !px-8 !py-3.5 text-[1.05em] shadow-xl shadow-yellow-500/20" onClick={() => { beep(); useShowroom.getState().setScene('showroom') }}>
         Conhecer os equipamentos
       </motion.button>
@@ -170,17 +169,6 @@ function OutroUI() {
         <p className="mt-3 font-title text-[clamp(1.1rem,2.6vw,1.9rem)] text-white">{SLOGAN}</p>
       </motion.div>
       <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2.6 }} className="btn glass pointer-events-auto" onClick={() => useShowroom.getState().setScene('intro')}>Recomeçar</motion.button>
-    </div>
-  )
-}
-
-function NetworkUI() {
-  return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-5 z-20 flex justify-center px-4">
-      <div className="glass max-w-2xl rounded-2xl px-5 py-3 text-center text-[0.9em] text-white/85">
-        <b className="font-title text-white">Sistema conectado.</b> Sensores, sirene e controle falam com o Módulo por radiofrequência. O Módulo fala com a nuvem por três vias: <b>Chip 4G, Wi-Fi e Ethernet</b>. Da nuvem, o aviso chega ao aplicativo e à Central.
-        <span className="mt-1 block text-[0.85em] text-white/55">Clique num aparelho para abri-lo no showroom.</span>
-      </div>
     </div>
   )
 }
@@ -233,7 +221,6 @@ export function UI() {
       {scene === 'showroom' && <ShowroomUI />}
       {scene === 'intro' && <IntroUI />}
       {scene === 'outro' && <OutroUI />}
-      {scene === 'network' && <NetworkUI />}
       {scene === 'inaction' && <InActionUI />}
     </>
   )
