@@ -126,15 +126,12 @@ const frame = () => new Promise<void>((r) => requestAnimationFrame(() => r()))
 export const postFx = { ready: false }
 
 /**
- * Carga, atrás da tela de carregamento. Regra: NADA é desenhado antes de os shaders ficarem prontos. Usar um
- * programa que ainda está compilando (desenhar com ele ou ler os uniforms) obriga a esperar a compilação, e é
- * isso que travava a carga por segundos. Por isso o canvas fica parado (`frameloop="never"`) enquanto:
- *   1. cada aparelho é montado, um por vez (showroom e kit da abertura), e tem os shaders pedidos com
- *      `compileAsync`, que só resolve quando os programas terminam (em paralelo, com KHR_parallel_shader_compile);
- *   2. o resto da cena (palco, pedestal, piso, luzes) passa pelo mesmo `compileAsync`.
- * Só então o canvas começa a desenhar: alguns quadros com tudo visível e selecionado sobem as texturas e
- * fecham os programas do pós-processamento e da sombra de contato; as caixas das partes são calculadas e a
- * tela de carregamento sai. Depois disso nenhum clique compila nada.
+ * Carga fatiada, atrás da tela de carregamento. Em vez de montar a cena inteira e chamar um `gl.compile`
+ * único (uma tarefa de segundos, que congelava tudo), cada aparelho entra num quadro e tem os shaders
+ * compilados com `compileAsync` (em paralelo, onde houver KHR_parallel_shader_compile), começando pelo da
+ * tela inicial. No fim, alguns quadros com tudo visível e selecionado sobem as texturas para a GPU e
+ * fecham o contorno do hover; as caixas de todas as partes são calculadas. Depois disso nenhum clique
+ * compila nada.
  */
 export function Boot() {
   const gl = useThree((s) => s.gl)
@@ -145,34 +142,27 @@ export function Boot() {
     let dead = false
     const st = useShowroom.getState
     const n = DEVICES.length
-    const tick = () => new Promise<void>((r) => setTimeout(r, 0)) // devolve a vez ao navegador (o canvas está parado)
-    const compile = async (root: THREE.Object3D | undefined) => {
-      if (!root || dead) return
-      try { await gl.compileAsync(root, camera, scene) } catch { /* segue: o render compila */ }
-    }
     ;(async () => {
       for (let i = st().mounted; i < n; i++) {
         if (dead) return
         const id = DEVICES[i].id
-        boot.set(0.15 + (0.65 * i) / n, `Aparelhos: ${DEVICES[i].short} (${i + 1} de ${n})`)
+        boot.set(0.2 + (0.7 * i) / n, `Aparelhos: ${DEVICES[i].short} (${i + 1} de ${n})`)
         st().set({ mounted: i + 1 })
-        await tick() // o React monta o aparelho (no showroom e no kit da abertura); nada é desenhado
-        await compile(deviceRoots[id])
-        await compile(scene.getObjectByName(`kit:${id}`))
+        await frame() // o React monta o aparelho (no showroom e no kit da abertura)
+        // shaders deste aparelho, nas duas instâncias; cada material é preparado uma vez só, aqui
+        // enquanto compila, o aparelho fica invisível: o render não toca num programa ainda não pronto
+        for (const root of [deviceRoots[id], scene.getObjectByName(`kit:${id}`)]) {
+          if (!root || dead) continue
+          try { await gl.compileAsync(root, camera, scene) } catch { /* segue: o render compila */ }
+        }
         compiledDevices.add(id)
       }
-      // o resto da cena: tudo o que não é aparelho (os aparelhos já passaram)
-      boot.set(0.85, 'Palco e materiais')
-      const roots = new Set<THREE.Object3D>(Object.values(deviceRoots))
-      for (const c of scene.children) {
-        if (roots.has(c) || c.getObjectByName(`kit:${DEVICES[0].id}`)) continue
-        await compile(c)
-      }
-      if (dead) return
-      // agora sim o canvas desenha: tudo visível e selecionado por alguns quadros
-      boot.set(0.95, 'Preparando')
-      st().set({ painting: true })
-      for (let k = 0; k < 3; k++) await frame()
+      boot.set(0.92, 'Materiais')
+      // o pós-processamento chega num pacote à parte: espera só um instante por ele, sem segurar a carga
+      for (let k = 0; k < 20 && !postFx.ready && !dead; k++) await frame()
+      boot.set(0.97, 'Preparando')
+      // dois quadros com tudo visível e selecionado: sobem as texturas e fecha o contorno do hover
+      await frame(); await frame()
       if (dead) return
       warmBounds()
       st().set({ warm: false })

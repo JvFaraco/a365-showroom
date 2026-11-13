@@ -41,7 +41,6 @@ type State = {
   ready: boolean // aparelhos montados e shaders pré-compilados
   warm: boolean // aquecimento: tudo visível e selecionado por alguns frames, atrás do carregamento
   mounted: number // carga fatiada: quantos aparelhos já foram montados (um por quadro)
-  painting: boolean // o canvas só começa a desenhar depois que os shaders da cena inteira ficam prontos
   chunks: number // sobe a cada pacote de código que chega (pós-processamento, cenas carregadas à parte)
   listOpen: boolean
   resetTick: number
@@ -85,7 +84,6 @@ export const useShowroom = create<State>((set, get) => ({
   ready: false,
   warm: true,
   mounted: 0,
-  painting: false,
   chunks: 0,
   listOpen: typeof window !== 'undefined' && window.innerWidth >= 1024,
   resetTick: 0,
