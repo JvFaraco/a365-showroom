@@ -17,87 +17,80 @@ import { VoiceWaves } from '../fx/VoiceWaves'
 import { HoldRing } from '../fx/HoldRing'
 
 // ---------- medidas (Y para cima, frente em +Z) ----------
-// Ficha (1 unidade = 80 mm): planta quase redonda de 144 × 145 mm com a cauda; corpo com 38 mm de altura.
+// 1 unidade = 80 mm. Medidas externas: tampa de 143,5 × 144,9 mm de planta e 38 mm de altura; base cinza de ~137 mm.
 const BOTTOM = -0.4, SQUASH = 0.6 // o corpo foi modelado mais alto; SQUASH leva a altura a ~0,475 (38 mm)
 const RF = 0.9 // raio de referência do corpo (72 mm)
-const R_FOOT = 0.98 // raio da tampa no fundo (~78 mm). Na borda dos arcos dá ~73 mm: é a largura de 144 mm da ficha
-const TIP_UP = 0.1 // fração da subida da borda que a ponta da frente já começa acima do fundo (~2 mm)
-const CHIN = 0.03 // quanto a ponta da frente avança além do resto da tampa, no fundo
-const R_TOP = 0.85 // raio do topo, contando o ombro arredondado (68 mm): pela foto de frente, a borda de baixo fica ~5 mm mais larga
+const R_TOP = 58.5 / 80 // raio do topo plano (58,5 mm): bem menor que o corpo; a lateral abre em curva até 75 mm no fundo
 const YC = 0.39 // altura do topo (antes do achatamento): plano e nivelado
 const TILT = 0 // o topo não é rampa: fica paralelo à base
-const CAPSULE_Z = 0.7 // a cápsula do LED/190 fica na frente, perto da borda do topo
+const CAPSULE_Z = 0.63 // a cápsula do LED/190 fica na frente, rente à borda do topo plano
 const PCB_Y = -0.08 // topo da placa
 const VIAS_TO: [number, number, number][] = [[-1.5, 1.9, -0.6], [0, 2.3, -0.9], [1.5, 1.9, -0.6]]
 const VIAS_FROM: [number, number, number] = [0, 0.2, 0]
 
-const Y_SIDE = -0.03 // borda de baixo da tampa nos lados, onde a base cinza aparece (~21 mm do fundo)
+const Y_SIDE = BOTTOM + 18 / 48 // borda de baixo da tampa no alto dos arcos: 18 mm acima do fundo (faixa branca de 20 mm)
 const DEG = Math.PI / 180
 
-const FOOT_T = 127 * DEG // os dois fechos de trás ficam a ~127° da frente, um de cada lado
+const FOOT_T = 120 * DEG // os três apoios da tampa ficam a 120° um do outro: o da frente e os dois de trás
 
-/**
- * Lateral da tampa: desce quase reta do ombro do topo (raio R_TOP) até o fundo (raio R_FOOT), abrindo só um pouco.
- * A tampa não sobra para fora: fica rente à carcaça cinza, presa nela pelas presilhas. A exceção é a ponta da
- * frente, que avança num bico (CHIN a mais no fundo), como nas fotos de lado e de baixo. Devolve o raio na altura y.
- */
-function wallR(t: number, y: number) {
-  const foot = R_FOOT + CHIN * Math.pow(1 - lidFeet(t)[0], 1.2)
-  return R_TOP + (foot - R_TOP) * Math.min(1, Math.max(0, (YC - y) / (YC - BOTTOM)))
+// Perfil externo da lateral da tampa: [mm abaixo do topo, mm além do raio do topo]. Abre rápido perto do topo e vai
+// ficando reta até o fundo, onde os apoios chegam a 75 mm de raio.
+const WALL_PROFILE: [number, number][] = [[0, 0], [2, 1.1], [6, 4.3], [11, 7.2], [16, 9.7], [21, 11.9], [29, 14.7], [36, 16.4], [38, 16.5]]
+
+/** Raio da lateral da tampa na altura y (interpola o perfil externo). É o mesmo em toda a volta. */
+function wallR(y: number) {
+  const d = Math.min(38, Math.max(0, (YC - y) * 48))
+  let i = 1
+  while (i < WALL_PROFILE.length - 1 && WALL_PROFILE[i][0] < d) i++
+  const [d0, r0] = WALL_PROFILE[i - 1], [d1, r1] = WALL_PROFILE[i]
+  return R_TOP + (r0 + ((r1 - r0) * (d - d0)) / (d1 - d0)) / 80
 }
 
 /**
- * Borda de baixo da tampa em volta do contorno: [raio, altura]. A tampa encosta no fundo em TRÊS pontos, que é onde
- * ficam as presilhas: na frente, atrás à esquerda e atrás à direita. Entre eles a borda sobe em arco: nos dois
- * lados, onde a base cinza aparece, e atrás, por onde saem a antena e os cabos.
+ * Borda de baixo da tampa em volta do contorno: [raio, altura]. A tampa desce até o fundo em TRÊS apoios iguais, a
+ * 120° um do outro (na frente, atrás à esquerda e atrás à direita), que é onde ficam as presilhas. Entre eles a
+ * borda faz um arco simétrico e arredondado: nos dois lados, onde a base cinza aparece, e atrás, por onde saem a
+ * antena e os cabos.
  */
 function lidRim(t: number): [number, number] {
-  // a ponta da frente quase chega ao fundo (TIP_UP); os apoios de trás descem até ele
-  const [front, rear] = lidFeet(t), y = BOTTOM + (Y_SIDE - BOTTOM) * Math.min(TIP_UP + (1 - TIP_UP) * front, rear)
-  return [wallR(t, y), y]
+  const y = BOTTOM + (Y_SIDE - BOTTOM) * Math.min(...lidFeet(t))
+  return [wallR(y), y]
 }
 
-/** Quanto a borda já subiu (0 no apoio, 1 no alto do arco), contando do apoio da frente e dos dois de trás. */
+/**
+ * Quanto a borda já subiu (0 no apoio, 1 no alto do arco), contando do apoio da frente e dos dois de trás. Cada apoio
+ * é plano em ±12°; daí a borda sobe rápido e arredonda até o meio do arco, a 60° do apoio.
+ */
 function lidFeet(t: number): [number, number] {
   const a = Math.abs(Math.atan2(Math.sin(t), Math.cos(t))) // 0 na frente, π atrás
-  const clamp = (x: number) => Math.min(1, Math.max(0, x))
-  // na frente a ponta tem a base reta (±13°), cantos arredondados, e a borda sobe dos dois lados em curva côncava:
-  // rápido no começo, depois quase em linha reta até os lados (pelas fotos de frente)
-  const sf = clamp((Math.sin(Math.min(a, Math.PI / 2)) - Math.sin(13 * DEG)) / (Math.sin(80 * DEG) - Math.sin(13 * DEG)))
-  const front = Math.pow(sf, 0.4) * (sf / (sf + 0.02)) * 1.02
-  // atrás a borda desce até cada apoio numa curva longa, como na frente (pela foto de lado)
-  const rear = 1 - Math.pow(1 - clamp((Math.abs(a - FOOT_T) - 4 * DEG) / (42 * DEG)), 1.6)
-  return [front, rear]
+  const rise = (phi: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, (phi - 12.5 * DEG) / (47.5 * DEG))), 3)
+  return [rise(a), rise(Math.abs(a - FOOT_T))]
 }
 
 /** Raio da lateral da tampa na altura y. Abaixo da borda não há tampa. */
 function lidRadiusAt(t: number, y: number) {
-  return y <= lidRim(t)[1] ? Infinity : wallR(t, y)
+  return y <= lidRim(t)[1] ? Infinity : wallR(y)
 }
 
 /**
- * Tampa: UMA superfície. Topo plano e nivelado (disco de raio R_TOP), canto arredondado e lateral que desce,
- * abrindo só um pouco, rente à carcaça cinza. A borda de baixo segue lidRim() e dobra para dentro (dá espessura à borda).
+ * Tampa: UMA superfície. Topo plano e nivelado (disco de raio R_TOP) e lateral que desce abrindo em curva,
+ * rente à carcaça cinza nos arcos. A borda de baixo segue lidRim() e dobra para dentro (dá espessura à borda).
  * Devolve duas malhas que dividem os mesmos vértices: o topo (fosco) e a lateral (com brilho).
  */
 function lidGeometry() {
-  const NT = 180, NF = 5, NC = 6, NS = 10, C = 0.065 // colunas; anéis do topo, do canto e da lateral; raio do canto
+  const NT = 180, NF = 5, NC = 6, NS = 10 // colunas; anéis do topo, do ombro e da lateral
   const pos: number[] = [], uv: number[] = [], idxTop: number[] = [], idxSide: number[] = []
   const W = 2 + NF + NC + NS
   for (let i = 0; i <= NT; i++) {
     const t = (i / NT) * Math.PI * 2, sn = Math.sin(t), cs = Math.cos(t)
     const [er, ey] = lidRim(t)
-    let dr = lidRadiusAt(t, YC - 0.06) - R_TOP, dy = -0.06
-    const dl = Math.hypot(dr, dy); dr /= dl; dy /= dl // direção da lateral ao sair do canto
     const put = (r: number, y: number) => { pos.push(r * sn, y, r * cs); uv.push(r * sn * 3, r * cs * 3) }
-    for (let j = 0; j <= NF; j++) put((R_TOP - C) * Math.pow(j / NF, 0.8), YC)
-    const r0 = R_TOP + C * dr, y0 = YC + C * dy
-    for (let j = 1; j <= NC; j++) {
-      const k = j / NC, a = (1 - k) * (1 - k), m = 2 * k * (1 - k), c = k * k
-      put(a * (R_TOP - C) + m * R_TOP + c * r0, a * YC + m * YC + c * y0)
-    }
-    for (let j = 1; j <= NS; j++) { const k = j / NS, y = y0 + (ey - y0) * k; put(j === NS ? er : r0 + (lidRadiusAt(t, y) - lidRadiusAt(t, y0)), y) }
-    put(er - (0.012 + 0.035 * (1 - lidFeet(t)[1])), ey) // a borda dobra para dentro até encostar na carcaça cinza
+    for (let j = 0; j <= NF; j++) put(R_TOP * Math.pow(j / NF, 0.8), YC)
+    // ombro (os primeiros 6 mm, onde o perfil mais curva) e depois a lateral até a borda
+    const yS = YC - 6 / 48
+    for (let j = 1; j <= NC; j++) { const y = YC + (yS - YC) * (j / NC); put(wallR(y), y) }
+    for (let j = 1; j <= NS; j++) { const y = yS + (ey - yS) * (j / NS); put(wallR(y), y) }
+    put(er - 0.015, ey) // a borda dobra para dentro até encostar na carcaça cinza
   }
   for (let i = 0; i < NT; i++) for (let j = 0; j < W - 1; j++) {
     const a = i * W + j, b = a + W
@@ -121,10 +114,10 @@ function lidGeometry() {
 
 /** Adesivo da frente: retalho de ~19 × 25 mm colado na lateral da tampa, centrado sob o botão. */
 function stickerGeometry() {
-  const NU = 8, NV = 8, HALF = 0.125, Y1 = 0.3, Y0 = -0.2 // meia largura (rad) e alturas de cima e de baixo
+  const NU = 8, NV = 8, HALF = 0.125, Y1 = YC - 5 / 48, Y0 = YC - 31 / 48 // meia largura (rad) e alturas de cima e de baixo
   const pos: number[] = [], uv: number[] = [], idx: number[] = []
   for (let j = 0; j <= NV; j++) for (let i = 0; i <= NU; i++) {
-    const t = (i / NU - 0.5) * 2 * HALF, y = Y1 + (Y0 - Y1) * (j / NV), r = wallR(t, y) + 0.004
+    const t = (i / NU - 0.5) * 2 * HALF, y = Y1 + (Y0 - Y1) * (j / NV), r = wallR(y) + 0.004
     pos.push(r * Math.sin(t), y, r * Math.cos(t)); uv.push(i / NU, 1 - j / NV)
   }
   for (let j = 0; j < NV; j++) for (let i = 0; i < NU; i++) { const a = j * (NU + 1) + i, b = a + 1, c = a + NU + 1; idx.push(a, c, b, b, c, c + 1) }
@@ -143,19 +136,28 @@ const PLATE = { x0: POCKET.x0 + 0.03, x1: POCKET.x1 - 0.03, z0: -0.78, z1: POCKE
 const LABEL = { x0: -0.46, x1: 0.44, z0: 0.02, z1: 0.36 } // rebaixo raso da etiqueta (fica vazio): largo, logo à frente do bolsão
 const RJ = { x: 0.0, y: Y_BOT + 0.145 } // RJ45 deitado, na PAREDE DA FRENTE do bolsão, com a boca virada para dentro dele
 const GRILLE = { x: (POCKET.x0 + POCKET.x1) / 2, z: -0.565, pitch: 0.054 } // grade de som: hexágono de furos na face funda do bolsão
-/** Onde a base tem nervuras: só nos dois lados, de ~25° a ~125° da frente. Na frente e atrás a parede é lisa. */
+/** Onde a base tem nervuras: só nos dois lados, sob os arcos laterais da tampa (de ~15° a ~105° da frente). */
 const ribZone = (t: number) => {
   const a = Math.abs(Math.atan2(Math.sin(t), Math.cos(t)))
-  return THREE.MathUtils.smoothstep(a, 22 * DEG, 30 * DEG) * (1 - THREE.MathUtils.smoothstep(a, 120 * DEG, 128 * DEG))
+  return THREE.MathUtils.smoothstep(a, 13 * DEG, 19 * DEG) * (1 - THREE.MathUtils.smoothstep(a, 101 * DEG, 107 * DEG))
 }
-const K_WALL = 0.998, K_FLOOR = 0.9 // base cinza nos arcos: ~72 mm de raio logo por dentro da tampa, parede reta e canto de ~7 mm de raio até o fundo de ~65 mm
-/**
- * Raio da parede da base em cada ângulo. A base acompanha a tampa: fica sempre logo por dentro da borda dela
- * (1 mm de degrau), então cresce um pouco onde a tampa desce (na frente e nos apoios de trás). Perto das pontas
- * há um teto: ali a tampa passa da base, formando o bico da frente.
- */
-const baseR = (t: number) => Math.min(lidRim(t)[0] - 0.012, 0.93)
-const FEET: [number, number][] = [[0, 0.66], [0.52, -0.44], [-0.52, -0.44]] // pés: um atrás da ponta da frente e dois perto dos cantos de trás
+// Perfil externo da base cinza: [mm acima do fundo, raio em mm]. Sob os arcos ela afina para baixo; sob os três apoios
+// ela abre para baixo, acompanhando a tampa por dentro.
+const BASE_ARCH: [number, number][] = [[0, 61.8], [3, 62.9], [7, 63.5], [11, 64.6], [15, 66.2], [19, 66.9], [24, 67.1]]
+const BASE_FOOT: [number, number][] = [[0, 72.3], [3, 71.8], [7, 70.3], [11, 68.7], [15, 67.1], [19, 66.9], [24, 67.1]]
+const BASE_R = 67.1 / 80, FLOOR_R = 61.8 / 80, FOOT_FLOOR_R = 72.3 / 80
+const lerpTable = (tb: [number, number][], h: number) => {
+  let i = 1
+  while (i < tb.length - 1 && tb[i][0] < h) i++
+  const [h0, r0] = tb[i - 1], [h1, r1] = tb[i]
+  return r0 + ((r1 - r0) * Math.min(1, Math.max(0, (h - h0) / (h1 - h0))))
+}
+/** Raio da base na altura y, em cada ângulo: mistura o perfil dos arcos com o dos apoios, conforme a borda da tampa desce. */
+const baseR = (t: number, y: number) => {
+  const h = (y - BOTTOM) * 48, w = Math.pow(1 - Math.min(...lidFeet(t)), 1.5)
+  return (lerpTable(BASE_ARCH, h) + w * (lerpTable(BASE_FOOT, h) - lerpTable(BASE_ARCH, h))) / 80
+}
+const FEET: [number, number][] = [[0, 0.64], [0.56, -0.32], [-0.56, -0.32]] // pés: um atrás da ponta da frente e dois perto dos cantos de trás
 const ANT_X = -0.35 // a antena não fica no centro: sai num ressalto ao lado do bolsão, sob o arco de trás da tampa
 /** Altura depois do achatamento do corpo (para o que fica fora do grupo achatado). */
 const sq = (y: number) => BOTTOM + (y - BOTTOM) * SQUASH
@@ -170,31 +172,31 @@ const JACK = { y: Y_BOT + POCKET.d * 0.5, z: -0.56 } // entrada da fonte na pare
 function baseGeometry() {
   type P = [number, number, number]
   // perfil: [fração do raio, altura, quanto do sulco]
-  const NT = 360, prof: P[] = [
-    [0.96, 0.13, 0], [K_WALL, 0.11, 0], [K_WALL, 0.03, 0], [K_WALL, -0.04, 0], [K_WALL, -0.1, 1], [K_WALL, -0.18, 1], [K_WALL, -0.254, 1],
-    [0.985, -0.327, 1], [0.9495, -0.38, 1], [0.918, -0.398, 0.6], [K_FLOOR, Y_BOT, 0], // afina para o fundo; os sulcos somem antes da borda de baixo: por baixo, o contorno é liso
+  // perfil: [altura, quanto da nervura]. O raio vem do perfil externo da base
+  const NT = 360, prof: [number, number][] = [
+    [0.1, 0], [0.06, 0], [0.0, 0], [-0.04, 0], [-0.1, 1], [-0.18, 1], [-0.254, 1], [-0.327, 1], [-0.375, 1], [-0.395, 0.5], [Y_BOT, 0], // por baixo, o contorno é liso
   ]
   const NP = prof.length, yTop = Y_BOT + POCKET.d // yTop: a face funda do bolsão
   // os frisos somem na largura do bolsão (a borda da abertura é lisa) e voltam aos poucos dos dois lados dela
-  const tA = Math.PI - Math.asin(POCKET.x1 / (RF * K_FLOOR)), tB = Math.PI - Math.asin(POCKET.x0 / (RF * K_FLOOR))
+  const tA = Math.PI - Math.asin(POCKET.x1 / (FLOOR_R)), tB = Math.PI - Math.asin(POCKET.x0 / (FLOOR_R))
   const fade = (t: number) => THREE.MathUtils.smoothstep(Math.max(tA - t, t - tB), 0, 8 * DEG)
   // onde a tampa cobre a base (queixo, cauda e acima da borda), a parede recua para dentro dela
-  const rad = (t: number, k: number, y: number, w: number) => Math.min((baseR(t) / K_WALL) * (k - 0.04 * w * fade(t) * ribZone(t) * Math.pow(0.5 + 0.5 * Math.cos(60 * t), 1.2)), lidRadiusAt(t, y) - 0.014)
+  const rad = (t: number, y: number, w: number) => Math.min(baseR(t, y) * (1 - 0.04 * w * fade(t) * ribZone(t) * Math.pow(0.5 + 0.5 * Math.cos(60 * t), 1.2)), lidRadiusAt(t, y) - 0.014)
   // colunas da parede. Na largura do bolsão a parede só existe acima da face funda: as colunas "abertas" param nela
   type Col = { p: P[]; open: boolean; edge?: P }
   const lift = (p: P[], edge: P) => p.map((q) => (q[1] < yTop ? edge : q))
   const column = (t: number): Col | null => {
-    const p = prof.map(([k, y, w]) => { const r = rad(t, k, y, w); return [r * Math.sin(t), y, r * Math.cos(t)] as P })
+    const p = prof.map(([y, w]) => { const r = rad(t, y, w); return [r * Math.sin(t), y, r * Math.cos(t)] as P })
     const inside = Math.cos(t) > 0 ? 0 : p.filter(([x]) => x > POCKET.x0 && x < POCKET.x1).length
     if (inside === 0) return { p, open: false }
     if (inside < NP) return null // em cima do batente: dá lugar à coluna exata do batente
-    const rc = rad(t, K_WALL, yTop, 1), edge: P = [rc * Math.sin(t), yTop, rc * Math.cos(t)]
+    const rc = rad(t, yTop, 1), edge: P = [rc * Math.sin(t), yTop, rc * Math.cos(t)]
     return { p: lift(p, edge), open: true, edge }
   }
   // batente do rasgo: coluna reta, no plano x = xb
   const jamb = (xb: number) => {
-    const t = Math.PI - Math.asin(xb / (RF * K_WALL)), at = (r: number, y: number): P => [xb, y, -Math.sqrt(r * r - xb * xb)]
-    return { p: prof.map(([k, y, w]) => at(rad(t, k, y, w), y)), edge: at(rad(t, K_WALL, yTop, 1), yTop) }
+    const t = Math.PI - Math.asin(xb / (BASE_R)), at = (r: number, y: number): P => [xb, y, -Math.sqrt(r * r - xb * xb)]
+    return { p: prof.map(([y, w]) => at(rad(t, y, w), y)), edge: at(rad(t, yTop, 1), yTop) }
   }
   const j1 = jamb(POCKET.x1), j0 = jamb(POCKET.x0)
   const cols: Col[] = []
@@ -210,7 +212,7 @@ function baseGeometry() {
   for (let i = 0; i < cols.length - 1; i++) {
     if (cols[i].open !== cols[i + 1].open) continue // os dois lados do batente não se ligam
     for (let j = 0; j < NP - 1; j++) {
-      if (cols[i].open && prof[j][1] < yTop) continue // abaixo da face funda não há parede
+      if (cols[i].open && prof[j][0] < yTop) continue // abaixo da face funda não há parede
       const a = i * NP + j, b = a + NP; idx.push(a, a + 1, b, b, a + 1, b + 1)
     }
   }
@@ -309,9 +311,9 @@ function build() {
     sticker: stickerGeometry(),
     base: baseGeometry(),
     slit: new THREE.BoxGeometry(0.034, 0.004, 0.15), // rasgo do fundo: a continuação de cada nervura
-    foot: new THREE.CylinderGeometry(0.07, 0.075, 0.02, 20),
-    capsuleRim: roundedRectGeometry(0.32, 0.15, 0.05, 0.012, 0.004), // fresta em volta da tecla
-    capsule: roundedRectGeometry(0.294, 0.124, 0.04, 0.014, 0.005), // tecla branca do botão (~26 × 12 mm com a fresta, medido na foto de frente)
+    foot: new THREE.CylinderGeometry(0.07, 0.075, 0.06, 20), // pé de ~3 mm
+    capsuleRim: roundedRectGeometry(0.365, 0.155, 0.05, 0.012, 0.004), // fresta em volta da tecla (29,2 × 12,4 mm)
+    capsule: roundedRectGeometry(0.339, 0.129, 0.04, 0.014, 0.005), // tecla branca do botão
     paddle: stadiumGeometry(0.17, 1.2, 0.05, 0.014),
     pcb: pcbGeometry(),
     cone: smoothLatheY([[0.185, 0.04], [0.175, 0.046], [0.155, 0.036], [0.11, 0.02], [0.06, 0.012], [0.03, 0.03]], 48, 24),
@@ -321,7 +323,7 @@ function build() {
     // coaxial do Wi-Fi: rabicho curto até a placa
     coaxA: wire([[-0.42, PCB_Y + 0.045, 0.13], [-0.5, PCB_Y + 0.07, 0.05], [-0.56, PCB_Y + 0.06, -0.05], [-0.52, PCB_Y + 0.03, -0.12]], 0.007),
     // coaxial do 4G: do cartão do chip até a rosca da antena, pelo braço da placa ao lado do recorte
-    coaxB: wire([[0.0, PCB_Y + 0.05, 0.16], [-0.16, PCB_Y + 0.085, 0.02], [-0.345, PCB_Y + 0.075, -0.2], [-0.355, PCB_Y + 0.06, -0.45], [ANT_X, PCB_Y + 0.02, -0.727]], 0.007),
+    coaxB: wire([[0.0, PCB_Y + 0.05, 0.16], [-0.16, PCB_Y + 0.085, 0.02], [-0.345, PCB_Y + 0.075, -0.2], [-0.355, PCB_Y + 0.06, -0.45], [ANT_X, PCB_Y + 0.02, -0.61]], 0.007),
     // antena de fio do rádio dos sensores: acompanha a borda da placa
     yellow: wire([[-0.52, PCB_Y + 0.02, -0.42], [-0.63, PCB_Y + 0.06, -0.2], [-0.7, PCB_Y + 0.07, 0.05], [-0.66, PCB_Y + 0.06, 0.3], [-0.56, PCB_Y + 0.03, 0.46]], 0.009),
     spkA: wire([[0.0, 0.02, -0.27], [-0.08, 0.03, -0.2], [-0.2, PCB_Y + 0.03, -0.14], [-0.24, PCB_Y + 0.012, -0.1]], 0.007),
@@ -384,7 +386,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
       // rasgos do fundo: cada nervura da parede dobra para baixo e continua no fundo. Só existem nas duas faixas laterais
       let n = 0
       for (let i = 0; i < 60; i++) {
-        const a = (i / 60) * Math.PI * 2, r = (baseR(a) / K_WALL) * K_FLOOR - 0.08, x = Math.sin(a) * r, z = Math.cos(a) * r
+        const a = (i / 60) * Math.PI * 2, r = baseR(a, BOTTOM) - 0.085, x = Math.sin(a) * r, z = Math.cos(a) * r
         if (ribZone(a) < 0.5) continue // na frente (sob a ponta da tampa) e atrás (bolsão e antena) o fundo é liso
         o.position.set(x, Y_BOT - 0.0015, z); o.rotation.set(0, a, 0); o.scale.setScalar(1)
         o.updateMatrix(); fins.current.setMatrixAt(n++, o.matrix)
@@ -469,8 +471,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
             {/* presilhas de trás: de baixo, a aba branca com a fenda sob cada apoio */}
             {[FOOT_T, -FOOT_T].map((a) => (
               <group key={a} rotation={[0, a, 0]}>
-                <RoundedBox args={[0.13, 0.014, lidRim(a)[0] - RF * K_FLOOR + 0.05]} radius={0.005} smoothness={2} position={[0, Y_BOT - 0.004, (lidRim(a)[0] + RF * K_FLOOR - 0.05) / 2 - 0.004]} material={M.white} />
-                <mesh material={M.hole} position={[0, Y_BOT - 0.0115, RF * K_FLOOR + 0.03]} rotation={[Math.PI / 2, 0, 0]}><planeGeometry args={[0.07, 0.016]} /></mesh>
+                <RoundedBox args={[0.13, 0.014, lidRim(a)[0] - FOOT_FLOOR_R + 0.05]} radius={0.005} smoothness={2} position={[0, Y_BOT - 0.004, (lidRim(a)[0] + FOOT_FLOOR_R - 0.05) / 2 - 0.004]} material={M.white} />
+                <mesh material={M.hole} position={[0, Y_BOT - 0.0115, FOOT_FLOOR_R - 0.02]} rotation={[Math.PI / 2, 0, 0]}><planeGeometry args={[0.07, 0.016]} /></mesh>
               </group>
             ))}
             <group position={[0, YC, 0]} rotation={[TILT, 0, 0]}>
@@ -514,7 +516,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         {/* ================= antena tipo pá: conector rosqueado e articulação ================= */}
         </group>
         <ClickablePart id="antena">
-          <group position={[ANT_X, BOTTOM + (-0.14 - BOTTOM) * SQUASH, -0.77]}>
+          <group position={[ANT_X, BOTTOM + (-0.14 - BOTTOM) * SQUASH, -0.648]}>
             <mesh material={M.gold} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.04]}><cylinderGeometry args={[0.048, 0.048, 0.1, 20]} /></mesh>
             <group ref={antenna}>
               {[0, 1, 2, 3].map((i) => (
@@ -544,15 +546,15 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         <ClickablePart follow="base">
           {/* pés redondos e baixos, com o furo do parafuso no centro */}
           {FEET.map(([x, z]) => (
-            <group key={x} position={[x, Y_BOT - 0.01, z]}>
+            <group key={x} position={[x, Y_BOT - 0.03, z]}>
               <mesh geometry={g.foot} material={M.grey} />
-              <mesh material={M.hole} position={[0, -0.0105, 0]} rotation={[Math.PI / 2, 0, 0]}><circleGeometry args={[0.02, 12]} /></mesh>
+              <mesh material={M.hole} position={[0, -0.0305, 0]} rotation={[Math.PI / 2, 0, 0]}><circleGeometry args={[0.02, 12]} /></mesh>
             </group>
           ))}
           {/* furo pequeno, à esquerda do bolsão */}
           <mesh material={M.hole} position={[0.42, Y_BOT - 0.001, -0.56]} rotation={[Math.PI / 2, 0, 0]}><circleGeometry args={[0.022, 14]} /></mesh>
           {/* ressalto da rosca da antena: bloco de face plana na borda de trás, à direita do bolsão; aparece sob o arco de trás da tampa */}
-          <RoundedBox args={[0.16, 0.341, 0.122]} radius={0.03} smoothness={3} position={[ANT_X, -0.2255, -0.801]} material={M.grey} />
+          <RoundedBox args={[0.16, 0.341, 0.122]} radius={0.03} smoothness={3} position={[ANT_X, -0.2255, -0.679]} material={M.grey} />
           {/* duas travas cinza, em lados opostos, que prendem a placa */}
           {[-1, 1].map((sx) => (
             <RoundedBox key={sx} args={[0.07, 0.07, 0.2]} radius={0.02} smoothness={3} position={[sx * 0.74, PCB_Y + 0.01, -0.1]} material={M.grey} />

@@ -80,10 +80,9 @@ function build() {
   // é um anel de verdade (não um disco): na vista explodida aparece fino, só o contorno
   fl.holes.push(new THREE.Path(teardrop(-0.05).getPoints(120).reverse()))
   const fillet = new THREE.ExtrudeGeometry(fl, { depth: 0.03, bevelEnabled: true, bevelSize: 0.004, bevelThickness: 0.004, bevelSegments: 2, curveSegments: 64 }); fillet.translate(0, 0, -0.015)
-  // tampa: circular com o topo levemente reto
+  // tampa: redonda inteira, fecha toda a cavidade (a placa não aparece por fora); a presilha fica na borda de cima
   const cs = new THREE.Shape()
-  const ca = Math.asin(0.6 / 0.69)
-  cs.absarc(0, 0, 0.69, Math.PI - ca, Math.PI * 2 + ca, false); cs.closePath()
+  cs.absarc(0, 0, 0.7, 0, Math.PI * 2, false)
   const cover = new THREE.ExtrudeGeometry(cs, { depth: 0.014, bevelEnabled: true, bevelSize: 0.008, bevelThickness: 0.008, bevelSegments: 3, curveSegments: 48 }); cover.translate(0, 0, -0.022)
   // componentes pequenos na frente da placa (sob o teclado), em volta do CI do centro, como na placa real: capacitores
   // (bege), resistores e CIs pequenos (pretos), o cristal (metal) e dois pontos de teste (dourados). Sem texto
@@ -224,13 +223,15 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
           <LogoGroove r={0.12} position={[0, KY, 0.1925]} material={M.logoGrooveDark} />
         </ClickablePart>
 
-        {/* tampa traseira: circular de topo reto, duas abas em cima e uma embaixo, entalhe e símbolo em relevo */}
+        {/* tampa traseira: redonda, com a presilha em cima, duas abas em cima e uma embaixo e o símbolo em relevo */}
         <ClickablePart id="tampa">
           <group position={[0, -0.574, -0.165]}>
             <group ref={cover}>
               <group position={[0, 0.574, 0]} scale={[0.87, 0.87, 1]}>
                 <mesh geometry={g.cover} material={coverMat} />
-                <mesh material={M.hole} position={[0, 0.585, -0.024]}><boxGeometry args={[0.2, 0.05, 0.016]} /></mesh>
+                {/* presilha da tampa, na borda de cima: lingueta retangular com a fenda onde se apoia para abrir */}
+                <mesh material={coverMat} position={[0, 0.6, -0.031]}><boxGeometry args={[0.24, 0.11, 0.012]} /></mesh>
+                <mesh material={M.hole} position={[0, 0.61, -0.0375]}><boxGeometry args={[0.16, 0.028, 0.004]} /></mesh>
                 <mesh material={M.black} position={[0, 0.3, -0.031]} rotation={[Math.PI / 2, Math.PI / 6, 0]}><cylinderGeometry args={[0.07, 0.07, 0.006, 3]} /></mesh>
                 <mesh material={M.black} position={[0, 0.17, -0.031]}><boxGeometry args={[0.2, 0.035, 0.006]} /></mesh>
                 {[[-0.22, 0.62], [0.22, 0.62], [0, -0.7]].map(([x, y], i) => (
