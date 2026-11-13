@@ -129,11 +129,24 @@ function fitText(ctx: CanvasRenderingContext2D, text: string, x: number, y: numb
 }
 
 // logo: anel grande (≈ 60% da largura da placa) com o swoosh recortado
+/** Texto esticado na horizontal até ocupar exatamente `w` (as letras largas da arte da placa), com reforço opcional do traço. */
+function wideText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, w: number, font: string, align: 'left' | 'center' = 'center', stroke = 0) {
+  ctx.save()
+  ctx.font = font; ctx.textAlign = align
+  const k = w / ctx.measureText(text).width
+  ctx.translate(x, y); ctx.scale(k, 1)
+  if (stroke) { ctx.lineJoin = 'round'; ctx.lineWidth = stroke / k; ctx.strokeStyle = ctx.fillStyle as string; ctx.strokeText(text, 0, 0) }
+  ctx.fillText(text, 0, 0)
+  ctx.restore()
+}
+
+// As quatro faixas da frente seguem a arte oficial da placa (450 × 600): logo (anel de 56% da largura, no alto),
+// marca e telefone, faixa amarela (de 66% a 83% da altura) e rodapé com "ALARME 365" e o QR.
 export const placaLogoTexture = () =>
   memo('placa-logo', () => {
     const [c, ctx] = canvas(768, 567, HI)
     ctx.fillStyle = AZUL; ctx.fillRect(0, 0, 768, 567)
-    logoPath2D(ctx, 384, 290, 262, AMARELO)
+    logoPath2D(ctx, 386, 286, 250, AMARELO)
     return tex(c)
   })
 
@@ -141,12 +154,10 @@ export const placaFoneTexture = () =>
   memo('placa-fone', () => {
     const [c, ctx] = canvas(768, 201, HI)
     ctx.fillStyle = AZUL; ctx.fillRect(0, 0, 768, 201)
-    ctx.textAlign = 'center'
     ctx.fillStyle = AMARELO
-    ;(ctx as unknown as { letterSpacing: string }).letterSpacing = '3px'
-    ctx.font = '700 62px Poppins, sans-serif'; ctx.fillText('ORSEGUPS', 384, 74)
-    ;(ctx as unknown as { letterSpacing: string }).letterSpacing = '0px'
-    ctx.fillStyle = '#fff'; ctx.font = '700 44px Poppins, sans-serif'; ctx.fillText('4020.4411', 384, 152)
+    wideText(ctx, 'ORSEGUPS', 384, 68, 398, '600 64px Poppins, sans-serif')
+    ctx.fillStyle = '#fff'
+    wideText(ctx, '4020.4411', 384, 158, 258, '700 52px Poppins, sans-serif')
     return tex(c)
   })
 
@@ -154,17 +165,21 @@ export const placaFaixaTexture = () =>
   memo('placa-faixa', () => {
     const [c, ctx] = canvas(768, 177, HI)
     ctx.fillStyle = AMARELO; ctx.fillRect(0, 0, 768, 177)
-    // câmera de segurança, pendurada no canto
-    ctx.fillStyle = AZUL; ctx.strokeStyle = AZUL; ctx.lineWidth = 11
-    ctx.beginPath(); ctx.moveTo(40, 0); ctx.lineTo(40, 62); ctx.lineTo(66, 62); ctx.stroke()
-    ctx.save(); ctx.translate(98, 92); ctx.rotate(0.3)
-    rr(ctx, -62, -28, 124, 56, 12); ctx.fill()
-    ctx.fillStyle = AMARELO; ctx.beginPath(); ctx.arc(36, 0, 17, 0, Math.PI * 2); ctx.fill()
-    ctx.fillStyle = AZUL; ctx.beginPath(); ctx.arc(36, 0, 8, 0, Math.PI * 2); ctx.fill()
+    // câmera de segurança: haste que desce do alto, braço curto e o corpo inclinado para baixo, com a lente na ponta
+    ctx.fillStyle = AZUL; ctx.strokeStyle = AZUL; ctx.lineCap = 'round'; ctx.lineJoin = 'round'
+    ctx.lineWidth = 13
+    ctx.beginPath(); ctx.moveTo(44, -8); ctx.lineTo(44, 66); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(44, 62); ctx.lineTo(74, 78); ctx.stroke()
+    ctx.save(); ctx.translate(100, 104); ctx.rotate(0.24); ctx.scale(1.1, 1.1)
+    rr(ctx, -72, -30, 144, 60, 20); ctx.fill() // corpo
+    ctx.beginPath(); ctx.moveTo(-70, -34); ctx.lineTo(84, -34); ctx.lineTo(96, -20); ctx.lineTo(-58, -20); ctx.closePath(); ctx.fill() // aba de cima
+    ctx.fillStyle = AMARELO; ctx.beginPath(); ctx.arc(40, 6, 22, 0, Math.PI * 2); ctx.fill()
+    ctx.fillStyle = AZUL; ctx.beginPath(); ctx.arc(40, 6, 14, 0, Math.PI * 2); ctx.fill()
+    ctx.fillStyle = AMARELO; ctx.beginPath(); ctx.arc(40, 6, 6, 0, Math.PI * 2); ctx.fill()
     ctx.restore()
-    ctx.fillStyle = AZUL; ctx.textAlign = 'left'
-    fitText(ctx, 'AVISO À POLÍCIA', 186, 86, 560, 72, '800 SIZEpx Poppins, sans-serif')
-    fitText(ctx, 'COM REGISTRO DE IMAGEM', 190, 140, 556, 40, '500 SIZEpx "Encode Sans", sans-serif')
+    ctx.fillStyle = AZUL
+    wideText(ctx, 'AVISO À POLÍCIA', 194, 84, 550, '700 64px Poppins, sans-serif', 'left', 3)
+    wideText(ctx, 'COM REGISTRO DE IMAGEM', 198, 138, 540, '600 34px "Encode Sans", sans-serif', 'left')
     return tex(c)
   })
 
@@ -198,13 +213,21 @@ export const duvidasStickerTexture = () =>
     return tex(c)
   })
 
+/** Azul liso da chapa (borda e miolo): 1 px. Com textura, a chapa usa o mesmo programa de shader das faces impressas. */
+export const placaAzulTexture = () =>
+  memo('placa-azul', () => {
+    const [c, ctx] = canvas(2, 2)
+    ctx.fillStyle = AZUL; ctx.fillRect(0, 0, 2, 2)
+    return tex(c)
+  })
+
 export const placaRodapeTexture = () =>
   memo('placa-rodape', () => {
     const [c, ctx] = canvas(768, 177, HI)
     ctx.fillStyle = AZUL; ctx.fillRect(0, 0, 768, 177)
-    ctx.fillStyle = '#fff'; ctx.font = '800 62px Poppins, sans-serif'; ctx.textAlign = 'center'
-    ctx.fillText('ALARME 365', 318, 104)
-    fakeQr(ctx, 590, 36, 104, '#1E398D', '#fff')
+    ctx.fillStyle = '#fff'
+    wideText(ctx, 'ALARME 365', 69, 116, 457, '700 72px Poppins, sans-serif', 'left', 3)
+    fakeQr(ctx, 590, 32, 110, '#fff', AZUL) // na arte o QR é branco sobre o azul
     return tex(c)
   })
 

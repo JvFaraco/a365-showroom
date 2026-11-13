@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
 import { M } from './materials'
+import { LOGO_RING, logoCut } from './logoShape'
 
 /**
  * Logo Orsegups em baixo-relevo: um círculo com um "swoosh" curvo em volta.
@@ -79,20 +80,20 @@ export function LogoGroove({ r = 0.3, material = M.logoGroove, ...props }: { r?:
   )
 }
 
-/** Logo da placa em canvas 2D: anel grosso com o "swoosh" recortado na cor do fundo. */
+/**
+ * Logo da placa em canvas 2D: o anel de dentro e o braço de fora, separados pelo corte na cor do fundo (ver
+ * `logoShape`). `r` é o raio de fora.
+ */
 export function logoPath2D(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, color: string, cut = '#1E398D') {
   ctx.save()
   ctx.fillStyle = color
   ctx.beginPath()
-  ctx.arc(cx, cy, r, 0, Math.PI * 2)
-  ctx.arc(cx - r * 0.02, cy + r * 0.03, r * 0.6, 0, Math.PI * 2, true)
+  ctx.arc(cx + r * LOGO_RING.outer[0], cy + r * LOGO_RING.outer[1], r, 0, Math.PI * 2)
+  ctx.arc(cx + r * LOGO_RING.hole[0], cy + r * LOGO_RING.hole[1], r * LOGO_RING.holeR, 0, Math.PI * 2, true)
   ctx.fill('evenodd')
-  // swoosh: crescente que entra pela esquerda, passa por cima e afina à direita
   ctx.fillStyle = cut
   ctx.beginPath()
-  const N = 40, a0 = Math.PI * 1.08, a1 = Math.PI * 1.95
-  for (let i = 0; i <= N; i++) { const a = a0 + ((a1 - a0) * i) / N; ctx.lineTo(cx + r * 0.16 + Math.cos(a) * r * 0.98, cy + r * 0.3 + Math.sin(a) * r * 0.98) }
-  for (let i = N; i >= 0; i--) { const t = i / N, a = a0 + (a1 - a0) * t; const w = 0.02 + 0.075 * Math.sin(Math.PI * Math.min(1, t * 1.6)); ctx.lineTo(cx + r * 0.16 + Math.cos(a) * r * (0.98 - w), cy + r * 0.3 + Math.sin(a) * r * (0.98 - w)) }
+  logoCut(cx, cy, r).forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)))
   ctx.closePath()
   ctx.fill()
   ctx.restore()

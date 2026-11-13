@@ -3,13 +3,18 @@ import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { ClickablePart } from '../parts/ClickablePart'
 import { fxBasic } from '../common/materials'
-import { placaFaixaTexture, placaFoneTexture, placaLogoTexture, placaRodapeTexture, placaVersoTexture } from '../common/textures'
+import { placaAzulTexture, placaFaixaTexture, placaFoneTexture, placaLogoTexture, placaRodapeTexture, placaVersoTexture } from '../common/textures'
 import { roundedRectGeometry } from '../common/shapes'
 import { DeviceCtx, bump, seg, type DeviceProps } from '../common/util'
 import { actionTime } from '../../store/showroomStore'
 
-// chapa pintada: cor viva (um pouco de emissivo) com um leve brilho de verniz
-const face = (map: THREE.Texture | null) => new THREE.MeshPhysicalMaterial({ color: map ? '#ffffff' : '#1E398D', map, emissive: map ? '#ffffff' : '#1E398D', emissiveMap: map, emissiveIntensity: 0.55, roughness: 0.36, clearcoat: 0.5, clearcoatRoughness: 0.3 })
+// chapa pintada: cor viva (um pouco de emissivo) com um leve brilho de verniz. `userData.brand` pede ao ClickablePart
+// a correção que mantém o azul e o amarelo da marca exatos depois do tone mapping (ver `brandPatch`).
+const face = (map: THREE.Texture) => {
+  const m = new THREE.MeshPhysicalMaterial({ color: '#ffffff', map, emissive: '#ffffff', emissiveMap: map, emissiveIntensity: 0.4, roughness: 0.4, clearcoat: 0.3, clearcoatRoughness: 0.3, envMapIntensity: 0.5 })
+  m.userData.brand = true
+  return m
+}
 
 /** Placa de aviso: retângulo azul de cantos redondos; frente com logo, telefone e faixa amarela; verso com QR Code. */
 export function Placa({ interactive = false }: DeviceProps) {
@@ -18,7 +23,7 @@ export function Placa({ interactive = false }: DeviceProps) {
   const plate = useMemo(() => roundedRectGeometry(1.5, 2, 0.105, 0.04, 0.008), [])
   const mats = useMemo(() => ({
     logo: face(placaLogoTexture()), fone: face(placaFoneTexture()), faixa: face(placaFaixaTexture()),
-    rodape: face(placaRodapeTexture()), verso: face(placaVersoTexture()), chapa: face(null),
+    rodape: face(placaRodapeTexture()), verso: face(placaVersoTexture()), chapa: face(placaAzulTexture()),
   }), [])
   const shineMat = useMemo(() => { const m = fxBasic('#ffffff', 0); m.blending = THREE.AdditiveBlending; return m }, [])
 

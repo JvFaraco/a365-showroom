@@ -9,6 +9,7 @@ import { getPart } from '../../data/devices'
 import { useShowroom } from '../../store/showroomStore'
 import { explodeAmt, useDeviceCtx } from '../common/util'
 import { registerPart } from '../common/registry'
+import { brandPatch } from '../common/materials'
 
 type Mat = THREE.Material & { opacity: number; emissive?: THREE.Color; emissiveIntensity?: number; isMeshStandardMaterial?: boolean }
 type Tracked = { mat: Mat; base: number; baseDepthWrite: boolean; led: boolean; baseEmissive?: THREE.Color; baseEI?: number; fres: { value: number } }
@@ -27,6 +28,7 @@ function fresnelPatch(this: { fres: { value: number } }, shader: { uniforms: Rec
       gl_FragColor.a = clamp(gl_FragColor.a + frs * 0.85, 0.0, 1.0);`)
 }
 const FRES_KEY = () => 'a365-fresnel'
+const BRAND_KEY = () => 'a365-fresnel-marca'
 
 function isInternalObject(o: THREE.Object3D | null) {
   for (; o; o = o.parent) if (o.userData.internalPart) return true
@@ -68,7 +70,12 @@ export function ClickablePart({ id, follow, internal: internalProp, explode: exp
       }
       // vale também para os aparelhos das outras cenas: assim todos usam os mesmos programas de shader
       mat.transparent = true
-      if (mat.isMeshStandardMaterial) { mat.onBeforeCompile = fresnelPatch.bind(t) as never; mat.customProgramCacheKey = FRES_KEY }
+      if (mat.isMeshStandardMaterial) {
+        // a chapa da placa pede também a correção de cor da marca (o clone não copia o onBeforeCompile do original)
+        const brand = !!mat.userData.brand
+        mat.onBeforeCompile = (brand ? (sh: Parameters<typeof fresnelPatch>[0]) => { brandPatch(sh); fresnelPatch.call(t, sh) } : fresnelPatch.bind(t)) as never
+        mat.customProgramCacheKey = brand ? BRAND_KEY : FRES_KEY
+      }
       m.material = mat
       list.push(t)
     })
