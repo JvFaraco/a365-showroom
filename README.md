@@ -66,7 +66,7 @@ Parâmetros de URL:
 | Parâmetro | Efeito |
 |---|---|
 | `?hq` | mantém reflexo e pós-processamento completos mesmo que o FPS caia |
-| `?debug=1` | número de programas de shader e aviso (com trace) de chamadas ao WebGL que esperam a compilação; em `npm run dev`, também FPS, draw calls e triângulos (`r3f-perf`) |
+| `?debug=1` | programas de shader e triângulos visíveis (também no build) e o diagnóstico de carga: cada leitura de estado de shader que espera mais de 20 ms vira um `console.trace`, e um resumo por material e etapa sai com `console.table` quando a tela de carregamento some (`window.__glReport`). Em `npm run dev`, também o painel do `r3f-perf` |
 | `?ref=1` | só em `npm run dev`: modo de comparação com a foto (veja abaixo) |
 
 ## Comparar com a foto (`?ref=1`)
@@ -110,6 +110,6 @@ A lista de partes de cada aparelho, com primitivas, proporções e materiais, es
 - Destino do QR Code do verso da placa. O que aparece no demo é ilustrativo e não codifica nada.
 - Cor do filete lateral do controle: azul na arte oficial, amarelo na foto real. O demo usa o azul.
 - Disco central do controle: não é botão. A arte de marketing mostra o logo nele e o ícone do sistema mostra liso; o demo usa o logo em baixo-relevo discreto.
-- Sensor magnético: a foto de instalação mostra o corpo na folha da porta e o ímã no batente (o texto antigo dizia o contrário); confirmar no manual. A mesma foto tem um terceiro bloco branco, abaixo do corpo, que não foi modelado.
-- Módulo: a ficha de medidas põe a antena a ~85% da largura e ~40% da profundidade (lateral direita); o modelo mantém a cauda e a antena atrás, como na foto oficial. A altura total segue a ficha (38 mm), mas a divisão entre base cinza (27 mm) e tampa é aproximada.
+- Sensor magnético: a foto de instalação mostra o corpo na folha da porta e o ímã no batente (o texto antigo dizia o contrário); confirmar no manual. As fotos novas do sensor instalado mostram só as duas peças (corpo e ímã); o terceiro bloco branco da foto antiga não faz parte dele. Qual ponta fica com o borne e qual com a antena é suposição: a foto da placa não mostra o lado da tampinha.
+- Módulo: a antena sai atrás, fora do centro, ao lado do bolsão dos cabos (pelo vídeo do fundo e pela foto de estúdio); a distância até o centro é estimada. A altura total segue a ficha (38 mm), mas a divisão entre base cinza (27 mm) e tampa é aproximada. A forma da tampa (topo largo, lateral rente à carcaça, faixa branca de ~20 mm, ponta da frente) e as nervuras, os pés e o rebaixo do fundo saem das fotos do aparelho, conferidas com o modelo renderizado na mesma câmera da foto de frente; os raios são estimados. A traseira real é reta, com os pés nos cantos; no modelo ela ainda é redonda. O QR do adesivo "Dúvidas?" é ilustrativo (não codifica nada).
 - Sirene: o suporte de parede não tem medida na ficha; foi mantido o da rodada anterior.

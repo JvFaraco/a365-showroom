@@ -184,6 +184,20 @@ function fakeQr(ctx: CanvasRenderingContext2D, x: number, y: number, size: numbe
   }
 }
 
+/** Adesivo "Dúvidas?" da frente do módulo: texto azul e um QR ilustrativo (não codifica nada) sobre fundo branco. */
+export const duvidasStickerTexture = () =>
+  memo('duvidas-sticker', () => {
+    const [c, ctx] = canvas(320, 420, 2)
+    ctx.fillStyle = '#fbfbfa'; ctx.fillRect(0, 0, 320, 420)
+    ctx.fillStyle = AZUL; ctx.textAlign = 'center'
+    fitText(ctx, 'Dúvidas?', 160, 60, 230, 46, '700 SIZEpx Poppins, sans-serif')
+    fakeQr(ctx, 50, 86, 220, AZUL, '#fbfbfa')
+    ctx.fillStyle = AZUL; ctx.textAlign = 'center'
+    fitText(ctx, 'Aponte a câmera para o', 160, 352, 270, 23, '600 SIZEpx "Encode Sans", sans-serif')
+    fitText(ctx, 'QRCode e fale conosco', 160, 384, 270, 23, '600 SIZEpx "Encode Sans", sans-serif')
+    return tex(c)
+  })
+
 export const placaRodapeTexture = () =>
   memo('placa-rodape', () => {
     const [c, ctx] = canvas(768, 177, HI)
@@ -267,30 +281,33 @@ export const microNormalTexture = () =>
     return t
   })
 
-/** Placa de circuito: verde com trilhas, ilhas e serigrafia ilegível (sem marcas nem textos). */
+/** Placa de circuito: verde liso, de um tom só, com trilhas finas e MUITO discretas. Sem componentes pintados,
+ *  sem serigrafia, sem etiquetas: os componentes de verdade são poucos e ficam na geometria. */
 export const pcbTexture = () =>
   memo('pcb', () => {
-    const [c, ctx] = canvas(512, 512)
-    ctx.fillStyle = '#157a3c'; ctx.fillRect(0, 0, 512, 512)
+    const [c, ctx] = canvas(256, 256)
+    ctx.fillStyle = '#157a3c'; ctx.fillRect(0, 0, 256, 256)
     let seed = 365
     const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280)
-    ctx.lineCap = 'round'
-    for (let i = 0; i < 90; i++) {
-      ctx.strokeStyle = `rgba(60,170,95,${0.35 + rnd() * 0.35})`
-      ctx.lineWidth = 1 + rnd() * 2.2
-      let x = rnd() * 512, y = rnd() * 512
-      ctx.beginPath(); ctx.moveTo(x, y)
-      for (let k = 0; k < 3; k++) { if (rnd() > 0.5) x += (rnd() - 0.5) * 180; else y += (rnd() - 0.5) * 180; ctx.lineTo(x, y) }
-      ctx.stroke()
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 1.4
+    // trilhas como numa placa de verdade: feixes de 2 a 4 linhas paralelas (um tom acima do verde), com um trecho
+    // reto, uma quebra a 45° e outro trecho reto; no fim de cada linha, uma via (pontinho claro de miolo escuro)
+    for (let i = 0; i < 15; i++) {
+      const x0 = rnd() * 256, y0 = rnd() * 256, h = rnd() > 0.5, l1 = 24 + rnd() * 70, l2 = 18 + rnd() * 60, n = 2 + Math.floor(rnd() * 3)
+      for (let k = 0; k < n; k++) {
+        let x = x0 + (h ? 0 : k * 5), y = y0 + (h ? k * 5 : 0)
+        ctx.strokeStyle = 'rgba(92,186,118,0.3)'
+        ctx.beginPath(); ctx.moveTo(x, y)
+        if (h) x += l1 - k * 5; else y += l1 - k * 5
+        ctx.lineTo(x, y); x += 9; y += 9; ctx.lineTo(x, y)
+        if (h) y += l2; else x += l2
+        ctx.lineTo(x, y); ctx.stroke()
+        if (k === 0) {
+          ctx.fillStyle = 'rgba(150,215,165,0.5)'; ctx.beginPath(); ctx.arc(x, y, 2.2, 0, Math.PI * 2); ctx.fill()
+          ctx.fillStyle = 'rgba(8,40,20,0.75)'; ctx.beginPath(); ctx.arc(x, y, 0.9, 0, Math.PI * 2); ctx.fill()
+        }
+      }
     }
-    for (let i = 0; i < 160; i++) {
-      const x = rnd() * 512, y = rnd() * 512
-      ctx.fillStyle = rnd() > 0.5 ? 'rgba(214,190,120,.9)' : 'rgba(15,60,30,.9)'
-      ctx.beginPath(); ctx.arc(x, y, 1.5 + rnd() * 2, 0, Math.PI * 2); ctx.fill()
-    }
-    // serigrafia: tracinhos brancos que lembram texto, mas não formam nada legível
-    ctx.fillStyle = 'rgba(235,245,238,.75)'
-    for (let i = 0; i < 70; i++) { const x = rnd() * 500, y = rnd() * 500; for (let k = 0; k < 2 + rnd() * 4; k++) ctx.fillRect(x + k * 4, y, 2.5, 1.2 + rnd() * 2.5) }
     return tex(c)
   })
 

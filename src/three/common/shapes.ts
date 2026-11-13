@@ -1,4 +1,12 @@
 import * as THREE from 'three'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+
+/** Um bloquinho: [x, y, z, tamanho em x, em y, em z]. */
+export type Block = [number, number, number, number, number, number]
+/** Vários bloquinhos numa malha só (os componentes pequenos de uma placa, por cor): uma chamada de desenho. */
+export function boxesGeometry(items: Block[]) {
+  return mergeGeometries(items.map(([x, y, z, w, h, d]) => { const g = new THREE.BoxGeometry(w, h, d); g.translate(x, y, z); return g }))
+}
 
 /** Sólido em forma de "estádio" (retângulo com pontas redondas), no plano XY, extrudado em +Z. */
 export function stadiumGeometry(w: number, h: number, depth: number, bevel = 0.012) {

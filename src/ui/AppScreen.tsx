@@ -43,8 +43,11 @@ function Region({ id, interactive, children, className = '' }: { id: string; int
 
 /** Tela inicial do aplicativo Alarme Orsegups, em React, renderizada dentro do celular 3D. */
 export function AppScreen({ interactive }: { interactive: boolean }) {
-  const arm = useShowroom((s) => s.armState)
+  const armState = useShowroom((s) => s.armState)
   const photo = useShowroom((s) => s.appPhoto)
+  // na cena "Em ação" o celular acompanha o disparo: alarme armado, o aviso do disparo e, por fim, a tela "Imagem"
+  const iaStep = useShowroom((s) => (s.scene === 'inaction' ? s.iaStep : -1))
+  const arm: ArmState = iaStep >= 0 ? 'armed' : armState
   const action = useShowroom((s) => (interactive ? s.action?.id : undefined))
   const canArm = action === 'alarme-geral'
 
@@ -67,6 +70,32 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
     <div className="relative flex h-[688px] w-[320px] select-none flex-col overflow-hidden rounded-[34px] bg-[#f3f5fa] font-body text-[#1b2233]" lang="pt-BR">
       {/* reflexo do vidro por cima da interface */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-10" style={{ background: 'linear-gradient(118deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.16) 44%, rgba(255,255,255,0) 52%)' }} />
+      {/* aviso do disparo, como a notificação do app: aparece quando a sirene toca */}
+      {iaStep === 3 && (
+        <div className="absolute inset-x-2 top-8 z-[6] flex items-center gap-2 rounded-2xl bg-[#e03131] px-3 py-2 text-white shadow-lg">
+          <Bell size={18} />
+          <div className="leading-tight"><div className="text-[12px] font-bold">Disparo</div><div className="text-[10.5px] opacity-90">Movimento detectado · Sala de estar</div></div>
+        </div>
+      )}
+      {/* tela "Imagem" (escura), como no app: a foto do fotossensor com a pessoa marcada */}
+      {iaStep >= 4 && (
+        <div className="absolute inset-0 z-[5] flex flex-col bg-[#0b0c10] text-white">
+          <div className="relative flex items-center justify-between px-7 pt-2.5 text-[11px] font-semibold"><span>17:50</span><span>5G ▮▮▮</span>
+            <span className="absolute left-1/2 top-0 h-[22px] w-[132px] -translate-x-1/2 rounded-b-[14px] bg-black" />
+          </div>
+          <div className="flex items-center gap-4 px-5 pt-5 text-[15px]"><span className="text-xl leading-none">‹</span><span className="flex-1">Imagem</span><span>⋮</span></div>
+          <img src={aiPhotoDataUrl(true)} alt="Foto do fotossensor com a pessoa marcada" className="mt-10 h-[240px] w-full object-cover" draggable={false} />
+          <div className="mx-auto mt-6 h-[3px] w-9 rounded bg-white/50" />
+          <div className="mt-4 text-center text-[11px] leading-5 text-white/85">Hoje, agora<br />Detector de presença · 1 detecção<br /><span className="text-white/55">Sala de estar</span></div>
+          <div className="mt-8 flex items-center justify-between px-6 text-white/70">
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-white/10">‹</span>
+            <span className="text-[11px] text-white/90">Pessoa (100% de previsão)</span>
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-white/10">›</span>
+          </div>
+          <div className="mt-3 flex justify-center gap-1.5"><i className="h-1.5 w-1.5 rounded-full bg-white" /><i className="h-1.5 w-1.5 rounded-full bg-white/30" /><i className="h-1.5 w-1.5 rounded-full bg-white/30" /></div>
+          <div className="mx-auto mb-2 mt-auto h-1 w-28 rounded bg-white/70" />
+        </div>
+      )}
       {/* barra de status com o entalhe */}
       <div className="relative flex items-center justify-between px-7 pt-2.5 text-[11px] font-semibold"><span>17:50</span><span>5G ▮▮▮</span>
         <span className="absolute left-1/2 top-0 h-[22px] w-[132px] -translate-x-1/2 rounded-b-[14px] bg-black" />
@@ -104,7 +133,7 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
 
         <Region id="ultimas-imagens" interactive={interactive}>
           <div className="rounded-xl bg-white p-3 shadow-sm">
-            <div className="mb-1.5 text-[11px] text-slate-500">Últimas imagens</div>
+            <div className="mb-1.5 flex items-baseline justify-between text-[11px] text-slate-500"><span>Últimas imagens</span><span className="text-[9.5px]">Fotossensor · Sala de estar</span></div>
             <div className="relative h-[136px] overflow-hidden rounded-lg bg-slate-200">
               <img src={aiPhotoDataUrl(photo === 'done')} alt="Foto do fotossensor" className="h-full w-full object-cover" draggable={false} />
               {photo === 'loading' && (
@@ -127,7 +156,7 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
 
         <Region id="ultimos-eventos" interactive={interactive}>
           <div className="rounded-xl bg-white p-3 shadow-sm">
-            <div className="mb-1 text-[11px] text-slate-500">Últimos eventos</div>
+            <div className="mb-1 flex items-baseline justify-between text-[11px] text-slate-500"><span>Últimos eventos</span><span className="text-[9.5px]">Hoje</span></div>
             {events.map(({ Icon, color, text }, i) => (
               <div key={i} className="flex items-center gap-2 border-b border-slate-100 py-1.5 text-[12px] last:border-0">
                 <span style={{ color }}><Icon size={17} /></span>

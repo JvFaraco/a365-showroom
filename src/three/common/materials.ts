@@ -35,6 +35,8 @@ export const M = {
   pcb: std({ color: '#ffffff', roughness: 0.5, ...(typeof document !== 'undefined' ? { map: pcbTexture() } : {}) }),
   pcbDark: std({ color: '#0f5a2c', roughness: 0.5 }),
   chip: std({ color: '#1b1c20', roughness: 0.4 }),
+  // componentes pequenos de placa (capacitores): bege
+  smdTan: std({ color: '#b08a60', roughness: 0.55 }),
   // metais (molas, parafusos, conectores): metalness 1, roughness média
   metal: std({ color: '#cfd3d9', roughness: 0.38, metalness: 1 }),
   gold: std({ color: '#d9b25c', roughness: 0.36, metalness: 1 }),
@@ -45,7 +47,8 @@ export const M = {
   wireBlue: std({ color: '#2f55c8', roughness: 0.55 }),
   cell: std({ color: '#3d4350', roughness: 0.45, metalness: 0.3 }),
   frosted: new THREE.MeshPhysicalMaterial({ color: '#f4f6fa', roughness: 0.35, transparent: true, opacity: 0.72, clearcoat: 0.6 }),
-  crystal: new THREE.MeshPhysicalMaterial({ color: '#f3f6fb', roughness: 0.25, transparent: true, opacity: 0.55, clearcoat: 1, clearcoatRoughness: 0.1 }),
+  // cristal dos LEDs (fotossensor, sirene e cápsula do módulo): plástico translúcido, levemente azulado, com reflexo
+  crystal: new THREE.MeshPhysicalMaterial({ color: '#eaf2ff', roughness: 0.18, transparent: true, opacity: 0.5, clearcoat: 1, clearcoatRoughness: 0.08 }),
 }
 
 /** Material de efeito (não participa do esmaecer/raio-X das partes). */
