@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useRef, useState, type ComponentType } from 'react'
 import { MotionConfig } from 'framer-motion'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useThree } from '@react-three/fiber'
 import { AdaptiveDpr, PerformanceMonitor } from '@react-three/drei'
 import { Selection } from '@react-three/postprocessing'
 import { useShowroom } from './store/showroomStore'
@@ -12,6 +12,8 @@ import { UI } from './ui/Overlays'
 import { PresenterMode } from './ui/PresenterMode'
 import { REF_ON, RefCamera, RefOverlay } from './dev/RefMode'
 import { installGlTrace, reportGlTrace } from './dev/glTrace'
+import { FORCE_DPR, FORCE_Q, FPS_MIN, PERF_HUD, perfBridge } from './dev/perf'
+import { PerfHud } from './dev/PerfHud'
 
 const Q = typeof location !== 'undefined' ? location.search : ''
 // ?hq: mantém reflexo e pós-processamento completos mesmo se o FPS cair
@@ -26,7 +28,9 @@ if (DEBUG) {
   const un = useShowroom.subscribe((st) => { if (st.ready) { un(); (window as unknown as { __glReport?: unknown }).__glReport = reportGlTrace() } })
 }
 const Perf = DEBUG && import.meta.env.DEV ? lazy(() => import('r3f-perf').then((m) => ({ default: m.Perf }))) : null
-const MAX_DPR = typeof window !== 'undefined' ? Math.min(2, window.devicePixelRatio || 1) : 1
+const MAX_DPR = FORCE_DPR ?? (typeof window !== 'undefined' ? Math.min(2, window.devicePixelRatio || 1) : 1)
+// ?q=N fixa a qualidade (teste de fluidez): vale desde o primeiro quadro e desliga a qualidade adaptativa
+if (FORCE_Q !== null) useShowroom.setState({ quality: FORCE_Q })
 
 type DebugGL = { info: { programs: unknown[] | null } }
 type DebugNode = { visible: boolean; children: DebugNode[]; isMesh?: boolean; count?: number; geometry?: { index: { count: number } | null; attributes: { position?: { count: number } } } }
@@ -38,6 +42,14 @@ function visibleTriangles(root: DebugNode): number {
   for (const c of root.children) n += visibleTriangles(c)
   return n
 }
+/** Liga o medidor de fluidez (`?perf=1`) aos controles da câmera e ao renderer. */
+function PerfBridge() {
+  const controls = useThree((s) => s.controls) as typeof perfBridge.controls
+  const gl = useThree((s) => s.gl)
+  useEffect(() => { perfBridge.controls = controls; perfBridge.gl = gl }, [controls, gl])
+  return null
+}
+
 /** `?debug=1`: programas de shader (cada combinação de flags de material é um a mais) e triângulos visíveis. */
 function ProgramCount() {
   const el = useRef<HTMLDivElement>(null)
@@ -104,13 +116,13 @@ export default function App() {
   // qualidade adaptativa: primeiro cai o DPR (mínimo 1); depois sai o AO; por último, o reflexo
   const decline = () => {
     const s = useShowroom.getState()
-    if (dpr > 1) { setDpr(1); s.set({ quality: Math.max(1, s.quality) as 1 }) }
+    if (dpr > 1 && FORCE_DPR === null) { setDpr(1); s.set({ quality: Math.max(1, s.quality) as 1 }) }
     else if (s.quality < 3) s.set({ quality: Math.max(2, s.quality + 1) as 2 | 3 })
   }
   return (
     <main className={`relative h-full w-full ${presenter ? 'presenter' : ''}`}>
       {/* eventSource no contêiner: arrastar por cima da tela do celular (Html) também gira a câmera */}
-      <div ref={container} className="absolute inset-0 isolate z-0">
+      <div ref={(el) => { container.current = el!; perfBridge.container = el }} className="absolute inset-0 isolate z-0">
         <Canvas
           eventSource={container} eventPrefix="client"
           dpr={dpr} camera={{ fov: 32, near: 0.05, far: 120, position: [0, 2.6, 15] }}
@@ -132,14 +144,19 @@ export default function App() {
             </Selection>
             {Perf && <Perf position="bottom-right" />}
           </Suspense>
-          <AdaptiveDpr />
-          {!FORCE_HQ && !REF_ON && <PerformanceMonitor flipflops={3} onDecline={decline} onFallback={() => useShowroom.getState().set({ quality: 3 })} />}
+          {FORCE_DPR === null && <AdaptiveDpr />}
+          {!FORCE_HQ && !REF_ON && FORCE_Q === null && (
+            <PerformanceMonitor flipflops={3} onDecline={decline} onFallback={() => useShowroom.getState().set({ quality: 3 })}
+              {...(FPS_MIN !== null ? { bounds: (rr: number) => [FPS_MIN!, Math.max(FPS_MIN! + 5, rr > 100 ? 100 : 60)] as [number, number] } : {})} />
+          )}
+          {PERF_HUD && <PerfBridge />}
         </Canvas>
       </div>
       {/* a camada 2D respeita prefers-reduced-motion também nas animações do framer-motion */}
       <MotionConfig reducedMotion="user">{REF_ON ? <RefOverlay /> : <UI />}</MotionConfig>
       <PresenterMode />
       {DEBUG && <ProgramCount />}
+      {PERF_HUD && <PerfHud />}
     </main>
   )
 }
