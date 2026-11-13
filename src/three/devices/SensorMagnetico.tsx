@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { Html, RoundedBox } from '@react-three/drei'
 import { ClickablePart } from '../parts/ClickablePart'
-import { M, mat } from '../common/materials'
+import { M } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
 import { stadiumGeometry } from '../common/shapes'
@@ -44,15 +44,15 @@ const alarmOn = () => doorOpen() > 0.08 || knockFired()
 export function SensorMagnetico({ interactive = false, open }: DeviceProps & { open?: () => number }) {
   const door = useRef<THREE.Group>(null!)
   const slit = useMemo(() => stadiumGeometry(mm(8), mm(4), 0.01, 0.003), [])
-  const doorMat = useMemo(() => mat({ color: '#6b5a4a', roughness: 0.8 }), [])
-  const wallMat = useMemo(() => mat({ color: '#2a3145', roughness: 0.9 }), [])
+  const doorMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#6b5a4a', roughness: 0.8 }), [])
+  const wallMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2a3145', roughness: 0.9 }), [])
   // antena em mola de cobre
   const spring = useMemo(() => {
     const pts: THREE.Vector3[] = []
     for (let i = 0; i <= 120; i++) { const t = i / 120; pts.push(new THREE.Vector3(Math.cos(t * Math.PI * 14) * 0.045, t * 0.16, Math.sin(t * Math.PI * 14) * 0.045)) }
     return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 180, 0.009, 5)
   }, [])
-  const copper = useMemo(() => mat({ color: '#b87333', roughness: 0.35, metalness: 0.9 }), [])
+  const copper = useMemo(() => new THREE.MeshStandardMaterial({ color: '#b87333', roughness: 0.35, metalness: 0.9 }), [])
   const sceneOn = useActionPhase(['ima', 'choque']) >= 0
   const knock = useShowroom((s) => (interactive ? s.knock : null))
 

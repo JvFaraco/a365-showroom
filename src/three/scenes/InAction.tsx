@@ -16,7 +16,6 @@ import { CameraFlash } from '../fx/CameraFlash'
 import { LowPolyPerson } from '../fx/DetectionFan'
 import { bump, seg } from '../common/util'
 import { aiPhotoDataUrl } from '../common/textures'
-import { mat } from '../common/materials'
 
 const T = () => ia.t
 const doorOpen = () => seg(T(), 3.2, 4.6)
@@ -30,9 +29,9 @@ const MAG_POS: [number, number, number] = [HINGE - HINGE_X * MAG_S, 2.3 - DOOR_T
 
 /** Em ação: corte de um cômodo low-poly com os aparelhos instalados e a sequência de um disparo. */
 export function InAction() {
-  const wall = useMemo(() => mat({ color: '#27304a', roughness: 0.95 }), [])
-  const floor = useMemo(() => mat({ color: '#3a3248', roughness: 0.9 }), [])
-  const wood = useMemo(() => mat({ color: '#7a6450', roughness: 0.8 }), [])
+  const wall = useMemo(() => new THREE.MeshStandardMaterial({ color: '#27304a', roughness: 0.95 }), [])
+  const floor = useMemo(() => new THREE.MeshStandardMaterial({ color: '#3a3248', roughness: 0.9 }), [])
+  const wood = useMemo(() => new THREE.MeshStandardMaterial({ color: '#7a6450', roughness: 0.8 }), [])
   const door = useRef<THREE.Group>(null!)
   const intruder = useRef<THREE.Group>(null!)
   const step = useShowroom((s) => s.iaStep)

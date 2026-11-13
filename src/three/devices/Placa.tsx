@@ -2,14 +2,14 @@ import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { ClickablePart } from '../parts/ClickablePart'
-import { fxBasic, mat } from '../common/materials'
+import { fxBasic } from '../common/materials'
 import { placaFaixaTexture, placaFoneTexture, placaLogoTexture, placaRodapeTexture, placaVersoTexture } from '../common/textures'
 import { roundedRectGeometry } from '../common/shapes'
 import { DeviceCtx, bump, seg, type DeviceProps } from '../common/util'
 import { actionTime } from '../../store/showroomStore'
 
 // chapa pintada: cor viva (um pouco de emissivo) com um leve brilho de verniz
-const face = (map: THREE.Texture | null) => mat({ color: map ? '#ffffff' : '#1E398D', map, emissive: map ? '#ffffff' : '#1E398D', emissiveMap: map, emissiveIntensity: 0.55, roughness: 0.36, clearcoat: 0.5, clearcoatRoughness: 0.3 })
+const face = (map: THREE.Texture | null) => new THREE.MeshPhysicalMaterial({ color: map ? '#ffffff' : '#1E398D', map, emissive: map ? '#ffffff' : '#1E398D', emissiveMap: map, emissiveIntensity: 0.55, roughness: 0.36, clearcoat: 0.5, clearcoatRoughness: 0.3 })
 
 /** Placa de aviso: retângulo azul de cantos redondos; frente com logo, telefone e faixa amarela; verso com QR Code. */
 export function Placa({ interactive = false }: DeviceProps) {

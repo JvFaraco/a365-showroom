@@ -1,10 +1,10 @@
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
-import { Html, RoundedBox } from '@react-three/drei'
+import { Html, MeshTransmissionMaterial, RoundedBox } from '@react-three/drei'
 import { RoundedBoxGeometry } from 'three-stdlib'
 import { ClickablePart } from '../parts/ClickablePart'
-import { M, fxBasic, mat } from '../common/materials'
+import { M, fxBasic } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
 import { smoothLatheY, stadiumGeometry, stadiumRingGeometry, wire } from '../common/shapes'
@@ -161,7 +161,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
   const cableMat = useMemo(() => fxBasic('#2a2d35'), [])
   const apronMat = useMemo(() => { const m = M.white.clone(); m.side = THREE.DoubleSide; return m }, [])
   const finMat = useMemo(() => M.grey.clone(), [])
-  const smdMat = useMemo(() => mat({ roughness: 0.5 }), [])
+  const smdMat = useMemo(() => new THREE.MeshStandardMaterial({ roughness: 0.5 }), [])
   const viasPhase = useActionPhase('antena', [4, 7.5, 10])
   const audioPhase = useActionPhase('audio', [1.2])
   const batPhase = useActionPhase('bateria-modulo', [2.2])
@@ -277,8 +277,13 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
               <group position={[0, 0, CAPSULE_Z]}>
                 <mesh geometry={g.capsuleRim} material={M.chrome} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.006, 0]} />
                 <group ref={pressA} {...hold}>
-                  {/* cápsula translúcida do LED: mesmo material nas duas instâncias (sem transmission, que renderizava a cena de novo a cada quadro) */}
-                  <mesh ref={cap} geometry={g.capsule} material={M.crystal} rotation={[-Math.PI / 2, 0, 0]} userData={interactive ? { fx: true } : undefined} />
+                  {interactive ? (
+                    <mesh ref={cap} geometry={g.capsule} rotation={[-Math.PI / 2, 0, 0]} userData={{ fx: true }}>
+                      <MeshTransmissionMaterial resolution={256} samples={3} transmission={0.92} thickness={0.08} roughness={0.28} chromaticAberration={0} anisotropicBlur={0.1} color="#f4f7fc" backside={false} />
+                    </mesh>
+                  ) : (
+                    <mesh geometry={g.capsule} material={M.crystal} rotation={[-Math.PI / 2, 0, 0]} />
+                  )}
                 </group>
                 {interactive && <HoldRing radius={0.26} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} />}
               </group>

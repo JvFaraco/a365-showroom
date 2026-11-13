@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import { ClickablePart } from '../parts/ClickablePart'
-import { M, fxBasic, mat } from '../common/materials'
+import { M, fxBasic } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
 import { iconTexture, type IconId } from '../common/textures'
@@ -95,11 +95,9 @@ const G = () => (cache ??= build())
 export function ControleRemoto({ interactive = false, pressed }: DeviceProps & { pressed?: () => string | null }) {
   const g = G()
   // corpo preto/grafite brilhante, como na arte oficial
-  const bodyMat = useMemo(() => mat({ color: '#1d1f24', roughness: 0.34, clearcoat: 0.7, clearcoatRoughness: 0.25 }), [])
-  // filete: azul saturado, com brilho leve (fica abaixo do limiar do bloom)
-  const filletMat = useMemo(() => mat({ color: '#2a5bff', roughness: 0.28, clearcoat: 0.8, emissive: '#2a5bff', emissiveIntensity: 0.55 }), [])
-  const coinMat = useMemo(() => mat({ color: '#dfe2e8', roughness: 0.32, metalness: 0.6 }), [])
-  const coverMat = useMemo(() => mat({ color: '#22242a', roughness: 0.7 }), [])
+  const bodyMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#1d1f24', roughness: 0.34, clearcoat: 0.7, clearcoatRoughness: 0.25 }), [])
+  const coinMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#dfe2e8', roughness: 0.32, metalness: 0.6 }), [])
+  const coverMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#22242a', roughness: 0.7 }), [])
   const icons = useMemo(() => BUTTONS.map((b) => new THREE.MeshBasicMaterial({ map: iconTexture(b.icon), transparent: true, toneMapped: false })), [])
   const btnRefs = useRef<(THREE.Group | null)[]>([])
   const root = useRef<THREE.Group>(null!)
@@ -166,7 +164,7 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
         </ClickablePart>
         {/* anel do filete azul: ~1,5 mm, no MEIO da espessura (a emenda entre as duas cascas), em volta de tudo */}
         <ClickablePart follow="corpo" explode={[0, 0, 0.2]}>
-          <mesh geometry={g.fillet} material={filletMat} />
+          <mesh geometry={g.fillet} material={M.blueGlow} />
         </ClickablePart>
         {/* casca de trás, com a argola */}
         <ClickablePart follow="corpo" explode={[0, 0, -0.6]}>
