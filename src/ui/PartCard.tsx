@@ -21,6 +21,8 @@ export function PartCard() {
   const part = show ? getPart(device, partId) : undefined
   const idx = part ? d.parts.indexOf(part) : -1
   const st = useShowroom.getState
+  // no celular o card é uma folha de baixo: entra subindo; no desktop fica ao lado e entra pela lateral
+  const sheet = typeof window !== 'undefined' && window.innerWidth < 768
 
   return (
     <div className="pointer-events-none fixed inset-x-2 bottom-2 z-30 flex items-end md:inset-x-auto md:bottom-4 md:right-5 md:top-[8.8rem] md:items-center">
@@ -31,9 +33,9 @@ export function PartCard() {
           id="part-card"
           role="dialog"
           aria-label={`${part.name}: informações`}
-          initial={{ opacity: 0, x: 24 }}
-          animate={{ opacity: 1, x: 0, transition: { duration: 0.25, ease: EASE_OUT } }}
-          exit={{ opacity: 0, x: 16, transition: { duration: 0.18, ease: EASE_IN } }}
+          initial={sheet ? { opacity: 0, y: 24 } : { opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0, y: 0, transition: { duration: 0.25, ease: EASE_OUT } }}
+          exit={{ opacity: 0, ...(sheet ? { y: 16 } : { x: 16 }), transition: { duration: 0.18, ease: EASE_IN } }}
           className="part-card glass pointer-events-auto max-h-[50vh] w-full overflow-y-auto rounded-2xl p-4 md:max-h-full md:w-[360px]"
         >
           <div className="mb-1 flex items-start justify-between gap-3">
@@ -61,9 +63,10 @@ export function PartCard() {
           )}
 
           {action ? <ActionPanel /> : part.action && (
-            <button className="btn btn-primary mt-3 w-full" onClick={() => { beep(); st().set({ tour: false }); st().startAction(part.action!) }}>
-              <Play size={14} /> Ver em ação
-              <span className="font-normal opacity-70">· {ACTIONS[part.action].label}</span>
+            // em tela estreita o nome da ação vai para a linha de baixo, em vez de quebrar no meio
+            <button className="btn btn-primary mt-3 w-full max-sm:flex-col max-sm:gap-0 max-sm:rounded-2xl" onClick={() => { beep(); st().set({ tour: false }); st().startAction(part.action!) }}>
+              <span className="inline-flex items-center gap-2"><Play size={14} /> Ver em ação</span>
+              <span className="font-normal opacity-70"><span className="max-sm:hidden">· </span>{ACTIONS[part.action].label}</span>
             </button>
           )}
 

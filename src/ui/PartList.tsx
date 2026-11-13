@@ -17,7 +17,7 @@ export function PartList() {
       </button>
       <AnimatePresence>
         {open && (
-          <motion.nav id="part-list" aria-label={`Partes do ${d.name}`} initial={{ opacity: 0, x: -16 }}
+          <motion.nav id="part-list" aria-label={`Partes ${d.fem ? 'da' : 'do'} ${d.name}`} initial={{ opacity: 0, x: -16 }}
             animate={{ opacity: 1, x: 0, transition: { duration: 0.25, ease: [0.2, 0, 0, 1] } }} exit={{ opacity: 0, x: -12, transition: { duration: 0.18, ease: [0.4, 0, 1, 1] } }}
             className="glass pointer-events-auto mt-2 max-h-[52vh] w-60 overflow-y-auto rounded-2xl p-2">
             <ol>

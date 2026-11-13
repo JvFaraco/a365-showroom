@@ -38,6 +38,7 @@ export type Device = {
   id: DeviceId
   name: string
   short: string
+  fem?: boolean // nome feminino: "da sirene", "da placa"
   tagline: string
   parts: Part[]
   inKit365S: boolean
@@ -411,6 +412,7 @@ export const DEVICES: Device[] = [
     id: 'sirene',
     name: 'Sirene',
     short: 'Sirene',
+    fem: true,
     tagline: 'Até 110 dB de alerta.',
     inKit365S: true,
     home: { position: [1.5, 0.5, 3.7], target: [0, 0, 0] },
@@ -593,6 +595,7 @@ export const DEVICES: Device[] = [
     id: 'placa',
     name: 'Placa de aviso',
     short: 'Placa',
+    fem: true,
     tagline: 'A primeira barreira.',
     inKit365S: true,
     home: { position: [1.0, 0.3, 4.0], target: [0, 0, 0] },
