@@ -132,10 +132,11 @@ function shellGeometry() {
   col(Math.PI * 1.5, fB, true); col(Math.PI * 1.5, fB, false); col(Math.PI * 1.5, (1 + fB) / 2, false)
   for (let i = 0; i <= C4; i++) col(Math.PI * 1.5 + (i / C4) * (Math.PI / 2), 1, false)
 
-  type Row = { y: number; inset: number; bay: boolean; flat?: boolean }
+  // `fan`: tampa de cima ou de baixo, em leque: o anel (em `inset`) é puxado para o centro da planta (0..1)
+  type Row = { y: number; inset: number; bay: boolean; fan?: number }
   const rows: Row[] = []
   // fundo (tampado pela faixa cinza) e lábio arredondado da base
-  rows.push({ y: Y_BASE, inset: RC, bay: false, flat: true }, { y: Y_BASE, inset: RC - 0.002, bay: false }, { y: Y_BASE, inset: 0.12, bay: false }, { y: Y_BASE, inset: 0.032, bay: false })
+  rows.push({ y: Y_BASE, inset: 0.032, bay: false, fan: 1 }, { y: Y_BASE, inset: 0.032, bay: false, fan: 0.5 }, { y: Y_BASE, inset: 0.032, bay: false })
   rows.push({ y: Y_BASE + 0.012, inset: 0.014, bay: false }, { y: Y_BASE + 0.03, inset: 0.004, bay: false })
   const yA = Y_BASE + 0.055, yB = Y_TOP - TOP_R, N = 132
   for (let i = 0; i <= N; i++) {
@@ -146,14 +147,16 @@ function shellGeometry() {
     if (y < BAY.y1 && next >= BAY.y1) rows.push({ y: BAY.y1, inset: 0, bay: true }, { y: BAY.y1, inset: 0, bay: false })
   }
   for (let k = 1; k <= 8; k++) { const a = (k / 8) * (Math.PI / 2); rows.push({ y: yB + TOP_R * Math.sin(a), inset: TOP_R * (1 - Math.cos(a)), bay: false }) }
-  rows.push({ y: Y_TOP, inset: 0.18, bay: false }, { y: Y_TOP, inset: RC - 0.002, bay: false }, { y: Y_TOP, inset: RC, bay: false, flat: true })
+  rows.push({ y: Y_TOP, inset: TOP_R, bay: false, fan: 0.5 }, { y: Y_TOP, inset: TOP_R, bay: false, fan: 1 })
 
   const C = cols.length, R = rows.length
+  const ZC = (HD - RC - (HD - RB)) / 2 // centro da planta, para onde as tampas convergem
   const pos = new Float32Array(C * R * 3), uv = new Float32Array(C * R * 2)
   rows.forEach((r, j) => cols.forEach((c, i) => {
     const rad = Math.max(0, c.r - r.inset)
-    const x = c.cx + rad * c.nx
-    let z = r.flat ? 0 : c.cz + rad * c.nz
+    let x = c.cx + rad * c.nx
+    let z = c.cz + rad * c.nz
+    if (r.fan) { x *= 1 - r.fan; z += (ZC - z) * r.fan }
     if (r.bay && c.bay) z = -BAY.floor
     else if (r.inset === 0 && c.nz > 0.05) z = frontCut(x, r.y, z)
     pos.set([x, r.y, z], (j * C + i) * 3)
@@ -250,6 +253,7 @@ function build() {
   return {
     shellFront: shell.front, shellBack: shell.back, base, baseSeam, capsule, cover, coverSeam, latch, clipL, clipR, rails, plate,
     ribs: mergeGeometries(fr),
+    pirFrame: frontPanel(PIR.hw + 0.014, PIR.y0 - 0.014, PIR.y1 + 0.014, 0.0, PIR.bulge - 0.006),
     pirBack: frontPanel(PIR.hw, PIR.y0, PIR.y1, 0.003, PIR.bulge - 0.02),
     pirLens: frontPanel(PIR.hw, PIR.y0, PIR.y1, 0.004, PIR.bulge),
     win: stadiumGeometry(mm(5), mm(11), 0.006, 0.003), // janela oval vertical do LED (~5 × 11 mm)
@@ -293,8 +297,8 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   // a cápsula é um plástico um pouco mais frio e brilhante que o corpo
   const capMat = useMemo(() => mat({ color: '#d3d6df', roughness: 0.26, clearcoat: 0.6, clearcoatRoughness: 0.2 }), [])
   const mountMat = useMemo(() => { const m = M.grey.clone(); m.color.set('#9a9ea6'); return m }, [])
-  const lensBack = useMemo(() => mat({ color: '#d6d9df', roughness: 0.7 }), [])
-  const pirMat = useMemo(() => mat({ color: '#e6e8ec', roughness: 0.36, clearcoat: 1, clearcoatRoughness: 0.12, transparent: true, opacity: 0.88, envMapIntensity: 1.4 }), [])
+  const lensBack = useMemo(() => mat({ color: '#b9bec8', roughness: 0.7 }), [])
+  const pirMat = useMemo(() => mat({ color: '#cdd2db', roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.15, transparent: true, opacity: 0.9, envMapIntensity: 1.4 }), [])
   const polMat = useMemo(() => new THREE.MeshBasicMaterial({ map: polaroidTexture(), toneMapped: false, side: THREE.DoubleSide }), [])
   const rulerMat = useMemo(() => fxBasic('#ffffff', 0.5), [])
   const bandMat = useMemo(() => fxBasic('#35d46a', 0.35), [])
@@ -423,21 +427,39 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
 
             {/* janela PIR: grande, quase quadrada, branco-leitosa, com Fresnel discreto; acompanha a curva da frente */}
             <ClickablePart id="pir">
+              <mesh geometry={g.pirFrame} material={M.partition} />
               <mesh geometry={g.pirBack} material={lensBack} />
               <mesh geometry={g.pirLens} material={pirMat} />
             </ClickablePart>
 
-            {/* por dentro (só fotos e vídeos): armação com a placa da câmera em cima, a placa do PIR no meio e a
-                antena em mola embaixo. Sem etiquetas nem textos. */}
+            {/* ===== por dentro (pelos vídeos de fábrica; tamanhos aproximados, sem etiquetas) ===== */}
+            {/* placa principal: verde, vertical, ~50 × 85 mm, do meio do corpo para baixo */}
             <ClickablePart id="placas">
-              <RoundedBox args={[0.6, 1.2, 0.03]} radius={0.012} smoothness={3} position={[0, H(72), 0.12]} material={M.chip} />
-              <mesh material={M.pcb} position={[0, H(104), 0.2]}><boxGeometry args={[0.5, 0.52, 0.02]} /></mesh>
-              <mesh material={M.chip} position={[0, LENS_Y, 0.235]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.07, 0.07, 0.06, 20]} /></mesh>
-              <mesh material={M.chip} position={[0.12, H(96), 0.216]}><boxGeometry args={[0.1, 0.1, 0.014]} /></mesh>
-              <mesh material={M.pcb} position={[0, H(42), 0.18]}><boxGeometry args={[0.52, 0.46, 0.02]} /></mesh>
-              <mesh material={M.white} position={[0, H(43), 0.205]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.06, 0.06, 0.03, 20]} /></mesh>
-              <mesh material={M.chip} position={[-0.14, H(34), 0.196]}><boxGeometry args={[0.09, 0.09, 0.014]} /></mesh>
-              <mesh geometry={g.spring} material={springMat} position={[0.1, H(12), 0.12]} rotation={[0, 0, Math.PI / 2]} />
+              <mesh material={M.pcb} position={[0, H(50), 0.1]}><boxGeometry args={[mm(50), mm(85), 0.02]} /></mesh>
+              <mesh material={M.chip} position={[-0.16, H(62), 0.116]}><boxGeometry args={[0.1, 0.1, 0.014]} /></mesh>
+              <mesh material={M.chip} position={[0.17, H(22), 0.116]}><boxGeometry args={[0.08, 0.12, 0.014]} /></mesh>
+              {/* cabo flat branco, que desce pela esquerda do módulo da câmera até a placa */}
+              <mesh material={M.white} position={[-0.21, H(84), 0.135]}><boxGeometry args={[0.11, mm(34), 0.006]} /></mesh>
+            </ClickablePart>
+            {/* sensor PIR: cilindro metálico (~9 × 5 mm) com a janelinha escura, na altura da lente PIR */}
+            <ClickablePart id="sensor-pir">
+              <mesh material={M.metal} position={[0, H(37), 0.11 + mm(2.5)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(4.5), mm(4.5), mm(5), 28]} /></mesh>
+              <mesh material={M.hole} position={[0, H(37), 0.11 + mm(5) + 0.001]}><planeGeometry args={[mm(3.6), mm(3.6)]} /></mesh>
+            </ClickablePart>
+            {/* módulo da câmera, no terço de cima: suporte branco com janela, tubo preto da lente apontando para a
+                frente e um pouco para baixo, e a plaquinha verde atrás, com o LED alinhado à janela do LED */}
+            <ClickablePart id="modulo-camera">
+              <mesh material={M.pcb} position={[0, H(104), 0.16]}><boxGeometry args={[mm(28), mm(24), 0.016]} /></mesh>
+              <mesh material={M.white} position={[0, LEDWIN_Y, 0.176]}><boxGeometry args={[0.04, 0.05, 0.016]} /></mesh>
+              <RoundedBox args={[mm(20), mm(18), mm(8)]} radius={0.02} smoothness={3} position={[0, LENS_Y, 0.17 + mm(4)]} material={M.white} />
+              <group position={[0, LENS_Y, 0.17 + mm(8)]} rotation={[CAP.tilt, 0, 0]}>
+                <mesh material={M.chip} position={[0, 0, mm(4)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(4.5), mm(4.5), mm(10), 28]} /></mesh>
+                <mesh material={M.lens} position={[0, 0, mm(9) + 0.002]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(3), mm(3), 0.004, 24]} /></mesh>
+              </group>
+            </ClickablePart>
+            {/* antena: mola de cobre em pé, no centro, logo acima da base */}
+            <ClickablePart id="antena">
+              <mesh geometry={g.spring} material={springMat} position={[0, H(8), 0.2]} />
             </ClickablePart>
 
             {/* faixa cinza da base, um pouco recuada */}
