@@ -65,7 +65,7 @@ function build() {
   const cav = new THREE.Path(); cav.absarc(0, 0, 0.61, 0, Math.PI * 2, true); bs.holes.push(cav)
   const back = new THREE.ExtrudeGeometry(bs, { depth: 0.12, ...bevel }); back.translate(0, 0, -0.14)
   // filete azul: anel fino (~1,5 mm) no meio da espessura, quase rente às cascas
-  const fl = teardrop(0.014)
+  const fl = teardrop(0.03)
   // é um anel de verdade (não um disco): na vista explodida aparece fino, só o contorno
   fl.holes.push(new THREE.Path(teardrop(-0.05).getPoints(120).reverse()))
   const fillet = new THREE.ExtrudeGeometry(fl, { depth: 0.03, bevelEnabled: true, bevelSize: 0.004, bevelThickness: 0.004, bevelSegments: 2, curveSegments: 64 }); fillet.translate(0, 0, -0.015)
@@ -96,6 +96,8 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
   const g = G()
   // corpo preto/grafite brilhante, como na arte oficial
   const bodyMat = useMemo(() => mat({ color: '#1d1f24', roughness: 0.34, clearcoat: 0.7, clearcoatRoughness: 0.25 }), [])
+  // filete: azul saturado, com brilho leve (fica abaixo do limiar do bloom)
+  const filletMat = useMemo(() => mat({ color: '#2a5bff', roughness: 0.28, clearcoat: 0.8, emissive: '#2a5bff', emissiveIntensity: 0.55 }), [])
   const coinMat = useMemo(() => mat({ color: '#dfe2e8', roughness: 0.32, metalness: 0.6 }), [])
   const coverMat = useMemo(() => mat({ color: '#22242a', roughness: 0.7 }), [])
   const icons = useMemo(() => BUTTONS.map((b) => new THREE.MeshBasicMaterial({ map: iconTexture(b.icon), transparent: true, toneMapped: false })), [])
@@ -164,7 +166,7 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
         </ClickablePart>
         {/* anel do filete azul: ~1,5 mm, no MEIO da espessura (a emenda entre as duas cascas), em volta de tudo */}
         <ClickablePart follow="corpo" explode={[0, 0, 0.2]}>
-          <mesh geometry={g.fillet} material={M.blueGlow} />
+          <mesh geometry={g.fillet} material={filletMat} />
         </ClickablePart>
         {/* casca de trás, com a argola */}
         <ClickablePart follow="corpo" explode={[0, 0, -0.6]}>
