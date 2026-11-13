@@ -111,5 +111,5 @@ A lista de partes de cada aparelho, com primitivas, proporções e materiais, es
 - Cor do filete lateral do controle: azul na arte oficial, amarelo na foto real. O demo usa o azul.
 - Disco central do controle: não é botão. A arte de marketing mostra o logo nele e o ícone do sistema mostra liso; o demo usa o logo em baixo-relevo discreto.
 - Sensor magnético: a foto de instalação mostra o corpo na folha da porta e o ímã no batente (o texto antigo dizia o contrário); confirmar no manual. A mesma foto tem um terceiro bloco branco, abaixo do corpo, que não foi modelado.
-- Módulo: a antena sai atrás, fora do centro, ao lado do bolsão dos cabos (pelo vídeo do fundo e pela foto de estúdio); a distância até o centro é estimada. A altura total segue a ficha (38 mm), mas a divisão entre base cinza (27 mm) e tampa é aproximada.
+- Módulo: a antena sai atrás, fora do centro, ao lado do bolsão dos cabos (pelo vídeo do fundo e pela foto de estúdio); a distância até o centro é estimada. A altura total segue a ficha (38 mm), mas a divisão entre base cinza (27 mm) e tampa é aproximada. A forma da tampa (topo largo, lateral curta nos arcos, três pontas nos apoios, frente em V) e o recuo da base saem dos quadros do vídeo de fábrica; os raios são estimados.
 - Sirene: o suporte de parede não tem medida na ficha; foi mantido o da rodada anterior.
