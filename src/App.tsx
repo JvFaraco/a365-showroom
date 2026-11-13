@@ -16,9 +16,25 @@ const Q = typeof location !== 'undefined' ? location.search : ''
 // ?hq: mantém reflexo e pós-processamento completos mesmo se o FPS cair
 const FORCE_HQ = Q.includes('hq')
 // ?debug=1 (só em desenvolvimento): FPS, draw calls e triângulos
-const DEBUG = import.meta.env.DEV && Q.includes('debug')
-const Perf = DEBUG ? lazy(() => import('r3f-perf').then((m) => ({ default: m.Perf }))) : null
+// ?debug=1: número de programas de shader e aviso de chamadas lentas ao WebGL (vale também no build);
+// o painel do r3f-perf (FPS, draw calls, triângulos) só entra em desenvolvimento
+const DEBUG = Q.includes('debug')
+const Perf = DEBUG && import.meta.env.DEV ? lazy(() => import('r3f-perf').then((m) => ({ default: m.Perf }))) : null
 const MAX_DPR = typeof window !== 'undefined' ? Math.min(2, window.devicePixelRatio || 1) : 1
+
+// `?debug=1`: descobre quem usa um programa antes de ele terminar de compilar. getProgramParameter (e a
+// leitura de uniforms que vem depois) esperam a compilação; se a chamada demorar, o trace mostra o caminho.
+if (DEBUG && typeof WebGL2RenderingContext !== 'undefined') {
+  const proto = WebGL2RenderingContext.prototype
+  const orig = proto.getProgramParameter
+  proto.getProgramParameter = function (this: WebGL2RenderingContext, program: WebGLProgram, pname: number) {
+    const t0 = performance.now()
+    const out = orig.call(this, program, pname)
+    const dt = performance.now() - t0
+    if (dt > 20) console.trace(`[debug] getProgramParameter esperou ${dt.toFixed(0)} ms (0x${pname.toString(16)})`)
+    return out
+  }
+}
 
 /** `?debug=1`: quantos programas de shader existem (cada combinação de flags de material é um a mais). */
 function ProgramCount() {
@@ -81,6 +97,8 @@ export default function App() {
   const container = useRef<HTMLDivElement>(null!)
   const presenter = useShowroom((s) => s.presenter)
   const [dpr, setDpr] = useState(MAX_DPR)
+  // o canvas fica parado até os shaders da cena inteira ficarem prontos (ver Boot)
+  const painting = useShowroom((s) => s.painting)
   // qualidade adaptativa: primeiro cai o DPR (mínimo 1); depois sai o AO; por último, o reflexo
   const decline = () => {
     const s = useShowroom.getState()
@@ -93,6 +111,7 @@ export default function App() {
       <div ref={container} className="absolute inset-0 isolate z-0">
         <Canvas
           eventSource={container} eventPrefix="client"
+          frameloop={painting ? 'always' : 'never'}
           dpr={dpr} camera={{ fov: 32, near: 0.05, far: 120, position: [0, 2.6, 15] }}
           gl={{ antialias: false, powerPreference: 'high-performance' }}
           // em produção, o three não confere erro de shader: essa conferência (getProgramParameter/getShaderInfoLog)
