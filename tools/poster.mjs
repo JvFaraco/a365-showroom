@@ -32,7 +32,9 @@ for (const [name, width, height, mobile] of [['poster.webp', 1600, 900, false], 
   await page.waitForFunction(() => window.__showroom?.getState?.().ready, null, { timeout: 600000 })
   // só a cena: somem a interface (título, botão, barras) e a própria tela de carregamento
   // (a tela do celular do kit é HTML dentro do contêiner do canvas, o primeiro filho de <main>, e fica)
-  await page.addStyleTag({ content: '#boot, main > :not(:first-child) { visibility: hidden !important; }' })
+  // (opacity e não visibility: a interface tem transição nas propriedades herdadas, e o `visibility` ia apagando
+  //  em cascata, filho por filho; o título acabava saindo na imagem, por baixo do título de verdade)
+  await page.addStyleTag({ content: '#boot, main > :not(:first-child) { opacity: 0 !important; transition: none !important; animation: none !important; }' })
   await page.waitForTimeout(2500)
   const png = await page.screenshot({ type: 'png', timeout: 240000 })
   // PNG → WebP dentro da página (o Playwright não grava WebP)
