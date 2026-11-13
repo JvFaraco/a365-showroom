@@ -63,12 +63,24 @@ O script precisa do Playwright (`npm i -D playwright`). Sem `--channel`, usa o C
 
 Outros dois scripts ajudam a conferir mudanças sem GPU: `node tools/count.mjs <url>` dá os programas de shader e os triângulos de cada aparelho, e `node tools/render.mjs <porta> <ref-id> <saída>` tira o print de um aparelho no ângulo de uma foto de referência. As regras de trabalho do projeto ficam em [`CLAUDE.md`](CLAUDE.md).
 
+### Medir a fluidez no aparelho de verdade
+
+Abra o site com `?perf=1` (no PC ou no celular): aparece um medidor com fps, p95 do quadro e quadros lentos ao vivo, e o botão **Testar fluidez**. O teste leva ~45 s e passa por girar, aproximar, passar o mouse, trocar de aparelho, abrir parte, Raio-X, explodido e a cena "Em ação". No fim, **Copiar resultado** copia a tabela (com a placa de vídeo e a resolução usadas). Quadro acima de 20 ms é um quadro perdido a 60 Hz; acima de 50 ms é travada visível.
+
+A `main` fica na raiz do site e o branch de trabalho (`acabamento-4`) em `/preview/`. Para comparar antes e depois, rode o teste nos dois endereços, no mesmo aparelho:
+
+- https://jvfaraco.github.io/a365-showroom/?perf=1
+- https://jvfaraco.github.io/a365-showroom/preview/?perf=1
+
+Para testar um ajuste sem mudar o código, junte à URL: `&q=0` a `&q=3` (fixa o nível de qualidade e desliga a adaptativa), `&dpr=1` ou `&dpr=1.5` (fixa a resolução) e `&fpsmin=55` (a qualidade adaptativa reduz quando a média cai abaixo desse fps).
+
 Parâmetros de URL:
 
 | Parâmetro | Efeito |
 |---|---|
 | `?hq` | mantém reflexo e pós-processamento completos mesmo que o FPS caia |
 | `?debug=1` | programas de shader e triângulos visíveis (também no build) e o diagnóstico de carga: cada leitura de estado de shader que espera mais de 20 ms vira um `console.trace`, e um resumo por material e etapa sai com `console.table` quando a tela de carregamento some (`window.__glReport`). Em `npm run dev`, também o painel do `r3f-perf` |
+| `?perf=1` | medidor de fluidez e teste automático (veja acima); `&q=`, `&dpr=` e `&fpsmin=` fixam qualidade, resolução e limite da qualidade adaptativa |
 | `?ref=1` | só em `npm run dev`: modo de comparação com a foto (veja abaixo) |
 
 ## Comparar com a foto (`?ref=1`)
