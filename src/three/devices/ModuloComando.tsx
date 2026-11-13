@@ -1,7 +1,7 @@
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
-import { Html, MeshTransmissionMaterial, RoundedBox } from '@react-three/drei'
+import { Html, RoundedBox } from '@react-three/drei'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { ClickablePart } from '../parts/ClickablePart'
 import { M, fxBasic } from '../common/materials'
@@ -322,13 +322,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
               <group position={[0, -0.008, CAPSULE_Z]}>
                 <mesh geometry={g.capsuleRim} material={M.chrome} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.006, 0]} />
                 <group ref={pressA} {...hold}>
-                  {interactive ? (
-                    <mesh ref={cap} geometry={g.capsule} rotation={[-Math.PI / 2, 0, 0]} userData={{ fx: true }}>
-                      <MeshTransmissionMaterial resolution={256} samples={3} transmission={0.92} thickness={0.08} roughness={0.28} chromaticAberration={0} anisotropicBlur={0.1} color="#f4f7fc" backside={false} />
-                    </mesh>
-                  ) : (
-                    <mesh geometry={g.capsule} material={M.crystal} rotation={[-Math.PI / 2, 0, 0]} />
-                  )}
+                  {/* cristal do LED: plástico translúcido que já existia (M.crystal); a luz aparece por trás. Sem transmission */}
+                  <mesh ref={cap} geometry={g.capsule} material={M.crystal} rotation={[-Math.PI / 2, 0, 0]} userData={interactive ? { fx: true } : undefined} />
                 </group>
                 {interactive && <HoldRing radius={0.26} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} />}
               </group>

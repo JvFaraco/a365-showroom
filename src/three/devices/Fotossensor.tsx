@@ -297,7 +297,6 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   const ruler = useRef<THREE.Group>(null!)
   const alertV = useRef(0)
   const g = G()
-  const winMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#0f3a1f', roughness: 0.12, clearcoat: 1 }), [])
   // base e suporte de parede: o mesmo plástico cinza fosco
   const baseMat = useMemo(() => { const m = M.grey.clone(); m.color.set('#80848c'); return m }, [])
   const springMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#b87333', roughness: 0.38, metalness: 1 }), [])
@@ -415,7 +414,8 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
             {/* janela oval vertical e estreita do LED, no meio da cápsula; o flash acende dentro dela */}
             <ClickablePart id="flash">
               <group position={[0, CAP.bottom, CAP.z]} rotation={[CAP.tilt, 0, 0]}>
-                <mesh geometry={g.win} material={winMat} position={[0, LEDWIN_L, CAP_F - 0.004]} />
+                <mesh geometry={g.win} material={M.hole} position={[0, LEDWIN_L, CAP_F - 0.008]} />
+                <mesh geometry={g.win} material={M.crystal} position={[0, LEDWIN_L, CAP_F - 0.004]} />
                 <Led sample={(_, o) => { const p = flashPower(); o.color = '#fff6c8'; o.on = p * 3 }} baseColor="#123d22" position={[0, LEDWIN_L + mm(2.6), CAP_F + 0.004]}>
                   <boxGeometry args={[0.03, 0.03, 0.003]} />
                 </Led>

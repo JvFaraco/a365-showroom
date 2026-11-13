@@ -135,7 +135,8 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
         <ClickablePart id="led">
           <group rotation={[0, 0, LED_A + Math.PI / 2]}>
             <group position={[0, -0.86, domeZ(0.86) + 0.004]} rotation={[0.74, 0, 0]}>
-              <mesh geometry={slit} material={M.frosted} />
+              {/* cristal do LED: o mesmo plástico translúcido dos outros aparelhos */}
+              <mesh geometry={slit} material={M.crystal} />
               <Led sample={(t, o) => { const on = isOn(); o.color = on ? '#ff2a2a' : '#3d7bff'; o.on = on ? (t % 0.3 < 0.15 ? 1 : 0.05) : 0.14 }} position={[0, 0, 0.008]}>
                 <boxGeometry args={[0.12, 0.05, 0.004]} />
               </Led>
