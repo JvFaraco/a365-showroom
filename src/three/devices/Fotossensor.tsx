@@ -240,7 +240,8 @@ let cache: Geo | null = null
 function build() {
   const flat = { bevelEnabled: false, curveSegments: 24 }
   // base cinza: quase rente ao corpo em cima e ~4 mm mais estreita embaixo, com o canto de baixo arredondado
-  const base = new THREE.LatheGeometry([[0, 0], [27.5, 0], [29.3, 0.4], [30.2, 1.2], [31.5, 3], [32.6, 5], [33.3, 6.6], [33.3, 7.4]].map(([r, h]) => new THREE.Vector2(mm(r), Y0 + mm(h))), 64)
+  // base fechada em cima, como no CAD: borda e um fundo rebaixado em prato onde o corpo assenta
+  const base = new THREE.LatheGeometry([[0, 0], [27.5, 0], [29.3, 0.4], [30.2, 1.2], [31.5, 3], [32.6, 5], [33.3, 6.6], [33.3, 7.4], [31.8, 7.4], [30.6, 5.6], [29, 4.6], [0, 4.4]].map(([r, h]) => new THREE.Vector2(mm(r), Y0 + mm(h))), 64)
   // linha cinza entre o corpo e a base: só um aro fino na borda (uma chapa cheia parecia uma segunda base na vista explodida)
   const seamRing = outline(0.034); seamRing.holes.push(new THREE.Path(outline(0.034 + mm(2)).getPoints(64).reverse()))
   const baseSeam = upright(new THREE.ExtrudeGeometry(seamRing, { depth: 0.01, ...flat }), Y_BASE - 0.01)
@@ -434,7 +435,6 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
             {/* corpo traseiro: fica parado; leva os frisos, o parafuso lateral e o berço das pilhas */}
             <ClickablePart follow="corpo" explode={[0, UP, 0]}>
               <mesh geometry={g.shellBack} material={shellMat} castShadow />
-              <mesh geometry={g.baseSeam} material={M.partition} />
               {/* cabeça de um parafuso pequeno na lateral, junto à base */}
               <mesh material={M.metal} position={[-(HW + 0.002), H(12), -0.15]} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[0.022, 0.022, 0.012, 16]} /></mesh>
               <mesh geometry={g.ribs} material={M.white} />
@@ -557,6 +557,8 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
             {/* faixa cinza da base, um pouco recuada */}
             <ClickablePart id="base">
               <mesh geometry={g.base} material={baseMat} castShadow />
+              {/* linha da emenda com o corpo: fica com a base (não sobe junto com o corpo na vista explodida) */}
+              <mesh geometry={g.baseSeam} material={M.partition} />
             </ClickablePart>
 
             {/* tampa das pilhas: curva, acompanhando o corpo; aba de alavanca no topo e duas presilhas embaixo */}
