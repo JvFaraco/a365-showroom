@@ -21,7 +21,9 @@ const BACK = 0.3 - 60 / 64 // face traseira da base (a que encosta no suporte)
 const DOME_H = 36 / 64, DOME_P = 2.5
 /** Altura da cúpula no raio r (0 = centro, 1 = borda). */
 const domeZ = (r: number) => 0.3 - DOME_H * (1 - Math.pow(Math.max(0, 1 - Math.pow(Math.min(1, r), DOME_P)), 1 / DOME_P))
-const SUP_DZ = BACK + 0.277 // o suporte de parede acompanha a face traseira
+// o suporte de parede fica raso atrás da base (escala em Z), para não aparecer de lado com recortes e travas
+const SUP_S = 0.45
+const SUP_DZ = BACK + 0.277 * SUP_S // o suporte de parede acompanha a face traseira
 
 /** Fundo do suporte: disco com furo grande deslocado e dois recortes triangulares. */
 function supportFloor() {
@@ -30,7 +32,8 @@ function supportFloor() {
   const hole = new THREE.Path()
   hole.absarc(0.24, 0.04, 0.3, 0, Math.PI * 2, true)
   const tri = (pts: [number, number][]) => { const p = new THREE.Path(); p.moveTo(...pts[0]); p.lineTo(...pts[1]); p.lineTo(...pts[2]); p.closePath(); return p }
-  s.holes.push(hole, tri([[-0.2, 0.78], [0.2, 0.78], [0, 0.5]]), tri([[0.42, -0.6], [0.7, -0.42], [0.36, -0.36]]))
+  void tri // sem recortes triangulares: por fora, de lado, o suporte é liso
+  s.holes.push(hole)
   return new THREE.ExtrudeGeometry(s, { depth: 0.03, bevelEnabled: false, curveSegments: 40 })
 }
 
@@ -168,7 +171,7 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
               <mesh key={i} material={M.grey} position={[0, 0, BACK - 0.004]} rotation={[0, 0, i * 2.1 + 0.3]}><torusGeometry args={[0.37, 0.014, 8, 24, 1.7]} /></mesh>
             ))}
             <group ref={lever}>
-              <mesh geometry={tamperCap} material={M.white} position={[0, 0, BACK]} />
+              <mesh geometry={tamperCap} material={M.white} position={[0, 0, BACK]} scale={[1, 1, 0.6]} />
             </group>
           </group>
         </ClickablePart>
@@ -182,7 +185,7 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
         </ClickablePart>
         <ClickablePart id="bateria">
           <group ref={batt}>
-            <group position={[-0.03, 0.45, BACK - 0.02]} rotation={[0, 0, Math.PI / 2]}>
+            <group position={[-0.03, 0.45, BACK + 0.07]} rotation={[0, 0, Math.PI / 2]}>
               <mesh material={M.black}><cylinderGeometry args={[0.15, 0.15, 0.86, 28]} /></mesh>
               <mesh material={M.orange} position={[0, 0.04, 0]}><cylinderGeometry args={[0.152, 0.152, 0.5, 28, 1, true, 2.2, 1.1]} /></mesh>
             </group>
@@ -213,7 +216,7 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
 
       {/* suporte de parede: prato com furo grande, canal vertical, recortes e travas do encaixe */}
       <ClickablePart id="suporte">
-        <group position={[0, 0, SUP_DZ]}>
+        <group position={[0, 0, SUP_DZ]} scale={[1, 1, SUP_S]}>
           <mesh geometry={rim} material={whiteDS} castShadow />
           <mesh geometry={floor} material={whiteDS} position={[0, 0, -0.63]} />
           <mesh material={M.whiteRelief} position={[-0.42, -0.02, -0.54]}><boxGeometry args={[0.22, 0.95, 0.14]} /></mesh>
