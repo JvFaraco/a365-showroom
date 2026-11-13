@@ -489,12 +489,13 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
                 </group>
               </group>
             </ClickablePart>
-            {/* 3 pilhas AA na vertical, lado a lado, com a polaridade alternada (sem marca) */}
+            {/* 3 pilhas AA na vertical, lado a lado, com a polaridade alternada: corpo preto e faixa dourada no lado do +, sem marca nem texto */}
             <ClickablePart id="pilhas">
               {CELL_X.map((x, i) => (
                 <group key={x} ref={(gr) => { cellRefs.current[i] = gr }}>
                   <group position={[x, CELL.y, -CELL.s]} rotation={[0, 0, i % 2 ? Math.PI : 0]}>
-                    <mesh geometry={g.cell} material={M.cell} />
+                    <mesh geometry={g.cell} material={M.black} />
+                    <mesh material={M.gold} position={[0, CELL.len * 0.32, 0]}><cylinderGeometry args={[CELL.r + 0.0012, CELL.r + 0.0012, CELL.len * 0.36, 32, 1, true]} /></mesh>
                     <mesh material={M.metal} position={[0, CELL.len / 2 + 0.012, 0]}><cylinderGeometry args={[0.03, 0.03, 0.024, 16]} /></mesh>
                     <mesh material={M.metal} position={[0, CELL.len / 2 - 0.003, 0]}><cylinderGeometry args={[CELL.r - 0.012, CELL.r - 0.004, 0.006, 24]} /></mesh>
                     <mesh material={M.metal} position={[0, -CELL.len / 2 + 0.003, 0]}><cylinderGeometry args={[CELL.r - 0.004, CELL.r - 0.012, 0.006, 24]} /></mesh>
