@@ -7,7 +7,7 @@ import { ClickablePart } from '../parts/ClickablePart'
 import { M, fxBasic } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
-import { smoothLatheY, stadiumGeometry, stadiumRingGeometry, wire } from '../common/shapes'
+import { roundedRectGeometry, smoothLatheY, stadiumGeometry, wire } from '../common/shapes'
 import { DeviceCtx, bump, seg, useActionPhase, type DeviceProps } from '../common/util'
 import { LED_BY_ID, ledSample } from '../../data/ledStates'
 import { actionTau, actionTime, useShowroom } from '../../store/showroomStore'
@@ -188,9 +188,8 @@ function build() {
     base: baseGeometry(),
     slit: new THREE.BoxGeometry(0.016, 0.004, 0.075), // fenda de ventilação
     foot: new THREE.CylinderGeometry(0.07, 0.075, 0.02, 20),
-    capsuleRim: stadiumRingGeometry(0.33, 0.145, 0.014, 0.012, 0.003),
-    capsule: stadiumGeometry(0.3, 0.116, 0.014, 0.006),
-    halo: stadiumRingGeometry(0.296, 0.112, 0.012, 0.003, 0),
+    capsuleRim: roundedRectGeometry(0.345, 0.168, 0.066, 0.012, 0.004), // aro prateado fino em volta da tecla
+    capsule: roundedRectGeometry(0.318, 0.141, 0.052, 0.014, 0.005), // tecla branca do botão (~29 × 14 mm com o aro)
     paddle: stadiumGeometry(0.17, 1.2, 0.05, 0.014),
     pcb: pcbGeometry(),
     cone: smoothLatheY([[0.185, 0.04], [0.175, 0.046], [0.155, 0.036], [0.11, 0.02], [0.06, 0.012], [0.03, 0.03]], 48, 24),
@@ -231,7 +230,6 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
   const antenna = useRef<THREE.Group>(null!)
   const pressA = useRef<THREE.Group>(null!)
   const pressB = useRef<THREE.Group>(null!)
-  const cap = useRef<THREE.Mesh>(null!)
   const plug = useRef<THREE.Group>(null!)
   const cables = useRef<THREE.Group>(null!)
   const netRef = useRef<THREE.Group>(null!)
@@ -240,10 +238,10 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
   const holes = useRef<THREE.InstancedMesh>(null!)
   const shieldHoles = useRef<THREE.InstancedMesh>(null!)
   const inited = useRef(false)
-  // o disco do topo é fosco; a lateral tem o brilho do plástico. Mesmo material (clones), só muda o acabamento
-  const topMat = useMemo(() => { const m = M.white.clone(); m.side = THREE.DoubleSide; m.roughness = 0.62; m.clearcoat = 0.06; return m }, [])
   const cableMat = useMemo(() => fxBasic('#2a2d35'), [])
   const apronMat = useMemo(() => { const m = M.white.clone(); m.side = THREE.DoubleSide; return m }, [])
+  // o disco do topo é fosco; a lateral tem o brilho do plástico. Mesmo material (clones), só muda o acabamento
+  const topMat = useMemo(() => { const m = M.white.clone(); m.side = THREE.DoubleSide; m.roughness = 0.62; m.clearcoat = 0.06; return m }, [])
   const viasPhase = useActionPhase('antena', [4, 7.5, 10])
   const audioPhase = useActionPhase('audio', [1.2])
   const batPhase = useActionPhase('bateria-modulo', [2.2])
@@ -295,8 +293,6 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
     // a cápsula inteira afunda ~1 mm enquanto o 190 é segurado
     const down = s.holding && s.action?.id === 'sos190' ? -0.012 : 0
     pressA.current.position.y = pressB.current.position.y = down
-    // a cápsula de transmissão não entra no esmaecer das partes: some quando outra parte está em foco
-    if (cap.current) cap.current.visible = !s.part || s.part === 'led' || s.part === 'botao-sos' || !!s.action
     // tomada sai ("sem energia")
     const tb = actionTime('bateria-modulo')
     plug.current.visible = tb >= 0
@@ -329,7 +325,6 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
     }
     ledSample(LED_BY_ID[id], t, out)
   }
-  const sampleHalo = (t: number, out: { color: string; on: number }) => { sampleLed(t, out); out.on *= 0.35 }
 
   return (
     <DeviceCtx.Provider value={{ deviceId: 'modulo', interactive }}>
@@ -354,14 +349,15 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
             </group>
           </ClickablePart>
 
-          {/* cápsula do LED/190: aro fino, guia de luz e o ponto do LED no centro */}
+          {/* botão do 190: tecla branca rente à tampa, com aro prateado fino; o LED é o ponto no centro dela */}
           <ClickablePart id="botao-sos">
             <group position={[0, YC, 0]} rotation={[TILT, 0, 0]}>
               <group position={[0, -0.008, CAPSULE_Z]}>
-                <mesh geometry={g.capsuleRim} material={M.chrome} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.006, 0]} />
+                <mesh geometry={g.capsuleRim} material={M.chrome} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]} />
                 <group ref={pressA} {...hold}>
-                  {/* cristal do LED: plástico translúcido que já existia (M.crystal); a luz aparece por trás. Sem transmission */}
-                  <mesh ref={cap} geometry={g.capsule} material={M.crystal} rotation={[-Math.PI / 2, 0, 0]} userData={interactive ? { fx: true } : undefined} />
+                  <mesh geometry={g.capsule} material={M.white} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]} />
+                  {/* guia de luz: pino de cristal que leva a luz do LED da placa até o ponto no centro da tecla */}
+                  <mesh material={M.crystal} position={[0, -0.215, 0]}><cylinderGeometry args={[0.03, 0.03, 0.4, 14]} /></mesh>
                 </group>
                 {interactive && <HoldRing radius={0.26} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} />}
               </group>
@@ -371,9 +367,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
             <group position={[0, YC, 0]} rotation={[TILT, 0, 0]}>
               <group position={[0, -0.008, CAPSULE_Z]}>
                 <group ref={pressB} {...hold}>
-                  {/* ponto forte no centro + halo suave pelo contorno: a cápsula inteira guia a luz */}
-                  <Led sample={sampleLed} boost={5} baseColor="#20242c" position={[0, 0.0215, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.024, 20]} /></Led>
-                  <Led sample={sampleHalo} boost={2.2} baseColor="#dfe5ef" geometry={g.halo} position={[0, 0.004, 0]} rotation={[-Math.PI / 2, 0, 0]} />
+                  {/* LED: ponto pequeno e forte no centro da tecla (escuro quando apagado) */}
+                  <Led sample={sampleLed} boost={9} baseColor="#14161b" position={[0, 0.0152, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.028, 24]} /></Led>
                 </group>
               </group>
             </group>
