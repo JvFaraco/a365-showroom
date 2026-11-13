@@ -133,9 +133,9 @@ const Y_BOT = BOTTOM
 // borda de trás, por onde saem os cabos; a antena sai ao lado dele, à direita (−X); o furo pequeno fica à esquerda (+X).
 const POCKET = { x0: -0.2, x1: 0.3, z1: -0.22, d: 0.3 } // bolsão fundo dos cabos, no meio: começa em z1 e vai até a borda de trás, aberto
 const PLATE = { x0: POCKET.x0 + 0.03, x1: POCKET.x1 - 0.03, z0: -0.78, z1: POCKET.z1 + 0.02 } // moldura da grade de som, na face funda
-const LABEL = { x0: -0.46, x1: 0.44, z0: 0.02, z1: 0.36 } // rebaixo raso da etiqueta (fica vazio): largo, logo à frente do bolsão
+const LABEL = { x0: -0.365, x1: 0.375, z0: 0.075, z1: 0.425 } // rebaixo raso da etiqueta (fica vazio): ~59 × 28 mm, à frente do bolsão
 const RJ = { x: 0.0, y: Y_BOT + 0.145 } // RJ45 deitado, na PAREDE DA FRENTE do bolsão, com a boca virada para dentro dele
-const GRILLE = { x: (POCKET.x0 + POCKET.x1) / 2, z: -0.565, pitch: 0.054 } // grade de som: hexágono de furos na face funda do bolsão
+const GRILLE = { x: (POCKET.x0 + POCKET.x1) / 2, z: -0.47, pitch: 0.054 } // grade de som: hexágono de furos na face funda do bolsão
 /** Onde a base tem nervuras: só nos dois lados, sob os arcos laterais da tampa (de ~15° a ~105° da frente). */
 const ribZone = (t: number) => {
   const a = Math.abs(Math.atan2(Math.sin(t), Math.cos(t)))
@@ -157,7 +157,7 @@ const baseR = (t: number, y: number) => {
   const h = (y - BOTTOM) * 48, w = Math.pow(1 - Math.min(...lidFeet(t)), 1.5)
   return (lerpTable(BASE_ARCH, h) + w * (lerpTable(BASE_FOOT, h) - lerpTable(BASE_ARCH, h))) / 80
 }
-const FEET: [number, number][] = [[0, 0.64], [0.56, -0.32], [-0.56, -0.32]] // pés: um atrás da ponta da frente e dois perto dos cantos de trás
+const FEET: [number, number][] = [[0, 0.675], [0.65, -0.45], [-0.65, -0.45]] // pés: um atrás do apoio da frente e dois sob os apoios de trás
 const ANT_X = -0.35 // a antena não fica no centro: sai num ressalto ao lado do bolsão, sob o arco de trás da tampa
 /** Altura depois do achatamento do corpo (para o que fica fora do grupo achatado). */
 const sq = (y: number) => BOTTOM + (y - BOTTOM) * SQUASH

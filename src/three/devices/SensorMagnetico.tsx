@@ -18,11 +18,12 @@ import { MiniModulo } from '../fx/MiniModulo'
 // comprimento. O corpo vai na folha (embaixo) e o ímã no batente (em cima), com vão de poucos milímetros.
 // As peças são modeladas "de pé" (comprimento em Y) e deitadas por DEITA dentro de cada parte.
 const DEITA: [number, number, number] = [0, 0, Math.PI / 2]
-// Ficha (1 unidade = 49,5 mm): corpo de 93 de comprimento × 25 de altura da face × 28 de espessura;
-// ímã de 92 × 12 × 15; vão de 7 mm na montagem (o card diz "máximo 1 cm").
+// Medidas externas (1 unidade = 49,5 mm): corpo de 92,6 de comprimento × 24 de altura da face × 27,6 de espessura;
+// ímã de 92,3 × 11 × 15; vão de 7 mm na montagem (o card diz "máximo 1 cm").
 const mm = (v: number) => v / 49.5
-const BODY = { w: mm(25), len: mm(93), d: mm(28), x: -mm(9.5) }
-const MAG = { w: mm(12), len: mm(92), d: mm(15), gap: mm(7) }
+const BODY = { w: mm(24), len: mm(92.6), d: mm(27.6), x: -mm(9.5) }
+const MAG = { w: mm(11), len: mm(92.3), d: mm(15), gap: mm(7) }
+const LED_Y = mm(18) // janela do LED: a 18 mm do meio, do lado da tampinha
 const BZ = 0.04, FRONT = BZ + BODY.d / 2, BACK = BZ - BODY.d / 2 // centro, frente e costas do corpo em Z
 const SPLIT = BACK + BODY.d * 0.42 // emenda entre a base (atrás) e a tampa (na frente)
 const MAG_X = BODY.x + BODY.w / 2 + MAG.gap + MAG.w / 2
@@ -32,7 +33,7 @@ export const HINGE_X = 1.85 // o sensor fica no canto de cima da folha, do lado 
 const MINI: [number, number, number] = [-2.3, 1.35, 0.6]
 // Por dentro (pela foto da placa). Ao longo do comprimento (Y): a tampinha e o borne ficam na ponta do LED (+Y); a
 // antena em mola sai da outra ponta da placa (−Y) e ocupa o resto do corpo.
-const CAP_Y = BODY.len * 0.36 // emenda da tampinha da ponta (a ~14% do comprimento)
+const CAP_Y = BODY.len / 2 - mm(12.8) // emenda da tampinha da ponta (a ~13 mm dela)
 const PCB = { len: mm(74), w: mm(19), y: BODY.len / 2 - mm(3) - mm(74) / 2, z: -0.1 }
 const PCB_END = PCB.y - PCB.len / 2 // borda da placa do lado da antena
 const CELL = { r: mm(5.2), len: mm(43), y: PCB.y - mm(1) } // pilha cilíndrica, deitada sobre a placa, entre as duas presilhas
@@ -49,7 +50,7 @@ const alarmOn = () => doorOpen() > 0.08 || knockFired()
  */
 export function SensorMagnetico({ interactive = false, open }: DeviceProps & { open?: () => number }) {
   const door = useRef<THREE.Group>(null!)
-  const slit = useMemo(() => stadiumGeometry(mm(6.5), mm(3.2), 0.01, 0.003), [])
+  const slit = useMemo(() => stadiumGeometry(mm(8), mm(3.9), 0.01, 0.003), [])
   // emenda da tampinha: um aro fino com o mesmo perfil arredondado da tampa
   const capSeam = useMemo(() => roundedRectGeometry(BODY.w + 0.004, FRONT - SPLIT + 0.1 + 0.004, 0.047, 0.01, 0), [])
   const doorMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#6b5a4a', roughness: 0.8 }), [])
@@ -100,21 +101,21 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
             <ClickablePart id="corpo">
               <group rotation={DEITA}>
                 <RoundedBox args={[BODY.w, BODY.len, FRONT - SPLIT + 0.1]} radius={0.045} smoothness={5} position={[BODY.x, 0, (FRONT + SPLIT - 0.1) / 2]} material={M.white} castShadow />
-                {/* logo em relevo, pequeno, um pouco antes do meio */}
-                <LogoGroove r={0.1} position={[BODY.x, -BODY.len * 0.03, FRONT + 0.0005]} />
+                {/* logo em relevo, no meio do comprimento */}
+                <LogoGroove r={0.12} position={[BODY.x, 0, FRONT + 0.0005]} />
                 {/* emenda da tampinha da ponta: dá a volta na frente e nos dois lados */}
                 <mesh geometry={capSeam} material={M.partition} position={[BODY.x, CAP_Y, (FRONT + SPLIT - 0.1) / 2]} rotation={[Math.PI / 2, 0, 0]} />
               </group>
             </ClickablePart>
-            {/* janela do LED: pequena (~6 × 3 mm), atravessada na face, entre o logo e a tampinha da ponta */}
+            {/* janela do LED: pequena (~8 × 4 mm), atravessada na face, entre o logo e a tampinha da ponta */}
             <ClickablePart id="led">
               <group rotation={DEITA}>
-                <mesh geometry={slit} material={M.blackGloss} position={[BODY.x, BODY.len / 6, FRONT - 0.007]} />
+                <mesh geometry={slit} material={M.blackGloss} position={[BODY.x, LED_Y, FRONT - 0.007]} />
                 <Led sample={(t, o) => {
                   const on = interactive ? alarmOn() : (open?.() ?? 0) > 0.08
                   o.color = on ? '#ff2a2a' : '#3d7bff'; o.on = on ? (t % 0.4 < 0.2 ? 1 : 0.05) : 0.12
-                }} position={[BODY.x, BODY.len / 6, FRONT + 0.006]}>
-                  <boxGeometry args={[0.09, 0.035, 0.004]} />
+                }} position={[BODY.x, LED_Y, FRONT + 0.006]}>
+                  <boxGeometry args={[0.115, 0.045, 0.004]} />
                 </Led>
               </group>
             </ClickablePart>
@@ -185,7 +186,7 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
           {sceneOn && (
             <>
               <MiniModulo position={MINI} led={() => (alarmOn() ? 'disparo' : 'armado')} />
-              <RadioPulse from={[-BODY.len / 6, BODY.x, FRONT + 0.03]} to={MINI} on={alarmOn} />
+              <RadioPulse from={[-LED_Y, BODY.x, FRONT + 0.03]} to={MINI} on={alarmOn} />
               <SoundWaves position={[1.0, -1.4, -0.1]} color="#ffb020" count={3} maxRadius={1.0} speed={1.4}
                 level={() => { const t = knockT(); return t >= 0 && t < 1.1 ? 2 : 0 }} />
             </>

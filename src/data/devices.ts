@@ -572,7 +572,7 @@ export const DEVICES: Device[] = [
       {
         id: 'tampa',
         name: 'Tampa traseira',
-        what: 'Tampa redonda, quase rente à face de trás. Abre por alavanca, pelo entalhe no topo.',
+        what: 'Tampa redonda com um lado reto, quase rente à face de trás. Abre por alavanca, pelo entalhe da borda.',
         facts: [],
         camera: { position: [0.9, 0.5, -2.5], target: [0, 0.1, -0.18] },
         action: 'tampa-controle',

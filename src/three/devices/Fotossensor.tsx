@@ -15,52 +15,75 @@ import { DetectionFan, LowPolyDog, LowPolyPerson } from '../fx/DetectionFan'
 import { CameraFlash } from '../fx/CameraFlash'
 import { REF_ON } from '../../dev/RefMode'
 
-// ---------- medidas (frente em +Z). Corpo de 68 mm de largura e 137 de altura; a planta fecha um círculo: é tão
-// funda quanto larga (68 mm). Com a base cinza (7 mm), 144 de altura. 1 unidade = 79 mm (a meia largura é 0,43). ----------
+// ---------- medidas externas (frente em +Z). Corpo cilíndrico de 68 mm de diâmetro e 137 de altura: a planta é um
+// círculo. Com a base cinza (7 mm), 144 de altura. 1 unidade = 79 mm (o raio é 0,43). ----------
 const mm = (v: number) => v / 79.07
 const HW = 0.43, HD = HW // meia largura e meia profundidade: iguais
-// planta: a frente é um meio-cilindro de raio 34 mm (a largura inteira); a traseira fecha a volta com cantos
-// largos (~22 mm) e só um trecho quase reto no meio, onde fica a tampa das pilhas
-const RC = HW, RB = mm(22)
-const Y_TOP = 0.8, TOP_R = mm(10) // o topo desce para a traseira e as laterais em curva (~10 mm)
+// planta: círculo de raio 34 mm; a tampa das pilhas acompanha a curva de trás
+const RC = HW, RB = HW
+const Y_TOP = 0.8, TOP_R = mm(4) // topo plano, de borda arredondada curta (~4 mm)
 const Y0 = Y_TOP - mm(144) // fundo do aparelho (a altura h da ficha é medida a partir daqui)
 const H = (h: number) => Y0 + mm(h)
+const SEAM_Y = H(137) // sulco fino em volta do corpo, perto do topo
 const Y_BASE = H(7) // acima disto é corpo branco; abaixo, a base cinza
 // compartimento das pilhas, na traseira: tampa de ~54 × 76 mm, de h ≈ 64 a 140
 // a tampa (~54 mm) encaixa DENTRO de um aro do próprio corpo: sobra corpo branco dos lados e em cima
 const BAY = { y0: H(64), y1: 0.645, hw: mm(24.5), floor: HD - 0.27 }
 // pilha AA (50,5 × 14,5 mm): cilindro de ponta reta com o polo + saliente
+const COVER_TOP = H(136.5) // a tampa das pilhas sobe até o sulco fino que dá a volta no corpo, perto do topo
 const CELL = { r: mm(7.25), len: mm(50.5), y: (H(64) + 0.645) / 2, s: HD - 0.16 }
 const CELL_X = [-0.193, 0, 0.193]
-// ---------- Frente (pelas fotos na mão e de estúdio e pelo vídeo de fábrica da casca da frente) ----------
-// Lente PIR: painel fosco grande (~53 × 42 mm, ~79% da largura), curvo como o corpo e ~3 mm para dentro dele. Em
-// volta, a moldura: prateleira inclinada em cima, chanfros finos dos lados e, embaixo, o queixo, que volta em
-// rampa até a borda de baixo (é onde fica o logo). O funil que leva até o sensor fica POR DENTRO, atrás da lente.
-const LENS = { hw: mm(26.8), y0: H(31), y1: H(73), depth: mm(3), ledge: mm(6), bevel: mm(3), gap: mm(0.8), chin: H(12) }
-// Câmera e LED: ficam num REBAIXO (uma curva para dentro do corpo), não numa peça saliente. O bolso tem forma de
-// pera alongada (um pouco mais largo embaixo), paredes arredondadas e o fundo inclinado: raso em cima e mais
-// fundo embaixo, de modo que a lente olha um pouco para baixo. A parede de baixo termina na prateleira da lente PIR.
-const CAM = { y0: H(80), y1: H(130), rB: mm(15), rT: mm(11.5), d0: mm(2), d1: mm(10), wall: mm(4.5) }
-/** Profundidade do fundo do bolso na altura y. */
-const camFloor = (y: number) => CAM.d0 + (CAM.d1 - CAM.d0) * Math.min(1, Math.max(0, (CAM.y1 - y) / (CAM.y1 - CAM.y0)))
-const CAM_TILT = Math.atan((CAM.d1 - CAM.d0) / (CAM.y1 - CAM.y0)) // inclinação do fundo (a normal aponta para a frente e para baixo)
-/** Distância para dentro do contorno do bolso (positiva dentro): cápsula de raios diferentes em cima e embaixo. */
-function camInside(x: number, y: number) {
-  const px = Math.abs(x), py = y - (CAM.y0 + CAM.rB), h = CAM.y1 - CAM.rT - (CAM.y0 + CAM.rB)
-  const b = (CAM.rB - CAM.rT) / h, a = Math.sqrt(1 - b * b), k = -px * b + py * a
+// ---------- Frente (medidas externas, conferidas com as fotos na mão e de estúdio) ----------
+// Lente PIR: painel fosco grande (~50 × 43 mm), curvo como o corpo e ~9 mm para dentro dele. Em volta, a moldura:
+// prateleira inclinada em cima, chanfros dos lados e, embaixo, o queixo, que volta em rampa até a borda de baixo
+// (é onde fica o logo). O funil que leva até o sensor fica POR DENTRO, atrás da lente.
+const LENS = { hw: mm(25), y0: H(27.7), y1: H(70.7), depth: mm(9), ledge: mm(6.5), bevel: mm(4), gap: mm(0.8), chin: H(11.5) }
+// Câmera e LED ficam num capuz: um ressalto em forma de pera que nasce rente ao corpo no alto (h ≈ 131), sai até
+// ~10 mm para fora logo acima da câmera (a "sobrancelha") e, daí para baixo, vira a borda de um bolso escavado. O fundo
+// do bolso é inclinado: quase rente ao corpo na altura da câmera e ~15 mm para dentro embaixo, de modo que a janela
+// do LED olha um pouco para baixo. O bolso é mais largo embaixo e termina na prateleira da lente PIR.
+// Tudo em mm: dx a partir do eixo do aparelho, h a partir do fundo; o resultado é quanto a frente sai (+) ou entra (−).
+const CAM = { y0: 71, y1: 119.5, rB: 13.5, rT: 12.3 } // contorno do bolso: cápsula de raios diferentes em cima e embaixo
+/** Distância (mm) para dentro do contorno do bolso; positiva dentro. */
+function camInside(dx: number, h: number) {
+  const px = Math.abs(dx), py = h - (CAM.y0 + CAM.rB), len = CAM.y1 - CAM.rT - (CAM.y0 + CAM.rB)
+  const b = (CAM.rB - CAM.rT) / len, a = Math.sqrt(1 - b * b), k = -px * b + py * a
   if (k < 0) return CAM.rB - Math.hypot(px, py)
-  if (k > a * h) return CAM.rT - Math.hypot(px, py - h)
+  if (k > a * len) return CAM.rT - Math.hypot(px, py - len)
   return CAM.rB - (px * a + py * b)
 }
-const LENS_Y = H(116.5), LEDWIN_Y = H(99) // lente no alto do bolso; janela do LED no meio
-const camAt = (y: number): [number, number, number] => [0, y, HD - camFloor(y)]
+const POCKET_SLOPE = 0.575 // inclinação do fundo do bolso (mm de profundidade por mm de altura)
+/** Fundo do bolso na altura h: raso junto à câmera, desce em rampa até ~15 mm e volta em curva na ponta de baixo. */
+function pocketFloor(h: number) {
+  if (h >= 101.2) return -3.2 + Math.min(1, (h - 101.2) / 3) * 1.9
+  if (h >= 81) return Math.max(-14.8, -3.2 - POCKET_SLOPE * (101.2 - h))
+  return -14.8 + Math.pow((81 - h) / 9.8, 2) * 5.7
+}
+/** Ressalto do capuz (sem o bolso): o menor entre a sobrancelha, que desce do alto, e a borda inclinada do bolso. */
+function hoodBoss(dx: number, h: number) {
+  const brow = 0.83 * (130.8 - h) - (0.021 + 0.0015 * (128.2 - h)) * dx * dx
+  const rim = 0.58 * (h - 96.9) * smooth(0, 4, 16.2 - Math.abs(dx))
+  const k = 1.2, m = Math.min(brow, rim)
+  return Math.max(0, m - k * Math.log(Math.exp(-(brow - m) / k) + Math.exp(-(rim - m) / k))) // mínimo suave: sem vinco
+}
+/** Quanto a frente sai (+) ou entra (−) do cilindro no capuz e no bolso da câmera, em mm. */
+function hoodOffset(dx: number, h: number) {
+  if (h < CAM.y0 || h > 131 || Math.abs(dx) > 17) return 0
+  const boss = hoodBoss(dx, h), d = camInside(dx, h)
+  const wall = 6.5 + 2.5 * smooth(100, 110, h) // largura da parede do bolso: mais aberta em cima, sob a sobrancelha
+  return d <= 0 ? boss : boss + (pocketFloor(h) - boss) * Math.pow(smooth(0, wall, d), 0.8)
+}
+const hOf = (y: number) => (y - Y0) * 79.07 // altura em mm a partir do fundo
+const CAM_H = 109.3, LEDWIN_H = 92.2 // centro da lente (no alto do bolso, sob a sobrancelha) e da janela do LED (na rampa)
+const LENS_Y = H(CAM_H), LEDWIN_Y = H(LEDWIN_H)
+const camAt = (h: number): [number, number, number] => [0, H(h), HD + mm(hoodOffset(0, h))]
+const CAM_TILT = Math.atan(POCKET_SLOPE) // a rampa do bolso (a normal aponta para a frente e para baixo)
 const CAM_ROT: [number, number, number] = [CAM_TILT, 0, 0]
-// Capuz: rebaixo raso e suave em volta do bolso, com o alto em arco (mais largo que o bolso).
-const HOOD = { top: H(133.5), hw: mm(18.6), deep: mm(2.6), shallow: mm(0.8) }
-const LOGO_Y = H(19), LOGO_R = mm(5.6)
-// placa de fixação na parede (cinza): ~31 × 67 mm, de h = 0 a 68, ~11 mm de espessura
-const WALL = { hw: mm(15.5), top: H(67), plate: 0.045, rail: 0.085 }
-const HINGE: [number, number, number] = [0, Y0, -(HD + 0.08)] // eixo horizontal no pé da placa: é ali que o sensor inclina
+const LOGO_Y = H(21.5), LOGO_R = mm(5.6)
+// suporte de parede (cinza): ~31 × 67 mm, de h = 0 a 68; com os trilhos, afasta o corpo ~16 mm da parede
+const WALL = { hw: mm(15.5), top: H(67), plate: mm(6.5), rail: mm(10) }
+const HINGE: [number, number, number] = [0, Y0, -(HD + 0.1)] // eixo horizontal no pé da placa: é ali que o sensor inclina
+const PCB_DZ = -0.16 // a placa principal fica atrás do eixo do aparelho, encostada no berço das pilhas; o funil vem até a lente
 const UP = 0.22 // na vista explodida tudo sobe um pouco e a base cinza fica embaixo (é como ela "desce" sem entrar no pedestal)
 const FAN_Y = Y0 - 0.01 // altura do chão da cena do PIR
 const personX = (t: number) => -3.4 + seg(t, 2.5, 6.5) * 6.8
@@ -103,24 +126,17 @@ function lensRecess(x: number, y: number) {
 }
 
 /**
- * Frente escavada: devolve o z do ponto (x, y) depois dos rebaixos, que acompanham a curva do corpo: o capuz
- * (concha rasa em arco), o bolso da câmera e do LED dentro dele e a moldura rasa onde assenta a lente PIR.
+ * Frente esculpida: devolve o z do ponto (x, y) depois do capuz da câmera (que sai do corpo no alto e vira o bolso
+ * escavado embaixo) e da moldura onde assenta a lente PIR.
  */
 function frontCut(x: number, y: number, z: number) {
-  const ax = Math.abs(x)
-  const yArc = HOOD.top - HOOD.hw, yLedge = LENS.y1 + LENS.ledge
-  // abaixo do arco os lados descem retos e, perto da prateleira, abrem até a largura dela
-  const hw = HOOD.hw + (LENS.hw + LENS.bevel - HOOD.hw) * smooth(yLedge + mm(14), yLedge, y)
-  const side = y >= yArc ? HOOD.hw - Math.hypot(ax, y - yArc) : hw - ax
-  const deep = HOOD.shallow + (HOOD.deep - HOOD.shallow) * smooth(H(98), H(120), y)
-  const hood = y > LENS.y1 + mm(2) ? smooth(0, mm(5), side) * deep : 0
-  const cam = smooth(0, CAM.wall, camInside(x, y)) * camFloor(y)
-  return z - Math.max(hood, cam, lensRecess(x, y))
+  const off = mm(hoodOffset(x * 79.07, hOf(y)))
+  return off > 0 ? z + off : z - Math.max(-off, lensRecess(x, y))
 }
 
 /**
  * Casca do corpo: superfície paramétrica (volta do contorno × altura), com a borda do topo arredondada,
- * o lábio da base, o capuz e o rebaixo da frente escavados (com fundo e paredes de verdade) e o
+ * o lábio da base, o capuz da câmera e o rebaixo da lente esculpidos na frente e o
  * compartimento das pilhas aberto atrás. Sai em duas metades (frente e corpo traseiro), que se separam
  * na vista explodida.
  */
@@ -139,7 +155,7 @@ function shellGeometry() {
   for (let i = 0; i <= A; i++) col((i / A) * (Math.PI / 2), 1, false)
   for (let i = 0; i <= A; i++) col(Math.PI / 2 + (i / A) * (Math.PI / 2), -1, false)
   frontSide = false
-  // traseira: o compartimento das pilhas abre de x = −BAY.hw a +BAY.hw, que cai nos cantos arredondados
+  // traseira: o compartimento das pilhas abre de x = −BAY.hw a +BAY.hw, na curva de trás
   // (em φ = π + phiBay e 2π − phiBay); as paredes nascem das amostras duplicadas ali
   const phiBay = Math.acos((BAY.hw - bx) / RB)
   const nL = Math.max(2, Math.round((C4 * phiBay) / (Math.PI / 2))), nB = Math.max(2, C4 - nL), span = Math.PI / 2 - phiBay
@@ -158,18 +174,15 @@ function shellGeometry() {
   const yA = Y_BASE + 0.055, yB = Y_TOP - TOP_R, N = 132
   for (let i = 0; i <= N; i++) {
     const y = yA + ((yB - yA) * i) / N, next = yA + ((yB - yA) * (i + 1)) / N
+    // sulco fino que dá a volta no corpo ~7 mm abaixo do topo (a emenda da tampa de cima)
+    if (Math.abs(y - SEAM_Y) <= (yB - yA) / N / 2) { rows.push({ y: y - 0.004, inset: 0, bay: false }, { y, inset: 0.007, bay: false }, { y: y + 0.004, inset: 0, bay: false }); continue }
     rows.push({ y, inset: 0, bay: y > BAY.y0 && y < BAY.y1 })
     // paredes de baixo e de cima do compartimento: a mesma altura duas vezes (fora e dentro)
     if (y < BAY.y0 && next >= BAY.y0) rows.push({ y: BAY.y0, inset: 0, bay: false }, { y: BAY.y0, inset: 0, bay: true })
     if (y < BAY.y1 && next >= BAY.y1) rows.push({ y: BAY.y1, inset: 0, bay: true }, { y: BAY.y1, inset: 0, bay: false })
   }
-  // borda arredondada do topo, com o sulco fino da tampa de cima (a linha que dá a volta ~6 mm abaixo do topo)
-  const aSeam = Math.asin(0.4), top = (a: number, groove = 0) => rows.push({ y: yB + TOP_R * Math.sin(a), inset: TOP_R * (1 - Math.cos(a)) + groove, bay: false })
-  for (let k = 1; k <= 8; k++) {
-    const a = (k / 8) * (Math.PI / 2), prev = ((k - 1) / 8) * (Math.PI / 2)
-    if (prev < aSeam && a >= aSeam) { top(aSeam - 0.045); top(aSeam, 0.007); top(aSeam + 0.045) }
-    if (Math.abs(a - aSeam) > 0.06) top(a)
-  }
+  // borda arredondada do topo
+  for (let k = 1; k <= 7; k++) { const a = (k / 7) * (Math.PI / 2); rows.push({ y: yB + TOP_R * Math.sin(a), inset: TOP_R * (1 - Math.cos(a)), bay: false }) }
   rows.push({ y: Y_TOP, inset: TOP_R, bay: false, fan: 0.5 }, { y: Y_TOP, inset: TOP_R, bay: false, fan: 1 })
 
   const C = cols.length, R = rows.length
@@ -219,28 +232,28 @@ type Geo = ReturnType<typeof build>
 let cache: Geo | null = null
 function build() {
   const flat = { bevelEnabled: false, curveSegments: 24 }
-  // faixa cinza da base: recuada, com o fundo arredondado
-  const base = upright(new THREE.ExtrudeGeometry(outline(0.055), { depth: Y_BASE - Y0 - 0.04, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.025, bevelSegments: 5, curveSegments: 24 }), Y0 + 0.025)
+  // base cinza: quase rente ao corpo em cima e ~4 mm mais estreita embaixo, com o canto de baixo arredondado
+  const base = new THREE.LatheGeometry([[0, 0], [27.5, 0], [29.3, 0.4], [30.2, 1.2], [31.5, 3], [32.6, 5], [33.3, 6.6], [33.3, 7.4]].map(([r, h]) => new THREE.Vector2(mm(r), Y0 + mm(h))), 64)
   const baseSeam = upright(new THREE.ExtrudeGeometry(outline(0.034), { depth: 0.01, ...flat }), Y_BASE - 0.01)
 
   // funil por dentro, atrás da lente PIR: tronco de pirâmide aberto, da boca até o sensor. A frente do corpo é
   // bem curva (a lente dá a volta), então a boca é mais estreita que a lente e fica atrás dela em toda a largura
-  const fhw = mm(18.5), zMouth = sFront(fhw) - LENS.depth - mm(2), zSensor = 0.11 + mm(6)
+  const fhw = mm(18.5), zMouth = sFront(fhw) - LENS.depth - mm(2), zSensor = PCB_DZ + 0.11 + mm(6)
   const funnel = new THREE.CylinderGeometry(Math.SQRT2, 0.3 * Math.SQRT2, 1, 4, 1, true)
   funnel.rotateY(Math.PI / 4); funnel.rotateX(Math.PI / 2)
   funnel.scale(fhw, mm(19), zMouth - zSensor)
   funnel.translate(0, (LENS.y0 + LENS.y1) / 2, (zMouth + zSensor) / 2)
 
   // traseira: tampa curva, aba de alavanca no topo, presilhas embaixo e os frisos perto da base (dos dois lados)
-  const coverH = BAY.y1 + 0.02 - (BAY.y0 - 0.012)
-  const cover = upright(backBand(-(BAY.hw + 0.012), BAY.hw + 0.012, coverH, -0.001, 0.028), BAY.y0 - 0.012)
+  const coverH = COVER_TOP - (BAY.y0 - 0.012)
+  const cover = upright(backBand(-(BAY.hw + 0.012), BAY.hw + 0.012, coverH, 0.0012, 0.03), BAY.y0 - 0.012)
   // linha de junção em volta da tampa (embaixo e dos lados)
   const coverSeam = mergeGeometries([
     upright(backBand(-(BAY.hw + 0.016), BAY.hw + 0.016, 0.005, 0.0005, 0.01), BAY.y0 - 0.019),
     upright(backBand(-(BAY.hw + 0.016), -(BAY.hw + 0.012), coverH, 0.0005, 0.01), BAY.y0 - 0.012),
     upright(backBand(BAY.hw + 0.012, BAY.hw + 0.016, coverH, 0.0005, 0.01), BAY.y0 - 0.012),
   ])
-  const latch = upright(backBand(-0.085, 0.085, 0.045, 0.012, 0.03), BAY.y1 + 0.02)
+  const latch = upright(backBand(-0.085, 0.085, 0.04, 0.012, 0.03), COVER_TOP)
   const clipL = upright(backBand(-0.25, -0.15, 0.035, 0, 0.022), BAY.y0 - 0.047)
   const clipR = upright(backBand(0.15, 0.25, 0.035, 0, 0.022), BAY.y0 - 0.047)
   // placa de fixação na parede (vista por trás, o lado +x fica à esquerda): dois trilhos cinza em "Λ" aberto,
@@ -257,21 +270,13 @@ function build() {
   pl.moveTo(-w + 0.006, TOP - 0.01); pl.lineTo(-0.025, TOP - 0.01); pl.lineTo(-0.025, TOP - 0.04); pl.lineTo(0.035, TOP - 0.04); pl.lineTo(0.035, TOP - 0.01); pl.lineTo(w - 0.006, TOP - 0.01)
   pl.lineTo(w - 0.006, Y0 + 0.04); pl.lineTo(-w + 0.006, Y0 + 0.04); pl.closePath()
   const plate = new THREE.ExtrudeGeometry(pl, { depth: WALL.plate - 0.008, bevelEnabled: true, bevelSize: 0.004, bevelThickness: 0.004, bevelSegments: 2 })
-  // faixa de frisos verticais finos nas laterais, perto da base
-  const fr: THREE.BufferGeometry[] = [], ribY = H(21), ribH = 0.12
-  // trecho reto de cada lateral (entre o canto de trás e o da frente)
-  for (const sx of [-1, 1]) for (let i = 1; i <= 29; i++) {
-    const b = new THREE.BoxGeometry(0.006, ribH, 0.005)
-    b.translate(sx * (HW + 0.001), ribY, -(HD - RB) + (i / 30) * (HD - RB + HD - RC))
-    fr.push(b)
-  }
-  for (const sx of [-1, 1]) for (let i = 0; i <= 22; i++) {
-    const phi = -0.9 + (i / 22) * 1.15 // de ~52° no canto de trás até ~14° na frente (antes da boca do rebaixo)
-    if (Math.abs(phi) < 0.02) continue
-    const front = phi >= 0, r = (front ? RC : RB) + 0.001
+  // faixa de frisos verticais finos em volta da metade de trás, perto da base (atrás do suporte de parede não há)
+  const fr: THREE.BufferGeometry[] = [], ribY = H(25), ribH = mm(13)
+  for (const sx of [-1, 1]) for (let i = 0; i <= 26; i++) {
+    const phi = -1.08 + (i / 26) * 1.05 // de ~62° para trás até quase o meio da lateral
     const b = new THREE.BoxGeometry(0.005, ribH, 0.006)
     b.rotateY(Math.atan2(sx * Math.cos(phi), Math.sin(phi))) // o lado fino aponta para fora, na normal
-    b.translate(sx * ((front ? HW - RC : HW - RB) + r * Math.cos(phi)), ribY, (front ? HD - RC : -(HD - RB)) + r * Math.sin(phi))
+    b.translate(sx * (RC + 0.001) * Math.cos(phi), ribY, (RC + 0.001) * Math.sin(phi))
     fr.push(b)
   }
   const shell = shellGeometry()
@@ -287,7 +292,7 @@ function build() {
     pirFrame: lensPanel(LENS.hw + mm(0.6), LENS.y0 - mm(0.6), LENS.y1 + mm(0.6), LENS.depth - 0.002),
     pirBack: lensPanel(LENS.hw, LENS.y0, LENS.y1, LENS.depth - 0.004),
     pirLens: lensPanel(LENS.hw, LENS.y0, LENS.y1, LENS.depth - 0.007),
-    win: stadiumGeometry(mm(6.5), mm(14.5), 0.006, 0.003), // janela oval vertical do LED (~6,5 × 14,5 mm)
+    win: stadiumGeometry(mm(8), mm(15.5), 0.006, 0.003), // janela oval vertical do LED (~8 × 15,5 mm)
     cell: new THREE.CylinderGeometry(CELL.r, CELL.r, CELL.len, 32),
     spring: (() => { const pts: THREE.Vector3[] = []; for (let i = 0; i <= 90; i++) { const t = i / 90; pts.push(new THREE.Vector3(Math.cos(t * Math.PI * 12) * 0.035, t * 0.2, Math.sin(t * Math.PI * 12) * 0.035)) } return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 72, 0.007, 4) })(),
   }
@@ -302,9 +307,9 @@ function pirAlert() {
 }
 
 /**
- * Fotossensor: torre arredondada (laterais quase semicirculares) de topo plano com a borda arredondada.
- * Na frente, o capuz em arco e, dentro dele, o bolso escavado da câmera (lente e janela oval do LED); a lente PIR
- * grande e fosca logo abaixo, na sua moldura, e o logo no queixo; faixa cinza recuada na base. Atrás, a tampa curva das pilhas (3 AA) na
+ * Fotossensor: cilindro de topo plano com a borda arredondada. Na frente, o capuz da câmera (um ressalto em pera,
+ * saliente em cima, que vira o bolso escavado da lente e da janela oval do LED); a lente PIR grande e fosca logo
+ * abaixo, recuada na sua moldura, e o logo no queixo; base cinza embaixo. Atrás, a tampa curva das pilhas (3 AA) na
  * metade de cima e, na de baixo, o suporte de parede cinza: dois trilhos em Λ sobre uma placa com um parafuso. Frente em +Z.
  */
 export function Fotossensor({ interactive = false, flash }: DeviceProps & { flash?: () => number }) {
@@ -394,7 +399,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
             <ClickablePart follow="corpo" explode={[0, UP, 1.05]}>
               <mesh geometry={g.shellFront} material={shellMat} castShadow />
               {/* logo no queixo, deitado na rampa */}
-              <LogoGroove r={LOGO_R} position={[0, LOGO_Y, HD - lensRecess(0, LOGO_Y) + 0.004]} rotation={[-0.16, 0, 0]} />
+              <LogoGroove r={LOGO_R} position={[0, LOGO_Y, HD - lensRecess(0, LOGO_Y) + 0.004]} rotation={[-0.5, 0, 0]} />
               {/* por dentro, atrás da lente PIR: o funil que leva até o sensor (aparece no Raio-X e no Explodir) */}
               <mesh geometry={g.funnel} material={shellMat} />
             </ClickablePart>
@@ -421,18 +426,18 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
               ))}
             </ClickablePart>
 
-            {/* a câmera e o LED ficam no fundo do bolso escavado na frente (não há peça saliente) */}
-            {/* lente: círculo preto pequeno (~7 mm) com aro escuro, no alto do bolso */}
+            {/* a câmera e o LED ficam no bolso do capuz: a lente no alto, sob a sobrancelha; o LED na rampa */}
+            {/* lente: círculo preto pequeno (~7 mm) com aro escuro, quase na vertical */}
             <ClickablePart id="camera">
-              <group position={camAt(LENS_Y)} rotation={CAM_ROT}>
-                <mesh material={M.blackGloss} position={[0, 0, 0.001]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(4.6), mm(4.6), 0.012, 32]} /></mesh>
+              <group position={camAt(CAM_H)} rotation={[0.12, 0, 0]}>
+                <mesh material={M.blackGloss} position={[0, 0, 0.001]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(4.3), mm(4.3), 0.012, 32]} /></mesh>
                 <mesh material={M.lens} position={[0, 0, 0.008]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(3.5), mm(3.5), 0.008, 32]} /></mesh>
                 {[0.014, 0.024].map((r) => <mesh key={r} material={M.greyDark} position={[0, 0, 0.0125]}><torusGeometry args={[r, 0.002, 6, 32]} /></mesh>)}
               </group>
             </ClickablePart>
             {/* janela oval vertical do LED, no meio do bolso; o flash acende dentro dela */}
             <ClickablePart id="flash">
-              <group position={camAt(LEDWIN_Y)} rotation={CAM_ROT}>
+              <group position={camAt(LEDWIN_H)} rotation={CAM_ROT}>
                 <mesh geometry={g.win} material={M.hole} position={[0, 0, -0.008]} />
                 <mesh geometry={g.win} material={M.crystal} position={[0, 0, -0.004]} />
                 <Led sample={(_, o) => { const p = flashPower(); o.color = '#fff6c8'; o.on = p * 3 }} baseColor="#123d22" position={[0, mm(3.4), 0.004]}>
@@ -442,7 +447,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
             </ClickablePart>
             {/* LED verde, na parte de baixo da janela */}
             <ClickablePart id="led">
-              <group position={camAt(LEDWIN_Y)} rotation={CAM_ROT}>
+              <group position={camAt(LEDWIN_H)} rotation={CAM_ROT}>
                 <Led sample={(t, o) => {
                   const al = interactive ? alertV.current : 0
                   o.color = al > 0.5 ? '#ff2a2a' : '#27d455'
@@ -464,6 +469,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
                 sem etiquetas nem textos. O corpo traseiro (a calha branca) é a metade de trás da casca. ===== */}
             {/* placa principal: verde, vertical, ~50 × 85 mm, do meio do corpo para baixo; cabo flat à esquerda */}
             <ClickablePart id="placas">
+              <group position={[0, 0, PCB_DZ]}>
               <mesh material={M.pcb} position={[0, H(50), 0.1]}><boxGeometry args={[mm(50), mm(85), 0.02]} /></mesh>
               <mesh material={M.chip} position={[-0.16, H(62), 0.116]}><boxGeometry args={[0.1, 0.1, 0.014]} /></mesh>
               <mesh material={M.chip} position={[0.17, H(22), 0.116]}><boxGeometry args={[0.08, 0.12, 0.014]} /></mesh>
@@ -472,11 +478,12 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
               <mesh geometry={g.smdBlack} material={M.chip} />
               <mesh geometry={g.smdMetal} material={M.metal} />
               <mesh geometry={g.smdGold} material={M.gold} />
+              </group>
             </ClickablePart>
             {/* sensor PIR: cilindro metálico (~9 × 5 mm) com a janelinha escura, no fundo do funil, no meio da lente PIR */}
             <ClickablePart id="sensor-pir">
-              <mesh material={M.metal} position={[0, H(52), 0.11 + mm(2.5)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(4.5), mm(4.5), mm(5), 14]} /></mesh>
-              <mesh material={M.hole} position={[0, H(52), 0.11 + mm(5) + 0.001]}><planeGeometry args={[mm(3.6), mm(3.6)]} /></mesh>
+              <mesh material={M.metal} position={[0, H(49), PCB_DZ + 0.11 + mm(2.5)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(4.5), mm(4.5), mm(5), 14]} /></mesh>
+              <mesh material={M.hole} position={[0, H(49), PCB_DZ + 0.11 + mm(5) + 0.001]}><planeGeometry args={[mm(3.6), mm(3.6)]} /></mesh>
             </ClickablePart>
             {/* módulo da câmera, no terço de cima: plaquinha verde com o LED, suporte branco e o tubo preto da lente
                 (~8 mm), alinhado com a lente no fundo do bolso */}
@@ -507,7 +514,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
                     <mesh geometry={g.latch} material={M.white} />
                     <mesh geometry={g.clipL} material={M.white} />
                     <mesh geometry={g.clipR} material={M.white} />
-                    <mesh material={M.hole} position={[0, BAY.y1 - 0.02, -(HD + 0.0075)]} rotation={[0, Math.PI, 0]}><planeGeometry args={[0.11, 0.016]} /></mesh>
+                    <mesh material={M.hole} position={[0, COVER_TOP - 0.04, -(HD + 0.0075)]} rotation={[0, Math.PI, 0]}><planeGeometry args={[0.11, 0.016]} /></mesh>
                   </group>
                 </group>
               </group>
