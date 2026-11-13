@@ -11,6 +11,7 @@ import { Boot, Showroom, ShowroomDevices } from './three/scenes/Showroom'
 import { UI } from './ui/Overlays'
 import { PresenterMode } from './ui/PresenterMode'
 import { REF_ON, RefCamera, RefOverlay } from './dev/RefMode'
+import { installGlTrace, reportGlTrace } from './dev/glTrace'
 
 const Q = typeof location !== 'undefined' ? location.search : ''
 // ?hq: mantém reflexo e pós-processamento completos mesmo se o FPS cair
@@ -19,6 +20,11 @@ const FORCE_HQ = Q.includes('hq')
 // ?debug=1: programas de shader e triângulos (vale também no build, para medir na máquina da apresentação);
 // o painel do r3f-perf (FPS, draw calls) só entra em desenvolvimento
 const DEBUG = Q.includes('debug')
+// diagnóstico de carga: registra quem usa um programa de shader antes de ele terminar de compilar
+if (DEBUG) {
+  installGlTrace()
+  const un = useShowroom.subscribe((st) => { if (st.ready) { un(); (window as unknown as { __glReport?: unknown }).__glReport = reportGlTrace() } })
+}
 const Perf = DEBUG && import.meta.env.DEV ? lazy(() => import('r3f-perf').then((m) => ({ default: m.Perf }))) : null
 const MAX_DPR = typeof window !== 'undefined' ? Math.min(2, window.devicePixelRatio || 1) : 1
 
