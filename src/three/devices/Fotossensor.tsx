@@ -240,8 +240,11 @@ let cache: Geo | null = null
 function build() {
   const flat = { bevelEnabled: false, curveSegments: 24 }
   // base cinza: quase rente ao corpo em cima e ~4 mm mais estreita embaixo, com o canto de baixo arredondado
-  const base = new THREE.LatheGeometry([[0, 0], [27.5, 0], [29.3, 0.4], [30.2, 1.2], [31.5, 3], [32.6, 5], [33.3, 6.6], [33.3, 7.4]].map(([r, h]) => new THREE.Vector2(mm(r), Y0 + mm(h))), 64)
-  const baseSeam = upright(new THREE.ExtrudeGeometry(outline(0.034), { depth: 0.01, ...flat }), Y_BASE - 0.01)
+  // base fechada em cima, como no CAD: borda e um fundo rebaixado em prato onde o corpo assenta
+  const base = new THREE.LatheGeometry([[0, 0], [27.5, 0], [29.3, 0.4], [30.2, 1.2], [31.5, 3], [32.6, 5], [33.3, 6.6], [33.3, 7.4], [31.8, 7.4], [30.6, 5.6], [29, 4.6], [0, 4.4]].map(([r, h]) => new THREE.Vector2(mm(r), Y0 + mm(h))), 64)
+  // linha cinza entre o corpo e a base: só um aro fino na borda (uma chapa cheia parecia uma segunda base na vista explodida)
+  const seamRing = outline(0.034); seamRing.holes.push(new THREE.Path(outline(0.034 + mm(2)).getPoints(64).reverse()))
+  const baseSeam = upright(new THREE.ExtrudeGeometry(seamRing, { depth: 0.01, ...flat }), Y_BASE - 0.01)
 
   // funil por dentro, atrás da lente PIR: tronco de pirâmide aberto, da boca até o sensor. A frente do corpo é
   // bem curva (a lente dá a volta), então a boca é mais estreita que a lente e fica atrás dela em toda a largura
@@ -432,7 +435,6 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
             {/* corpo traseiro: fica parado; leva os frisos, o parafuso lateral e o berço das pilhas */}
             <ClickablePart follow="corpo" explode={[0, UP, 0]}>
               <mesh geometry={g.shellBack} material={shellMat} castShadow />
-              <mesh geometry={g.baseSeam} material={M.partition} />
               {/* cabeça de um parafuso pequeno na lateral, junto à base */}
               <mesh material={M.metal} position={[-(HW + 0.002), H(12), -0.15]} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[0.022, 0.022, 0.012, 16]} /></mesh>
               <mesh geometry={g.ribs} material={M.white} />
@@ -507,21 +509,28 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
               <mesh material={M.metal} position={[0, H(49), PCB_DZ + 0.11 + mm(2.5)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(4.5), mm(4.5), mm(5), 14]} /></mesh>
               <mesh material={M.hole} position={[0, H(49), PCB_DZ + 0.11 + mm(5) + 0.001]}><planeGeometry args={[mm(3.6), mm(3.6)]} /></mesh>
             </ClickablePart>
-            {/* módulo da câmera, preso na parte de cima da placa principal: suporte branco (moldura com janela), o bloco
-                da câmera no alto com o tubo preto da lente apontando para a lente do capuz, e a plaquinha verde dos LEDs
-                na frente da moldura, inclinada como o fundo do bolso */}
+            {/* módulo da câmera, pelo CAD: um suporte branco preso na frente da placa principal (abas laterais, paredes e
+                uma frente com janela), com a plaquinha da câmera apoiada em dois pinos logo atrás do furo da lente (~14 mm,
+                lente de ~7 mm; só ~8 mm de fundo até o furo) e, na janela de baixo, a plaquinha verde dos LEDs */}
             <ClickablePart id="modulo-camera">
-              <group position={[0, 0, BOARD.z + 0.01]}>
-                {([[0, 120, 54, 14], [0, 77, 54, 6], [-23.5, 98.5, 7, 37], [23.5, 98.5, 7, 37]] as const).map(([x, h, ww, hh]) => (
-                  <mesh key={`${x}-${h}`} material={M.white} position={[mm(x), H(h), mm(1.5)]}><boxGeometry args={[mm(ww), mm(hh), mm(3)]} /></mesh>
-                ))}
-                {/* bloco da câmera: sai da moldura até perto do capuz */}
-                <mesh material={M.white} position={[0, H(114), mm(9)]}><boxGeometry args={[mm(20), mm(18), mm(18)]} /></mesh>
-                {/* braços que seguram a plaquinha dos LEDs */}
-                {[-1, 1].map((sx) => <mesh key={sx} material={M.white} position={[sx * mm(10), H(93), mm(11)]}><boxGeometry args={[mm(3), mm(10), mm(22)]} /></mesh>)}
-              </group>
-              <group position={[0, LENS_Y, BOARD.z + 0.01 + mm(18)]} rotation={[0.12, 0, 0]}>
-                <mesh material={M.chip} position={[0, 0, mm(9)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(4.5), mm(4.5), mm(18), 16]} /></mesh>
+              {([
+                // frente: parte de cima (atrás do furo da lente) e travessa de baixo
+                [0, 115.5, 33, 19, 68.5, 71], [0, 79, 33, 6, 68.5, 71],
+                // paredes dos lados, da frente até as abas
+                [-15, 100, 3, 50, 55, 71], [15, 100, 3, 50, 55, 71],
+                // abas laterais e pés que encostam na placa principal
+                [-21.5, 100, 11, 50, 55, 57], [21.5, 100, 11, 50, 55, 57], [-26, 100, 2, 50, 46.5, 55], [26, 100, 2, 50, 46.5, 55],
+                // os dois pinos onde a plaquinha da câmera se apoia
+                [-4.5, 115, 2, 12, 71, 75], [4.5, 115, 2, 12, 71, 75],
+              ] as const).map(([x, h, w, hh, z0, z1]) => (
+                <mesh key={`${x}-${h}-${z0}`} material={M.white} position={[mm(x), H(h), ZC((z0 + z1) / 2)]}><boxGeometry args={[mm(w), mm(hh), mm(z1 - z0)]} /></mesh>
+              ))}
+              {/* câmera: plaquinha verde, o suporte preto da lente e a lente, apontando para o furo do capuz */}
+              <group position={[0, H(110), ZC(75)]} rotation={[0.12, 0, 0]}>
+                <mesh material={M.pcb} position={[0, 0, mm(0.6)]}><boxGeometry args={[mm(14), mm(14), mm(1.2)]} /></mesh>
+                <mesh material={M.chip} position={[0, 0, mm(1.2 + 1.75)]}><boxGeometry args={[mm(8.5), mm(8.5), mm(3.5)]} /></mesh>
+                <mesh material={M.chip} position={[0, 0, mm(4.7 + 1.5)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(3.5), mm(3.5), mm(3), 20]} /></mesh>
+                <mesh material={M.lens} position={[0, 0, mm(7.75)]}><circleGeometry args={[mm(2.4), 20]} /></mesh>
               </group>
               <group position={[0, H(93), BOARD.z + 0.01 + mm(23)]} rotation={CAM_ROT}>
                 <mesh material={M.pcb}><boxGeometry args={[mm(24), mm(22), mm(1.6)]} /></mesh>
@@ -548,6 +557,8 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
             {/* faixa cinza da base, um pouco recuada */}
             <ClickablePart id="base">
               <mesh geometry={g.base} material={baseMat} castShadow />
+              {/* linha da emenda com o corpo: fica com a base (não sobe junto com o corpo na vista explodida) */}
+              <mesh geometry={g.baseSeam} material={M.partition} />
             </ClickablePart>
 
             {/* tampa das pilhas: curva, acompanhando o corpo; aba de alavanca no topo e duas presilhas embaixo */}

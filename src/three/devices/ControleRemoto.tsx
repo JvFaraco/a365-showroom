@@ -43,6 +43,15 @@ const HOLE_Y = -0.95 // furo da argola: oval deitado (~6,5 × 4 mm), perto da po
 // tampa da bateria, atrás: disco com um lado reto (onde ela engancha) e a presilha de abrir no lado oposto; fica
 // girada 45° em relação ao olhal
 const COVER_ROT = -Math.PI / 4, CHORD = 0.382
+// Placa redonda (~38 mm), 1 mm à frente da emenda das cascas: encosta atrás na parede da cavidade da bateria e na
+// frente nos pinos do miolo. Teclas a 14 mm do centro. Em Z o modelo é escalado por THICK (1 mm = 1/37,6).
+const cm = (v: number) => v / 25.9, zm = (v: number) => v / 37.6
+const PCB = { r: cm(18.9), z0: zm(0.9), t: zm(1.6) }
+const PCB_F = PCB.z0 + PCB.t // face da frente da placa (a dos componentes, virada para o teclado)
+const SW_R = cm(14.1)
+// os componentes seguem a foto da placa, girada 135°: o LED fica embaixo da fenda e o entalhe da borda, do lado da argola
+const LAYOUT_ROT = Math.PI * 0.75
+const COIN_C = -0.03 // centro da bateria-moeda (e do suporte), atrás da placa
 
 /**
  * Contorno do corpo: um círculo com uma aba curta embaixo (o olhal da argola), ligada por duas concordâncias
@@ -74,7 +83,7 @@ function build() {
   // Metade da frente: maciça. Metade de trás: aro grosso com a cavidade da bateria (fechada pela tampa).
   // casca da frente oca: a placa fina da emenda é só um aro (por dentro fica o vão da placa e do teclado)
   const fs = teardrop(); fs.holes.push(ringHole())
-  const frontHole = new THREE.Path(); frontHole.absarc(0, 0, R - SH.r - 0.01, 0, Math.PI * 2, true); fs.holes.push(frontHole)
+  const frontHole = new THREE.Path(); frontHole.absarc(0, 0, cm(19.6), 0, Math.PI * 2, true); fs.holes.push(frontHole)
   const front = new THREE.ExtrudeGeometry(fs, { depth: 0.05, ...bevel })
   const bs = teardrop(); bs.holes.push(ringHole())
   const cav = new THREE.Path(); cav.absarc(0, 0, 0.61, 0, Math.PI * 2, true); bs.holes.push(cav)
@@ -91,12 +100,13 @@ function build() {
     return b
   }))
   // por dentro: parede circular em volta do teclado e os pinos de apoio da placa
-  const innerWall = new THREE.CylinderGeometry(0.665, 0.665, 0.09, 64, 1, true); innerWall.rotateX(Math.PI / 2); innerWall.translate(0, 0, 0.1)
-  const posts = mergeGeometries(Array.from({ length: 8 }, (_, i) => {
-    const a = ((i + 0.5) / 8) * Math.PI * 2, c = new THREE.CylinderGeometry(0.03, 0.03, 0.1, 10)
-    c.rotateX(Math.PI / 2); c.translate(Math.cos(a) * 0.76, Math.sin(a) * 0.76, 0.1)
+  // pinos das cascas, por fora da borda da placa, e o anel do miolo que encosta na frente da placa (em volta do CI)
+  const posts = mergeGeometries([90, 38, 142, 195, 345, 245, 296].map((d) => {
+    const c = new THREE.CylinderGeometry(0.03, 0.03, 0.1, 10)
+    c.rotateX(Math.PI / 2); c.translate(Math.cos(d * D2R) * 0.78, Math.sin(d * D2R) * 0.78, 0.1)
     return c
   }))
+  const hubRing = latheZ([[0.218, PCB_F + 0.003], [0.261, PCB_F + 0.003], [0.261, SH.face - 0.02], [0.218, SH.face - 0.02], [0.218, PCB_F + 0.003]], 48)
   // miolo: o disco central fixo também tem a face de baixo
   const hubBack = new THREE.CircleGeometry(0.27, 48); hubBack.rotateY(Math.PI); hubBack.translate(0, KY, SH.face - 0.025)
   // teclado de borracha: lâmina atrás da face, com um pino embaixo de cada tecla (aperta o domo dourado da placa)
@@ -104,7 +114,7 @@ function build() {
   const keypadBack = new THREE.RingGeometry(0.28, 0.645, 64); keypadBack.rotateY(Math.PI); keypadBack.translate(0, KY, SH.face - 0.034)
   const plungers = mergeGeometries([0, 90, 180, 270].map((d) => {
     const c = new THREE.CylinderGeometry(0.045, 0.05, 0.06, 16); c.rotateX(Math.PI / 2)
-    c.translate(Math.cos(d * D2R) * 0.47, KY + Math.sin(d * D2R) * 0.47, SH.face - 0.06)
+    c.translate(Math.cos(d * D2R) * SW_R, KY + Math.sin(d * D2R) * SW_R, SH.face - 0.05)
     return c
   }))
   // ombro de trás: o mesmo perfil espelhado; por dentro, a parede da cavidade da bateria
@@ -122,22 +132,46 @@ function build() {
   fs2.absarc(0, 0, 0.62, Math.PI + fa, Math.PI * 2 - fa, false); fs2.closePath()
   const coverSill = new THREE.ExtrudeGeometry(fs2, { depth: 0.109, bevelEnabled: false, curveSegments: 24 }); coverSill.translate(0, 0, -0.184)
   const cover = new THREE.ExtrudeGeometry(cs, { depth: 0.014, bevelEnabled: true, bevelSize: 0.008, bevelThickness: 0.008, bevelSegments: 3, curveSegments: 48 }); cover.translate(0, 0, -0.022)
-  // componentes pequenos na frente da placa (sob o teclado), em volta do CI do centro, como na placa real: capacitores
-  // (bege), resistores e CIs pequenos (pretos), o cristal (metal) e dois pontos de teste (dourados). Sem texto
-  const ZS = -0.046, t = (x: number, y: number, w = 0.04, h = 0.022): Block => [x, y, ZS, w, h, 0.008]
-  const side = (v: number): Block[] => [t(-0.08, v), t(0, v), t(0.08, v), t(v, -0.08, 0.022, 0.04), t(v, 0, 0.022, 0.04), t(v, 0.08, 0.022, 0.04)]
-  const smdTan = boxesGeometry([...side(0.17), t(-0.3, -0.2), t(-0.21, -0.31, 0.022, 0.04), t(0.3, -0.17), t(0.22, 0.3, 0.022, 0.04), t(-0.24, 0.27)])
-  const smdBlack = boxesGeometry([...side(-0.17), [-0.3, -0.3, ZS, 0.07, 0.07, 0.01], [0.3, -0.28, ZS, 0.06, 0.09, 0.01], t(-0.32, 0.2, 0.022, 0.04)])
-  const smdMetal = boxesGeometry([[0, 0.29, -0.042, 0.1, 0.06, 0.016]])
-  const smdGold = boxesGeometry([[0.13, 0.29, -0.048, 0.035, 0.035, 0.004], [0.2, 0.29, -0.048, 0.035, 0.035, 0.004]])
+  // placa: disco com um entalhe pequeno na borda do lado da argola
+  const ps = new THREE.Shape(), nx = cm(0.8), na = Math.asin(nx / PCB.r)
+  ps.absarc(0, 0, PCB.r, -Math.PI / 2 + na, Math.PI * 1.5 - na, false); ps.lineTo(-nx, -cm(17.4)); ps.lineTo(nx, -cm(17.4)); ps.closePath()
+  const pcb = new THREE.ExtrudeGeometry(ps, { depth: PCB.t, bevelEnabled: false, curveSegments: 64 }); pcb.translate(0, 0, PCB.z0)
+  const uv = pcb.attributes.uv as THREE.BufferAttribute, pos = pcb.attributes.position
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, pos.getX(i) / (2 * PCB.r) + 0.5, pos.getY(i) / (2 * PCB.r) + 0.5)
+  // frente da placa, como na foto (em mm, a partir do centro, antes do giro): o CI quadrado no meio, o cristal metálico
+  // em cima, capacitores (bege) e resistores/CIs pequenos (pretos) em volta, e os pads dourados. Sem texto
+  const L = (items: [number, number, number, number, number][]) => {
+    const g = boxesGeometry(items.map(([x, y, w, h, d]) => [cm(x), cm(y), PCB_F + zm(d) / 2, cm(w), cm(h), zm(d)] as Block)); g.rotateZ(LAYOUT_ROT); return g
+  }
+  const v = (x: number, y: number, d = 0.5): [number, number, number, number, number] => [x, y, 0.8, 1.6, d]
+  const hz = (x: number, y: number, d = 0.5): [number, number, number, number, number] => [x, y, 1.6, 0.8, d]
+  const smdBlack = L([[0, 0, 7, 7, 0.9], [2.3, -10.4, 2.9, 1.3, 1], [8.7, 0.4, 1.4, 1, 0.8], [10.6, 0.4, 1.4, 1, 0.8],
+    v(-3.9, -9), v(-1.5, -9), v(0.9, -9), v(-8.4, 4.4), hz(-7, 3), v(-11, -3), hz(-8, -5.2), [-7.4, -8, 1.3, 1.3, 0.5], v(7.7, 2.8), hz(5.5, -6.5)])
+  const smdTan = L([hz(-14, 2.6, 0.6), hz(-13.5, -0.7, 0.6), hz(-13.1, -3.8, 0.6), hz(-13.5, -6.6, 0.6), v(-11.6, 3.4), v(-11.6, 0.6), v(-11.6, -5.4),
+    [-8.6, -1.7, 1.6, 3.4, 0.8], v(-3.5, 8.4), v(-2.6, 8.4), hz(1.8, 5), [10.5, 4, 1, 2, 0.7], [9.6, -2.4, 1, 2, 0.7], v(8.4, 6.6), v(9.2, 6.6),
+    hz(-1.3, -5.2), v(4.2, -7.8), v(5, -7.8), v(-5.3, -9), v(-2.7, -9), v(-0.3, -9)])
+  const smdMetal = L([[0.6, 9, 3.4, 2.4, 0.8]])
+  // pads redondos: alimentação (2), gravação (fileira de 5, passo de 2,54 mm) e um ponto de teste
+  const smdGold = mergeGeometries([[3.8, 8.7, 0.75], [6.3, 8.7, 0.75], ...[-5.6, -3, -0.4, 2.2, 4.8].map((x) => [x, -12.8, 0.8]), [-15.2, -8.3, 0.5]].map(([x, y, r]) => {
+    const c = new THREE.CylinderGeometry(cm(r), cm(r), zm(0.1), 16); c.rotateX(Math.PI / 2); c.translate(cm(x), cm(y), PCB_F + zm(0.05)); return c
+  })); smdGold.rotateZ(LAYOUT_ROT)
+  // as 4 teclas da placa, embaixo dos pinos do teclado: base quadrada preta com o domo dourado
+  const swBase = boxesGeometry(BUTTONS.map((b) => [Math.cos(b.angle * D2R) * SW_R, Math.sin(b.angle * D2R) * SW_R, PCB_F + zm(0.35), cm(5.2), cm(5.2), zm(0.7)] as Block))
+  const swDome = mergeGeometries(BUTTONS.map((b) => {
+    const d = new THREE.SphereGeometry(cm(2), 20, 10); d.scale(1, 1, 0.12); d.translate(Math.cos(b.angle * D2R) * SW_R, Math.sin(b.angle * D2R) * SW_R, PCB_F + zm(0.7)); return d
+  }))
+  // atrás da placa: suporte da bateria-moeda (moldura marrom aberta de um lado, por onde a bateria sai) e a lâmina dourada
+  const holder = ringSectorGeometry(0.395, 0.435, -140 * D2R, 140 * D2R, PCB.z0 + 0.062, 0.004); holder.translate(0, COIN_C, -0.066)
+  const clip = boxesGeometry([[0.16, COIN_C, -0.069, 0.62, 0.22, 0.006], [0.465, COIN_C, -0.023, 0.012, 0.2, 0.094]])
   return {
-    front, back, frontDome, frontDomeIn, spokes, innerWall, posts, hubBack, keypadSheet, keypadBack, plungers, backDome, fillet, cover, coverSill, smdTan, smdBlack, smdMetal, smdGold,
+    front, back, frontDome, frontDomeIn, spokes, posts, hubRing, hubBack, keypadSheet, keypadBack, plungers, backDome, fillet, cover, coverSill,
+    pcb, smdTan, smdBlack, smdMetal, smdGold, swBase, swDome, holder, clip,
     sector: ringSectorGeometry(0.3, 0.62, -38 * D2R, 38 * D2R, 0.018, 0.022),
     // disco central fixo: baixo, sem contorno de tecla
     center: smoothLatheZ([[0.27, 0.168], [0.266, 0.182], [0.245, 0.19], [0.001, 0.192]], 96, 24),
-    coin: smoothLatheZ([[0.001, -0.14], [0.39, -0.14], [0.415, -0.135], [0.42, -0.12], [0.42, -0.09], [0.41, -0.08], [0.001, -0.08]], 64, 32),
+    coin: smoothLatheZ([[0.001, -0.064], [0.39, -0.064], [0.414, -0.06], [0.42, -0.05], [0.42, 0.008], [0.412, 0.017], [0.001, 0.019]], 64, 32),
     slit: stadiumGeometry(0.27, 0.075, 0.01, 0.003), // fenda do LED: ~7 × 2 mm
-    aerial: wire([[0.5, 0.42, -0.045], [0.63, 0.2, -0.04], [0.66, -0.1, -0.04], [0.56, -0.36, -0.04]], 0.012),
+    aerial: wire([[160, 0.66, 0.006], [170, 0.705, 0.016], [195, 0.705, 0.018], [220, 0.7, 0.018], [245, 0.69, 0.016]].map(([d, r, dz]) => [Math.cos(d * D2R) * r, Math.sin(d * D2R) * r, PCB_F + dz] as [number, number, number]), 0.012),
     rib: wire([[-0.42, 0.25, 0], [-0.45, -0.1, 0], [-0.36, -0.34, 0], [0, -0.39, 0], [0.36, -0.34, 0], [0.45, -0.1, 0], [0.42, 0.25, 0]], 0.014),
   }
 }
@@ -171,6 +205,8 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
     return (t > 0.25 && t < 2.2) || (s.action?.id === 'panico' && s.holdMsg === 'ok')
   }
 
+  const sampleLed = (t: number, o: { color: string; on: number }) => { o.color = '#3d7bff'; o.on = tx() ? (t % 0.24 < 0.12 ? 1 : 0.1) : 0.05 }
+
   // o comando chega ao módulo: o estado do alarme muda
   useEffect(() => {
     if (cmdPhase !== 1) return
@@ -201,8 +237,8 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
     const off = tt < 0 ? 0 : seg(tt, 2.0, 2.7)
     cover.current.rotation.x = -(tt < 0 ? 0 : seg(tt, 1.5, 2.0)) * 0.44
     cover.current.position.set(0, -off * 0.25, -off * 0.7)
-    const slide = tt < 0 ? 0 : seg(tt, 2.9, 3.6)
-    coin.current.position.set(-slide * 0.75, -slide * 0.25, -slide * 0.04)
+    const slide = tt < 0 ? 0 : seg(tt, 2.9, 3.25), out = tt < 0 ? 0 : seg(tt, 3.2, 3.6)
+    coin.current.position.set(-slide * 0.2 - out * 0.55, -out * 0.25, -out * 0.3)
     const ta = actionTime('alcance')
     const k = ta < 0 ? 0 : seg(ta, 0.2, 2.6)
     range.current.scale.setScalar(0.2 + k * 5.2)
@@ -216,11 +252,11 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
         <ClickablePart id="corpo">
           <mesh geometry={g.front} material={bodyMat} castShadow />
           <mesh geometry={g.frontDome} material={bodyMat} castShadow />
-          {/* por dentro: face interna do ombro, raios do miolo, parede em volta do teclado e pinos da placa */}
+          {/* por dentro: face interna do ombro, raios do miolo, pinos das cascas e o anel do miolo que encosta na placa */}
           <mesh geometry={g.frontDomeIn} material={bodyMat} />
           <mesh geometry={g.spokes} material={bodyMat} />
-          <mesh geometry={g.innerWall} material={bodyMat} />
           <mesh geometry={g.posts} material={bodyMat} />
+          <mesh geometry={g.hubRing} material={bodyMat} />
           <mesh geometry={g.hubBack} material={bodyMat} />
           {/* linha de partição em volta do teclado */}
           <mesh material={M.groove} position={[0, KY, 0.1705]}><ringGeometry args={[0.652, 0.666, 96]} /></mesh>
@@ -243,7 +279,7 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
         </ClickablePart>
         <ClickablePart id="led">
           <mesh geometry={g.slit} material={M.blackGloss} position={[0, 0.685, 0.159]} rotation={[-0.12, 0, 0]} />
-          <Led sample={(t, o) => { o.color = '#3d7bff'; o.on = tx() ? (t % 0.24 < 0.12 ? 1 : 0.1) : 0.05 }} position={[0, 0.687, 0.1735]} rotation={[-0.12, 0, 0]}>
+          <Led on="shell" sample={sampleLed} position={[0, 0.687, 0.1735]} rotation={[-0.12, 0, 0]}>
             <boxGeometry args={[0.2, 0.04, 0.004]} />
           </Led>
         </ClickablePart>
@@ -298,37 +334,32 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
           </group>
           </group>
         </ClickablePart>
-        {/* por dentro: placa verde, suporte preto da bateria com a lâmina de contato dourada e o bloco do encaixe */}
+        {/* por dentro: a placa verde (componentes na frente, virados para o teclado) e, atrás, o suporte da bateria */}
         <ClickablePart internal>
-          <mesh material={M.pcb} position={[0, 0, -0.06]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.69, 0.69, 0.02, 64]} /></mesh>
-          {/* frente da placa, sob os botões: 4 pads dourados redondos, o CI preto quadrado no centro, a fileira de 5 pads
-              perto da borda de baixo e a antena de fio amarelo. O resto é verde liso */}
-          {BUTTONS.map((b) => (
-            <group key={b.id} position={[Math.cos(b.angle * D2R) * 0.47, Math.sin(b.angle * D2R) * 0.47, -0.047]} rotation={[0, 0, Math.PI / 4]}>
-              <mesh material={M.gold} position={[0, 0, 0.004]} scale={[1, 1, 0.3]}><sphereGeometry args={[0.062, 20, 12]} /></mesh>
-            </group>
-          ))}
-          <mesh material={M.chip} position={[0, 0, -0.043]}><boxGeometry args={[0.2, 0.2, 0.014]} /></mesh>
-          <mesh geometry={g.smdTan} material={M.smdTan} />
+          <mesh geometry={g.pcb} material={M.pcb} />
+          <mesh geometry={g.swBase} material={M.chip} />
+          <mesh geometry={g.swDome} material={M.gold} />
           <mesh geometry={g.smdBlack} material={M.chip} />
+          <mesh geometry={g.smdTan} material={M.smdTan} />
           <mesh geometry={g.smdMetal} material={M.metal} />
           <mesh geometry={g.smdGold} material={M.gold} />
-          <mesh material={M.white} position={[0.3, 0.56, -0.045]}><boxGeometry args={[0.05, 0.03, 0.01]} /></mesh>
-          {[0, 1, 2, 3, 4].map((i) => <mesh key={i} material={M.gold} position={[-0.14 + i * 0.07, -0.6, -0.048]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.018, 0.018, 0.004, 10]} /></mesh>)}
           <mesh geometry={g.aerial} material={M.yellow} />
-          <mesh material={M.black} position={[0, -0.05, -0.1]}><torusGeometry args={[0.455, 0.035, 8, 48, Math.PI * 1.45]} /></mesh>
-          <mesh material={M.gold} position={[0.12, 0.3, -0.148]}><boxGeometry args={[0.2, 0.26, 0.008]} /></mesh>
-          <mesh material={M.gold} position={[0.12, 0.44, -0.12]}><boxGeometry args={[0.24, 0.05, 0.06]} /></mesh>
-          <mesh material={M.black} position={[-0.3, 0.57, -0.1]}><boxGeometry args={[0.3, 0.16, 0.1]} /></mesh>
-          <mesh material={M.white} position={[0.52, -0.3, -0.071]} rotation={[0, Math.PI, -0.5]}><planeGeometry args={[0.1, 0.4]} /></mesh>
+          {/* o LED de verdade fica na borda da placa, embaixo da fenda; com o aparelho explodido, é ele que acende */}
+          <Led on="board" sample={sampleLed} position={[cm(-0.3), cm(18), PCB_F + zm(0.4)]} rotation={[0, 0, Math.PI / 4]}>
+            <boxGeometry args={[cm(1.6), cm(1), zm(0.8)]} />
+          </Led>
+          <mesh geometry={g.holder} material={M.brown} />
+          <mesh geometry={g.clip} material={M.gold} />
+          {/* etiqueta lisa atrás da placa, embaixo do suporte (sem texto) */}
+          <mesh material={M.white} position={[0, -0.52, PCB.z0 - 0.001]} rotation={[0, Math.PI, 0]}><planeGeometry args={[0.45, 0.07]} /></mesh>
         </ClickablePart>
         <ClickablePart id="bateria">
           <group ref={coin}>
-            <group position={[0, -0.03, 0]} scale={[0.92, 0.92, 1]}>
+            <group position={[0, COIN_C, 0]} scale={[0.92, 0.92, 1]}>
               <mesh geometry={g.coin} material={coinMat} />
               {/* o "+" gravado na face */}
-              <mesh material={M.metal} position={[-0.1, -0.2, -0.141]}><boxGeometry args={[0.13, 0.022, 0.002]} /></mesh>
-              <mesh material={M.metal} position={[-0.1, -0.2, -0.141]}><boxGeometry args={[0.022, 0.13, 0.002]} /></mesh>
+              <mesh material={M.metal} position={[-0.1, -0.2, -0.065]}><boxGeometry args={[0.13, 0.022, 0.002]} /></mesh>
+              <mesh material={M.metal} position={[-0.1, -0.2, -0.065]}><boxGeometry args={[0.022, 0.13, 0.002]} /></mesh>
             </group>
           </group>
         </ClickablePart>
