@@ -206,7 +206,7 @@ export const DEVICES: Device[] = [
     short: 'Fotossensor',
     tagline: 'Detecta, fotografa e confirma.',
     inKit365S: true,
-    home: { position: [1.5, 0.5, 4.0], target: [0, 0, -0.1] },
+    home: { position: [0.45, 0.4, 4.2], target: [0, 0, -0.1] }, // quase de frente: a cápsula e a lente aparecem no eixo do aparelho
     bottom: -1.03,
     kitScale: 1.0, // 79 mm/un (referência)
     parts: [

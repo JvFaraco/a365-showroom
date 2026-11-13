@@ -33,7 +33,7 @@ const CELL = { r: mm(7.25), len: mm(50.5), y: (H(64) + 0.68) / 2, s: HD - 0.125 
 const CELL_X = [-0.196, 0, 0.196]
 // Cápsula da câmera: pílula de ~30 × 55 mm, mais larga em cima, INCLINADA (o topo sai mais que a base: a
 // câmera olha um pouco para baixo). Tudo dela é medido a partir da base da cápsula.
-const CAP = { bottom: H(70), h: mm(55), hwTop: mm(15), hwBottom: mm(11), tilt: 0.12, z: HD - 0.09 }
+const CAP = { bottom: H(70), h: mm(55), hwTop: mm(15), hwBottom: mm(11), tilt: 0.07, z: HD - 0.1 }
 const CAP_F = 0.085 // face da frente da cápsula, nas coordenadas dela
 const LENS_L = mm(43), LEDWIN_L = mm(22) // altura da lente e da janela do LED dentro da cápsula
 const LENS_Y = CAP.bottom + LENS_L, LEDWIN_Y = CAP.bottom + LEDWIN_L
