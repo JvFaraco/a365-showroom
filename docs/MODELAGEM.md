@@ -6,6 +6,8 @@ Materiais: plástico branco acetinado #F1F2F4 com verniz leve e micro-textura (`
 
 ## Módulo de Comando (planta de 144 × 145 mm, 38 mm de altura; 1 un = 80 mm; frente em +Z)
 
+
+A tampa é uma superfície só (topo plano que desce para a lateral em curva contínua), no mesmo contorno em gota da base: redondo do lado da antena e afinando para uma ponta arredondada na frente. A base cinza é lisa, com fendas curtas de ventilação em volta, três pés baixos, o rebaixo raso da etiqueta (vazio) e o bolsão fundo perto da borda de trás: grade de som em hexágono (37 furos) na parede do fundo, RJ45 embaixo dela com a boca para baixo e o jack da fonte na parede esquerda, a meia altura.
 | part.id | Como é modelada |
 |---|---|
 | `tampa` | Face: disco plano em `LatheGeometry`, inclinado para a frente, com linha de partição e o logo em sulcos finos. Saia: malha paramétrica que nasce redonda na borda da face e se abre em concha, com uma ponta na frente e duas asas atrás. Por dentro: bloco do guia de luz com furo de parafuso, ganchos e ressalto. |
@@ -62,7 +64,8 @@ A traseira é uma placa branca plana, sem tampa extra: é o suporte que cobre es
 | `corpo` | `LatheGeometry` de perfil suave: face plana, chanfro largo e lateral levemente cônica; linha de partição e logo em sulcos finos. |
 | `led` | Fenda na borda de baixo da face, virada para o chão. |
 | `suporte` | Prato de parede: aro aberto em cima (é por onde a sirene desce), fundo extrudado com furo grande e recortes, canal vertical, travas e parafusos. A sirene não gira: desce na vertical e trava com um clique. |
-| `tamper` (i) | Botão circular em degraus no centro da traseira. O suporte o mantém pressionado; ele salta quando a sirene sai do suporte. |
+| `tamper` (i) | Micro-chave preta (~6 × 6 mm, com o botão no meio) numa plaquinha verde (~15 × 20 mm), à direita da traseira, logo abaixo do conector branco da bateria. O ressalto do suporte mantém o botão apertado; fora do suporte, ele sobe ~1 mm. |
+| `encaixe-suporte` (i) | Disco levemente elevado, anel e arcos no centro-baixo da traseira: plástico fixo, que centraliza a sirene no suporte. Não é o tamper. |
 | `elemento-sonoro` (i) | Por dentro, pastilha branca redonda com furo no centro (`LatheGeometry`), ligada à placa por dois fios brancos; na traseira, o círculo em relevo com anéis concêntricos. |
 | `bateria` (i) | Cilindro preto deitado, com etiqueta laranja, num nicho no alto da traseira, preso por uma trava. |
 | `placa` (i) | Placa verde em cunha por dentro, com chips, pontos de teste e antena de fio preto; o trecho com o conector branco de 2 fios aparece na traseira, ao lado da bateria. |

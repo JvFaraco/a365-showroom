@@ -66,7 +66,7 @@ Parâmetros de URL:
 | Parâmetro | Efeito |
 |---|---|
 | `?hq` | mantém reflexo e pós-processamento completos mesmo que o FPS caia |
-| `?debug=1` | número de programas de shader e aviso (com trace) de chamadas ao WebGL que esperam a compilação; em `npm run dev`, também FPS, draw calls e triângulos (`r3f-perf`) |
+| `?debug=1` | programas de shader e triângulos visíveis (também no build) e o diagnóstico de carga: cada leitura de estado de shader que espera mais de 20 ms vira um `console.trace`, e um resumo por material e etapa sai com `console.table` quando a tela de carregamento some (`window.__glReport`). Em `npm run dev`, também o painel do `r3f-perf` |
 | `?ref=1` | só em `npm run dev`: modo de comparação com a foto (veja abaixo) |
 
 ## Comparar com a foto (`?ref=1`)
