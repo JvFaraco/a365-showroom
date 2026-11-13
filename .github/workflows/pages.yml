@@ -1,8 +1,10 @@
 name: Publicar no GitHub Pages
 
+# A raiz do site é sempre a `main`. O branch de trabalho (`acabamento-4`) sai em /preview/, para medir e conferir
+# uma mudança no aparelho de verdade antes de mesclar.
 on:
   push:
-    branches: [main]
+    branches: [main, acabamento-4]
   workflow_dispatch:
 
 permissions:
@@ -19,12 +21,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Prévia do branch de trabalho em /preview/
+        run: |
+          if git fetch --depth=1 origin acabamento-4; then
+            git worktree add ../previa FETCH_HEAD
+            (cd ../previa && npm ci && npm run build)
+            cp -r ../previa/dist dist/preview
+          else
+            echo "sem branch acabamento-4: só a main"
+          fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
