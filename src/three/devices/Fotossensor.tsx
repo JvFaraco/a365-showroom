@@ -305,8 +305,8 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   // a cápsula é um plástico um pouco mais frio e brilhante que o corpo
   const capMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#d3d6df', roughness: 0.26, clearcoat: 0.6, clearcoatRoughness: 0.2 }), [])
   const mountMat = useMemo(() => { const m = M.grey.clone(); m.color.set('#9a9ea6'); return m }, [])
-  const lensBack = useMemo(() => new THREE.MeshStandardMaterial({ color: '#c3cad6', roughness: 0.7 }), [])
-  const pirMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#d5dcea', roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12, transparent: true, opacity: 0.82, envMapIntensity: 1.4 }), [])
+  const lensBack = useMemo(() => new THREE.MeshStandardMaterial({ color: '#e3e5e8', roughness: 0.7 }), [])
+  const pirMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#f1f2f3', roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12, transparent: true, opacity: 0.8, envMapIntensity: 1.4 }), [])
   const polMat = useMemo(() => new THREE.MeshBasicMaterial({ map: polaroidTexture(), toneMapped: false, side: THREE.DoubleSide }), [])
   const rulerMat = useMemo(() => fxBasic('#ffffff', 0.5), [])
   const bandMat = useMemo(() => fxBasic('#35d46a', 0.35), [])
