@@ -91,7 +91,7 @@ export const DEVICES: Device[] = [
         name: 'Tampa / face com logo',
         what: 'Carcaça do módulo.',
         facts: ['Sistema anti-sabotagem (tamper)'],
-        camera: { position: [0, 2.3, 2.1], target: [0, 0.3, 0] },
+        camera: { position: [0, 2.3, 2.1], target: [0, 0.05, 0] },
         action: 'abrir-modulo',
         explode: [0, 1.4, 0],
       },
