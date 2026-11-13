@@ -61,6 +61,8 @@ node tools/perf.mjs http://localhost:4173/ --channel msedge
 
 O script precisa do Playwright (`npm i -D playwright`). Sem `--channel`, usa o Chromium do Playwright.
 
+Outros dois scripts ajudam a conferir mudanças sem GPU: `node tools/count.mjs <url>` dá os programas de shader e os triângulos de cada aparelho, e `node tools/render.mjs <porta> <ref-id> <saída>` tira o print de um aparelho no ângulo de uma foto de referência. As regras de trabalho do projeto ficam em [`CLAUDE.md`](CLAUDE.md).
+
 ### Medir a fluidez no aparelho de verdade
 
 Abra o site com `?perf=1` (no PC ou no celular): aparece um medidor com fps, p95 do quadro e quadros lentos ao vivo, e o botão **Testar fluidez**. O teste leva ~45 s e passa por girar, aproximar, passar o mouse, trocar de aparelho, abrir parte, Raio-X, explodido e a cena "Em ação". No fim, **Copiar resultado** copia a tabela (com a placa de vídeo e a resolução usadas). Quadro acima de 20 ms é um quadro perdido a 60 Hz; acima de 50 ms é travada visível.

@@ -152,7 +152,7 @@ export const DEVICES: Device[] = [
         facts: [],
         camera: { position: [1.2, 1.3, 1.4], target: [0.2, -0.03, 0.35] },
         internal: true,
-        explode: [0, 0.98, 0],
+        explode: [0, 0.75, 0], // preso na placa pela presilha: sai junto com ela
       },
       {
         id: 'wifi',
@@ -198,7 +198,7 @@ export const DEVICES: Device[] = [
         camera: { position: [1.7, 0.7, 1.7], target: [0.1, -0.24, 0.1] },
         internal: true,
         action: 'bateria-modulo',
-        explode: [0, 0.25, 0],
+        explode: [0, 0.75, 0], // presa embaixo da placa pelo cabo: sai junto com ela
       },
     ],
   },
@@ -264,12 +264,12 @@ export const DEVICES: Device[] = [
       {
         id: 'suporte',
         name: 'Suporte de parede',
-        what: 'Fixa na parede e permite inclinar o sensor.',
+        what: 'Faz parte da base: sobe pela traseira e tem o encaixe em "Λ" onde entra a peça de fixação da parede. Permite inclinar o sensor.',
         facts: ['Altura de instalação: 2,10 m a 2,40 m do chão'],
         tip: 'Instale no canto, entre 2,10 m e 2,40 m do chão, apontando para o centro da área.',
         camera: { position: [1.5, -0.2, -2.2], target: [0, -0.6, -0.6] },
         action: 'suporte',
-        explode: [0, 0.22, -1.15],
+        // a luva faz parte da base: não se separa dela na vista explodida
         pin: [0.12, -0.2, 0],
       },
       {
@@ -295,7 +295,7 @@ export const DEVICES: Device[] = [
       {
         id: 'fixacao',
         name: 'Peça de fixação',
-        what: 'Gabarito para furar a parede e guia para encaixar o sensor.',
+        what: 'Peça solta que vai parafusada na parede. A guia dela entra no encaixe do suporte, e o sensor desce até travar.',
         facts: ['Os parafusos de trava impedem que o sensor seja retirado'],
         camera: { position: [-1.3, -0.3, -2.2], target: [0, -0.6, -0.55] },
         explode: [0, 0.22, -1.15],
@@ -304,7 +304,7 @@ export const DEVICES: Device[] = [
       {
         id: 'placas',
         name: 'Placa principal',
-        what: 'Placa eletrônica principal: fica na vertical, do meio do corpo para baixo.',
+        what: 'Placa eletrônica principal, na vertical, quase da altura do corpo. Nela ficam o sensor PIR, o suporte da câmera e a antena.',
         facts: [],
         camera: { position: [1.0, -0.2, 2.4], target: [0, -0.4, 0.1] },
         internal: true,
@@ -313,11 +313,11 @@ export const DEVICES: Device[] = [
       {
         id: 'modulo-camera',
         name: 'Câmera (módulo interno)',
-        what: 'Por dentro, o tubo da lente fica num suporte branco, apontando para a frente e um pouco para baixo, alinhado com a lente da cápsula.',
+        what: 'Preso na parte de cima da placa principal: um suporte branco segura o tubo da lente, apontado para a lente do capuz, e a plaquinha dos LEDs.',
         facts: [],
         camera: { position: [0.9, 0.7, 2.2], target: [0, 0.4, 0.2] },
         internal: true,
-        explode: [0, 0.22, 0.62],
+        explode: [0, 0.22, 0.3],
       },
       {
         id: 'sensor-pir',
@@ -331,7 +331,7 @@ export const DEVICES: Device[] = [
       {
         id: 'antena',
         name: 'Antena',
-        what: 'Mola de cobre, em pé, logo acima da base.',
+        what: 'Mola de cobre soldada na borda de baixo da placa principal, logo acima da base.',
         facts: [],
         camera: { position: [0.8, -0.7, 2.0], target: [0, -0.85, 0.2] },
         internal: true,

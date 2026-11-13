@@ -81,9 +81,16 @@ const CAM_TILT = Math.atan(POCKET_SLOPE) // a rampa do bolso (a normal aponta pa
 const CAM_ROT: [number, number, number] = [CAM_TILT, 0, 0]
 const LOGO_Y = H(21.5), LOGO_R = mm(5.6)
 // suporte de parede (cinza): ~31 × 67 mm, de h = 0 a 68; com os trilhos, afasta o corpo ~16 mm da parede
-const WALL = { hw: mm(15.5), top: H(67), plate: mm(6.5), rail: mm(10) }
-const HINGE: [number, number, number] = [0, Y0, -(HD + 0.1)] // eixo horizontal no pé da placa: é ali que o sensor inclina
-const PCB_DZ = -0.16 // a placa principal fica atrás do eixo do aparelho, encostada no berço das pilhas; o funil vem até a lente
+// Suporte de parede em duas peças (medidas externas): a LUVA faz parte da base cinza e sobe pela traseira até h = 68,
+// com o encaixe em "Λ" (estreita para cima) e o parafuso de trava; a PLACA DE PAREDE é solta, vai parafusada na
+// parede e tem a guia que entra na luva. As duas têm 31 mm de largura.
+const ZC = (z: number) => (z - 50.9) / 79.07 // profundidade em mm a partir da parede → z do modelo
+const WALL = { hw: mm(15.5), top: H(68), floor: ZC(11), back: ZC(3.5), plate0: ZC(0.5), plate1: ZC(2.3), guide: ZC(10) }
+/** Meia largura do encaixe da luva na altura h (mm): 13 mm embaixo, 5,5 mm no alto. */
+const slotHW = (h: number) => mm(13 - (7.5 * h) / 68)
+const HINGE: [number, number, number] = [0, Y0, WALL.floor] // eixo horizontal no pé da placa: é ali que o sensor inclina
+const PCB_DZ = -0.17 // a placa principal fica ~5 mm atrás do eixo do aparelho; o funil vem da lente até o sensor, na frente dela
+const BOARD = { y0: H(24), y1: H(128), hw: mm(27), z: PCB_DZ + 0.1 } // placa principal: da altura do funil até o topo
 const UP = 0.22 // na vista explodida tudo sobe um pouco e a base cinza fica embaixo (é como ela "desce" sem entrar no pedestal)
 const FAN_Y = Y0 - 0.01 // altura do chão da cena do PIR
 const personX = (t: number) => -3.4 + seg(t, 2.5, 6.5) * 6.8
@@ -256,20 +263,32 @@ function build() {
   const latch = upright(backBand(-0.085, 0.085, 0.04, 0.012, 0.03), COVER_TOP)
   const clipL = upright(backBand(-0.25, -0.15, 0.035, 0, 0.022), BAY.y0 - 0.047)
   const clipR = upright(backBand(0.15, 0.25, 0.035, 0, 0.022), BAY.y0 - 0.047)
-  // placa de fixação na parede (vista por trás, o lado +x fica à esquerda): dois trilhos cinza em "Λ" aberto,
-  // mais próximos no alto e mais afastados embaixo, sobre uma placa mais funda; os pés ficam na altura da base
-  const TOP = WALL.top, w = WALL.hw
-  const legA = new THREE.Shape() // lado +x: quase vertical
-  legA.moveTo(0.045, TOP); legA.lineTo(w, TOP); legA.lineTo(w, Y0); legA.lineTo(0.1, Y0); legA.lineTo(0.07, Y0 + 0.25); legA.closePath()
-  const legB = new THREE.Shape() // lado −x: a borda de dentro inclina para fora
-  legB.moveTo(-0.035, TOP); legB.lineTo(-0.095, Y0 + 0.25); legB.lineTo(-0.115, Y0); legB.lineTo(-w, Y0); legB.lineTo(-w, TOP); legB.closePath()
-  const railOpt = { depth: WALL.rail - 0.016, bevelEnabled: true, bevelSize: 0.008, bevelThickness: 0.008, bevelSegments: 3 }
-  const rails = mergeGeometries([new THREE.ExtrudeGeometry(legA, railOpt), new THREE.ExtrudeGeometry(legB, railOpt)])
-  // placa cinza entre os trilhos, com o entalhe retangular no alto
+  // luva do suporte (presa à base): bloco da largura do suporte que vai da traseira do corpo até o fundo do encaixe,
+  // e os dois lábios em "Λ" por trás, que formam o encaixe onde entra a guia da placa de parede
+  const w = WALL.hw, N = 16
+  const core = new THREE.Shape()
+  core.moveTo(-w, -WALL.floor)
+  for (let i = 0; i <= N; i++) { const x = -w + (2 * w * i) / N; core.lineTo(x, sBack(x) - 0.008) }
+  core.lineTo(w, -WALL.floor); core.closePath()
+  const sleeveCore = upright(new THREE.ExtrudeGeometry(core, { depth: WALL.top - Y0, bevelEnabled: false }), Y0)
+  const lip = (sx: number) => {
+    const sh = new THREE.Shape()
+    sh.moveTo(sx * w, Y0); sh.lineTo(sx * slotHW(0), Y0); sh.lineTo(sx * slotHW(68), WALL.top); sh.lineTo(sx * w, WALL.top); sh.closePath()
+    const g = new THREE.ExtrudeGeometry(sh, { depth: WALL.floor - WALL.back, bevelEnabled: true, bevelSize: 0.004, bevelThickness: 0.004, bevelSegments: 2 })
+    g.translate(0, 0, WALL.back)
+    return g
+  }
+  const sleeve = mergeGeometries([sleeveCore, lip(-1), lip(1)])
+  // placa de parede (solta): chapa fina encostada na parede e a guia trapezoidal que entra no encaixe da luva
   const pl = new THREE.Shape()
-  pl.moveTo(-w + 0.006, TOP - 0.01); pl.lineTo(-0.025, TOP - 0.01); pl.lineTo(-0.025, TOP - 0.04); pl.lineTo(0.035, TOP - 0.04); pl.lineTo(0.035, TOP - 0.01); pl.lineTo(w - 0.006, TOP - 0.01)
-  pl.lineTo(w - 0.006, Y0 + 0.04); pl.lineTo(-w + 0.006, Y0 + 0.04); pl.closePath()
-  const plate = new THREE.ExtrudeGeometry(pl, { depth: WALL.plate - 0.008, bevelEnabled: true, bevelSize: 0.004, bevelThickness: 0.004, bevelSegments: 2 })
+  pl.moveTo(-w, H(1.3)); pl.lineTo(w, H(1.3)); pl.lineTo(w, H(68.7)); pl.lineTo(-w, H(68.7)); pl.closePath()
+  const plateBack = new THREE.ExtrudeGeometry(pl, { depth: WALL.plate1 - WALL.plate0, bevelEnabled: true, bevelSize: 0.003, bevelThickness: 0.003, bevelSegments: 2 })
+  plateBack.translate(0, 0, WALL.plate0)
+  const gd = new THREE.Shape(), gap = mm(0.8)
+  gd.moveTo(-(slotHW(3) - gap), H(3)); gd.lineTo(slotHW(3) - gap, H(3)); gd.lineTo(slotHW(66) - gap, H(66)); gd.lineTo(-(slotHW(66) - gap), H(66)); gd.closePath()
+  const guide = new THREE.ExtrudeGeometry(gd, { depth: WALL.guide - WALL.plate1, bevelEnabled: true, bevelSize: 0.003, bevelThickness: 0.003, bevelSegments: 2 })
+  guide.translate(0, 0, WALL.plate1)
+  const plate = mergeGeometries([plateBack, guide])
   // faixa de frisos verticais finos em volta da metade de trás, perto da base (atrás do suporte de parede não há)
   const fr: THREE.BufferGeometry[] = [], ribY = H(25), ribH = mm(13)
   for (const sx of [-1, 1]) for (let i = 0; i <= 26; i++) {
@@ -281,10 +300,10 @@ function build() {
   }
   const shell = shellGeometry()
   return {
-    shellFront: shell.front, shellBack: shell.back, base, baseSeam, funnel, cover, coverSeam, latch, clipL, clipR, rails, plate,
+    shellFront: shell.front, shellBack: shell.back, base, baseSeam, funnel, cover, coverSeam, latch, clipL, clipR, sleeve, plate,
     // componentes pequenos da placa principal, em volta do sensor PIR e dos CIs, como na placa real (sem texto nem etiqueta)
     smdTan: boxesGeometry([t(-0.12, 52), t(-0.12, 56), t(0.12, 52), t(0.12, 48), t(-0.06, 42, 0.022, 0.04), t(0, 42, 0.022, 0.04), t(0.06, 42, 0.022, 0.04), t(-0.26, 70), t(-0.26, 66), t(-0.05, 70)]),
-    smdBlack: boxesGeometry([[0.18, H(66), 0.117, 0.07, 0.07, 0.014], [-0.2, H(30), 0.117, 0.06, 0.09, 0.014], t(0.24, 40), t(0.24, 44), t(0.24, 48), [0.08, H(96), 0.172, 0.04, 0.03, 0.008], [-0.08, H(96), 0.172, 0.04, 0.03, 0.008]]),
+    smdBlack: boxesGeometry([[0.18, H(66), 0.117, 0.07, 0.07, 0.014], [-0.2, H(30), 0.117, 0.06, 0.09, 0.014], t(0.24, 40), t(0.24, 44), t(0.24, 48)]),
     smdMetal: boxesGeometry([[0.05, H(64), 0.118, 0.07, 0.035, 0.016]]),
     smdGold: boxesGeometry([-0.125, -0.075, -0.025, 0.025, 0.075, 0.125].map((x) => [x, H(76), 0.112, 0.022, 0.022, 0.004] as Block)),
     ribs: mergeGeometries(fr),
@@ -388,6 +407,13 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
     alertV.current += (pirAlert() - alertV.current) * Math.min(1, dt * 10)
   })
 
+  // LED de status: verde piscando; vermelho fixo no alerta do PIR
+  const sampleStatus = (t: number, o: { color: string; on: number }) => {
+    const al = interactive ? alertV.current : 0
+    o.color = al > 0.5 ? '#ff2a2a' : '#27d455'
+    o.on = al > 0.5 ? 1 : t % 3 < 0.25 ? 0.9 : 0.25
+  }
+
   return (
     <DeviceCtx.Provider value={{ deviceId: 'fotossensor', interactive }}>
       <group ref={flip}>
@@ -448,11 +474,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
             {/* LED verde, na parte de baixo da janela */}
             <ClickablePart id="led">
               <group position={camAt(LEDWIN_H)} rotation={CAM_ROT}>
-                <Led sample={(t, o) => {
-                  const al = interactive ? alertV.current : 0
-                  o.color = al > 0.5 ? '#ff2a2a' : '#27d455'
-                  o.on = al > 0.5 ? 1 : t % 3 < 0.25 ? 0.9 : 0.25
-                }} position={[0, -mm(3.4), 0.004]} rotation={[Math.PI / 2, 0, 0]}>
+                <Led on="shell" sample={sampleStatus} position={[0, -mm(3.4), 0.004]} rotation={[Math.PI / 2, 0, 0]}>
                   <cylinderGeometry args={[0.016, 0.016, 0.004, 16]} />
                 </Led>
               </group>
@@ -470,10 +492,10 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
             {/* placa principal: verde, vertical, ~50 × 85 mm, do meio do corpo para baixo; cabo flat à esquerda */}
             <ClickablePart id="placas">
               <group position={[0, 0, PCB_DZ]}>
-              <mesh material={M.pcb} position={[0, H(50), 0.1]}><boxGeometry args={[mm(50), mm(85), 0.02]} /></mesh>
+              <mesh material={M.pcb} position={[0, (BOARD.y0 + BOARD.y1) / 2, 0.1]}><boxGeometry args={[BOARD.hw * 2, BOARD.y1 - BOARD.y0, 0.02]} /></mesh>
               <mesh material={M.chip} position={[-0.16, H(62), 0.116]}><boxGeometry args={[0.1, 0.1, 0.014]} /></mesh>
-              <mesh material={M.chip} position={[0.17, H(22), 0.116]}><boxGeometry args={[0.08, 0.12, 0.014]} /></mesh>
-              <mesh material={M.white} position={[-0.21, H(84), 0.135]}><boxGeometry args={[0.11, mm(34), 0.006]} /></mesh>
+              <mesh material={M.chip} position={[0.17, H(32), 0.116]}><boxGeometry args={[0.08, 0.12, 0.014]} /></mesh>
+
               <mesh geometry={g.smdTan} material={M.smdTan} />
               <mesh geometry={g.smdBlack} material={M.chip} />
               <mesh geometry={g.smdMetal} material={M.metal} />
@@ -485,21 +507,44 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
               <mesh material={M.metal} position={[0, H(49), PCB_DZ + 0.11 + mm(2.5)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(4.5), mm(4.5), mm(5), 14]} /></mesh>
               <mesh material={M.hole} position={[0, H(49), PCB_DZ + 0.11 + mm(5) + 0.001]}><planeGeometry args={[mm(3.6), mm(3.6)]} /></mesh>
             </ClickablePart>
-            {/* módulo da câmera, no terço de cima: plaquinha verde com o LED, suporte branco e o tubo preto da lente
-                (~8 mm), alinhado com a lente no fundo do bolso */}
+            {/* módulo da câmera, preso na parte de cima da placa principal: suporte branco (moldura com janela), o bloco
+                da câmera no alto com o tubo preto da lente apontando para a lente do capuz, e a plaquinha verde dos LEDs
+                na frente da moldura, inclinada como o fundo do bolso */}
             <ClickablePart id="modulo-camera">
-              <mesh material={M.pcb} position={[0, H(104), 0.16]}><boxGeometry args={[mm(28), mm(24), 0.016]} /></mesh>
-              <mesh material={M.white} position={[0, LEDWIN_Y, 0.176]}><boxGeometry args={[0.04, 0.05, 0.016]} /></mesh>
-              <mesh material={M.white} position={[0, LENS_Y, 0.17 + mm(4)]}><boxGeometry args={[mm(20), mm(18), mm(8)]} /></mesh>
-              <group position={[0, LENS_Y, 0.17 + mm(8)]} rotation={CAM_ROT}>
-                <mesh material={M.chip} position={[0, 0, mm(3.5)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(4.5), mm(4.5), mm(7.5), 14]} /></mesh>
+              <group position={[0, 0, BOARD.z + 0.01]}>
+                {([[0, 120, 54, 14], [0, 77, 54, 6], [-23.5, 98.5, 7, 37], [23.5, 98.5, 7, 37]] as const).map(([x, h, ww, hh]) => (
+                  <mesh key={`${x}-${h}`} material={M.white} position={[mm(x), H(h), mm(1.5)]}><boxGeometry args={[mm(ww), mm(hh), mm(3)]} /></mesh>
+                ))}
+                {/* bloco da câmera: sai da moldura até perto do capuz */}
+                <mesh material={M.white} position={[0, H(114), mm(9)]}><boxGeometry args={[mm(20), mm(18), mm(18)]} /></mesh>
+                {/* braços que seguram a plaquinha dos LEDs */}
+                {[-1, 1].map((sx) => <mesh key={sx} material={M.white} position={[sx * mm(10), H(93), mm(11)]}><boxGeometry args={[mm(3), mm(10), mm(22)]} /></mesh>)}
+              </group>
+              <group position={[0, LENS_Y, BOARD.z + 0.01 + mm(18)]} rotation={[0.12, 0, 0]}>
+                <mesh material={M.chip} position={[0, 0, mm(9)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(4.5), mm(4.5), mm(18), 16]} /></mesh>
+              </group>
+              <group position={[0, H(93), BOARD.z + 0.01 + mm(23)]} rotation={CAM_ROT}>
+                <mesh material={M.pcb}><boxGeometry args={[mm(24), mm(22), mm(1.6)]} /></mesh>
+                {[-1, 1].map((sx) => <mesh key={sx} material={M.smdTan} position={[sx * mm(6), mm(5), mm(1)]}><boxGeometry args={[mm(2), mm(1.2), mm(0.8)]} /></mesh>)}
+                <mesh material={M.chip} position={[mm(-5), mm(-6), mm(1)]}><boxGeometry args={[mm(4), mm(3), mm(0.9)]} /></mesh>
+                {/* o LED de status de verdade fica aqui; com o aparelho explodido, é ele que acende (a janela da carcaça apaga) */}
+                <Led on="board" sample={sampleStatus} position={[0, mm(-3.4), mm(1)]}><boxGeometry args={[mm(2.5), mm(1.6), mm(1)]} /></Led>
               </group>
             </ClickablePart>
-            {/* antena: mola de cobre em pé, no centro, logo acima da base */}
+            {/* antena: mola de cobre soldada na borda de baixo da placa principal, pendurada até perto da base */}
             <ClickablePart id="antena">
-              <mesh geometry={g.spring} material={springMat} position={[0, H(8), 0.2]} />
+              <mesh geometry={g.spring} material={springMat} position={[mm(6), BOARD.y0 - 0.2, BOARD.z]} />
             </ClickablePart>
 
+            {/* luva do suporte de parede: faz parte da base cinza; o encaixe em Λ e o parafuso de trava ficam atrás */}
+            <ClickablePart id="suporte">
+              <mesh geometry={g.sleeve} material={mountMat} castShadow />
+              <group position={[0, H(25), WALL.floor - 0.001]} rotation={[0, Math.PI, 0]}>
+                <mesh material={M.metal} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, mm(0.6)]}><cylinderGeometry args={[mm(3), mm(3), mm(1.2), 20]} /></mesh>
+                <mesh material={M.greyDark} position={[0, 0, mm(1.25)]} rotation={[0, 0, 0.6]}><planeGeometry args={[mm(4), mm(0.7)]} /></mesh>
+                <mesh material={M.greyDark} position={[0, 0, mm(1.26)]} rotation={[0, 0, 0.6 + Math.PI / 2]}><planeGeometry args={[mm(4), mm(0.7)]} /></mesh>
+              </group>
+            </ClickablePart>
             {/* faixa cinza da base, um pouco recuada */}
             <ClickablePart id="base">
               <mesh geometry={g.base} material={baseMat} castShadow />
@@ -547,16 +592,16 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
         </group>
       </group>
 
-      {/* suporte de parede, preso à traseira (fica parado quando o sensor inclina): placa cinza com um parafuso
-          perto de baixo e, sobre ela, os dois trilhos em Λ que passam da base do corpo */}
+      {/* placa de parede (solta): fica parafusada na parede e parada quando o sensor inclina; a guia entra no encaixe
+          da luva. Na frente da guia, os dois furos dos parafusos da parede */}
       <ClickablePart id="fixacao">
-        <mesh geometry={g.plate} material={mountMat} position={[0, 0, -(HD + WALL.plate)]} castShadow />
-        <mesh material={M.metal} position={[-0.01, H(14), -(HD + WALL.plate + 0.006)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.032, 0.032, 0.012, 20]} /></mesh>
-        <mesh material={M.greyDark} position={[-0.01, H(14), -(HD + WALL.plate + 0.0125)]} rotation={[0, Math.PI, 0.6]}><planeGeometry args={[0.042, 0.008]} /></mesh>
-        <mesh material={M.greyDark} position={[-0.01, H(14), -(HD + WALL.plate + 0.0126)]} rotation={[0, Math.PI, 0.6 + Math.PI / 2]}><planeGeometry args={[0.042, 0.008]} /></mesh>
-      </ClickablePart>
-      <ClickablePart id="suporte">
-        <mesh geometry={g.rails} material={mountMat} position={[0, 0, -(HD + WALL.plate + WALL.rail)]} castShadow />
+        <mesh geometry={g.plate} material={mountMat} castShadow />
+        {[[13, 1.6], [55, 1]].map(([h, sx]) => (
+          <group key={h} position={[0, H(h), WALL.guide + 0.004]} scale={[sx, 1, 1]}>
+            <mesh material={M.hole}><circleGeometry args={[mm(3.4), 20]} /></mesh>
+            <mesh material={M.metal} position={[0, 0, 0.001]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(2.6), mm(2.6), mm(0.6), 16]} /></mesh>
+          </group>
+        ))}
       </ClickablePart>
 
       </group>

@@ -58,7 +58,10 @@ export function Stage() {
     return () => clearTimeout(t)
   }, [device, showroom])
 
-  useFrame(({ camera }, dt) => {
+  useFrame(({ camera, scene: sc }, dt) => {
+    // névoa: começa um pouco antes do centro da cena, nunca antes de 16 (no celular a câmera recua mais)
+    const fog = sc.fog as THREE.Fog | null
+    if (fog) { fog.near = Math.max(16, camera.position.length() * 0.95); fog.far = fog.near + 22 }
     // vista por baixo (fundo do módulo): o chão e o pedestal somem para não tapar
     ground.current.visible = !REF_ON && camera.position.y > floorY + 0.25
     // "sem energia": o palco escurece

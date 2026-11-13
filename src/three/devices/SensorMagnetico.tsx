@@ -38,6 +38,23 @@ const PCB = { len: mm(74), w: mm(19), y: BODY.len / 2 - mm(3) - mm(74) / 2, z: -
 const PCB_END = PCB.y - PCB.len / 2 // borda da placa do lado da antena
 const CELL = { r: mm(5.2), len: mm(43), y: PCB.y - mm(1) } // pilha cilíndrica, deitada sobre a placa, entre as duas presilhas
 
+/** Retângulo de cantos redondos centrado (contorno de casca). */
+function rrect(w: number, h: number, r: number, hole = false) {
+  const s = hole ? new THREE.Path() : new THREE.Shape(), x = w / 2 - r, y = h / 2 - r
+  if (hole) { s.absarc(x, -y, r, -Math.PI / 2, 0, false); s.absarc(x, y, r, 0, Math.PI / 2, false); s.absarc(-x, y, r, Math.PI / 2, Math.PI, false); s.absarc(-x, -y, r, Math.PI, Math.PI * 1.5, false) }
+  else { s.absarc(x, y, r, 0, Math.PI / 2, false); s.absarc(-x, y, r, Math.PI / 2, Math.PI, false); s.absarc(-x, -y, r, Math.PI, Math.PI * 1.5, false); s.absarc(x, -y, r, Math.PI * 1.5, Math.PI * 2, false) }
+  return s
+}
+/** Paredes de uma casca: anel de espessura `t` em volta do contorno, extrudado de z0 a z1. */
+function shellWalls(w: number, h: number, r: number, t: number, z0: number, z1: number) {
+  const sh = rrect(w, h, r) as THREE.Shape
+  sh.holes.push(rrect(w - 2 * t, h - 2 * t, Math.max(0.004, r - t), true) as THREE.Path)
+  const g = new THREE.ExtrudeGeometry(sh, { depth: z1 - z0, bevelEnabled: false, curveSegments: 6 })
+  g.translate(0, 0, z0)
+  return g
+}
+const WALL_T = mm(2.2), FLOOR_T = mm(2) // paredes e fundo das duas cascas (medidas externas; por dentro, aproximado)
+
 const knockT = () => { const k = useShowroom.getState().knock; return k ? now() - k.t0 : -1 }
 const knockFired = () => { const k = useShowroom.getState().knock; return !!k && k.fired && now() - k.t0 > 0.5 && now() - k.t0 < 3.5 }
 const doorOpen = () => { const t = actionTime('ima'); return t < 0 ? 0 : bump(t, 1, 2.6, 5.2, 6.6) }
@@ -50,6 +67,14 @@ const alarmOn = () => doorOpen() > 0.08 || knockFired()
  */
 export function SensorMagnetico({ interactive = false, open }: DeviceProps & { open?: () => number }) {
   const door = useRef<THREE.Group>(null!)
+  // anel em volta da janela do LED, por dentro da tampa (guia de luz)
+  const ledPipe = useMemo(() => {
+    // oval deitado, como a janela: mais comprido na largura da face
+    const sh = new THREE.Shape(); const o = mm(4), i = mm(2.4), hx = mm(2.2)
+    sh.absarc(hx, 0, o, -Math.PI / 2, Math.PI / 2, false); sh.absarc(-hx, 0, o, Math.PI / 2, Math.PI * 1.5, false)
+    const hole = new THREE.Path(); hole.absarc(-hx, 0, i, Math.PI * 1.5, Math.PI / 2, true); hole.absarc(hx, 0, i, Math.PI / 2, -Math.PI / 2, true); sh.holes.push(hole)
+    return new THREE.ExtrudeGeometry(sh, { depth: mm(4), bevelEnabled: false, curveSegments: 12 })
+  }, [])
   const slit = useMemo(() => stadiumGeometry(mm(8), mm(3.9), 0.01, 0.003), [])
   // emenda da tampinha: um aro fino com o mesmo perfil arredondado da tampa
   const capSeam = useMemo(() => roundedRectGeometry(BODY.w + 0.004, FRONT - SPLIT + 0.1 + 0.004, 0.047, 0.01, 0), [])
@@ -71,6 +96,15 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
     for (let i = 0; i <= 144; i++) { const t = i / 144; pts.push(new THREE.Vector3(Math.cos(t * Math.PI * 18) * 0.055, -t * 0.27, Math.sin(t * Math.PI * 18) * 0.055)) }
     return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 110, 0.009, 4)
   }, [])
+  // as duas metades do corpo são cascas finas: a base (atrás, presa à porta) e a tampa (na frente)
+  const shells = useMemo(() => {
+    const capD = 0.1
+    return {
+      baseWalls: shellWalls(BODY.w, BODY.len, 0.03, WALL_T, BACK + FLOOR_T, SPLIT),
+      coverWalls: shellWalls(BODY.w, BODY.len, 0.045, WALL_T, SPLIT - 0.1, FRONT - capD + 0.046),
+      capD,
+    }
+  }, [])
   const copper = useMemo(() => new THREE.MeshStandardMaterial({ color: '#b87333', roughness: 0.35, metalness: 0.9 }), [])
   const sceneOn = useActionPhase(['ima', 'choque']) >= 0
   const knock = useShowroom((s) => (interactive ? s.knock : null))
@@ -85,6 +119,12 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
     door.current.rotation.y = rot
   })
 
+  // LED: azul fraco em repouso; vermelho piscando no disparo
+  const sampleLed = (t: number, o: { color: string; on: number }) => {
+    const on = interactive ? alarmOn() : (open?.() ?? 0) > 0.08
+    o.color = on ? '#ff2a2a' : '#3d7bff'; o.on = on ? (t % 0.4 < 0.2 ? 1 : 0.05) : 0.12
+  }
+
   return (
     <DeviceCtx.Provider value={{ deviceId: 'magnetico', interactive }}>
       {/* a folha da porta gira na dobradiça (eixo vertical) e leva o corpo do sensor junto */}
@@ -94,13 +134,33 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
             {/* corpo em duas peças: a base (atrás, presa à porta) e a tampa (na frente), com a emenda entre elas */}
             <ClickablePart follow="corpo" explode={[0, 0, 0]}>
               <group rotation={DEITA}>
-                <RoundedBox args={[BODY.w, BODY.len, SPLIT - BACK]} radius={0.03} smoothness={4} position={[BODY.x, 0, (SPLIT + BACK) / 2]} material={M.white} castShadow />
+                {/* base: fundo e paredes; por dentro, o ressalto em cruz, as guias da placa, a divisória da ponta, o rasgo e o
+                    furo dos parafusos de fixação na porta */}
+                <RoundedBox args={[BODY.w, BODY.len, FLOOR_T]} radius={0.012} smoothness={2} position={[BODY.x, 0, BACK + FLOOR_T / 2]} material={M.white} castShadow />
+                <mesh geometry={shells.baseWalls} material={M.white} position={[BODY.x, 0, 0]} castShadow />
+                <group position={[BODY.x, 0, BACK + FLOOR_T]}>
+                  {[[0, mm(5)], [mm(5), 0]].map(([w, h], i) => <mesh key={i} material={M.white} position={[BODY.w / 2 - WALL_T - mm(5), mm(-24.5), mm(1)]}><boxGeometry args={[w + mm(2), h + mm(2), mm(2)]} /></mesh>)}
+                  <mesh material={M.white} position={[0, mm(-22.5), mm(0.8)]}><boxGeometry args={[mm(6), mm(1.6), mm(1.6)]} /></mesh>
+                  <mesh material={M.white} position={[0, mm(35.5), mm(3)]}><boxGeometry args={[BODY.w - 2 * WALL_T, mm(1.6), mm(6)]} /></mesh>
+                  <mesh material={M.hole} position={[0, mm(31.5), 0.001]} rotation={[0, 0, Math.PI / 2]}><planeGeometry args={[mm(13), mm(3)]} /></mesh>
+                  <mesh material={M.hole} position={[0, mm(39), 0.001]}><circleGeometry args={[mm(2.6), 16]} /></mesh>
+                  <mesh material={M.metal} position={[0, mm(39), mm(0.6)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(2.2), mm(2.2), mm(1.2), 16]} /></mesh>
+                  {[-11.5, 25.5].flatMap((y) => [-1, 1].map((sx) => (
+                    <mesh key={`${y}${sx}`} material={M.white} position={[sx * (BODY.w / 2 - WALL_T - mm(0.8)), mm(y), mm(3)]}><boxGeometry args={[mm(1.6), mm(2.5), mm(6)]} /></mesh>
+                  )))}
+                </group>
                 <RoundedBox args={[BODY.w + 0.004, BODY.len + 0.004, 0.012]} radius={0.006} smoothness={2} position={[BODY.x, 0, SPLIT]} material={M.partition} />
               </group>
             </ClickablePart>
             <ClickablePart id="corpo">
               <group rotation={DEITA}>
-                <RoundedBox args={[BODY.w, BODY.len, FRONT - SPLIT + 0.1]} radius={0.045} smoothness={5} position={[BODY.x, 0, (FRONT + SPLIT - 0.1) / 2]} material={M.white} castShadow />
+                {/* tampa: frente arredondada e paredes ocas; por dentro, o anel da luz do LED e o apoio da placa */}
+                <RoundedBox args={[BODY.w, BODY.len, shells.capD]} radius={0.045} smoothness={5} position={[BODY.x, 0, FRONT - shells.capD / 2]} material={M.white} castShadow />
+                <mesh geometry={shells.coverWalls} material={M.white} position={[BODY.x, 0, 0]} castShadow />
+                <group position={[BODY.x, 0, FRONT - shells.capD]} rotation={[Math.PI, 0, 0]}>
+                  <mesh geometry={ledPipe} material={M.white} position={[0, -LED_Y, 0]} />
+                  <mesh material={M.white} position={[0, mm(31.5), mm(4)]}><boxGeometry args={[mm(5), mm(2), mm(8)]} /></mesh>
+                </group>
                 {/* logo em relevo, no meio do comprimento */}
                 <LogoGroove r={0.12} position={[BODY.x, 0, FRONT + 0.0005]} />
                 {/* emenda da tampinha da ponta: dá a volta na frente e nos dois lados */}
@@ -111,10 +171,7 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
             <ClickablePart id="led">
               <group rotation={DEITA}>
                 <mesh geometry={slit} material={M.blackGloss} position={[BODY.x, LED_Y, FRONT - 0.007]} />
-                <Led sample={(t, o) => {
-                  const on = interactive ? alarmOn() : (open?.() ?? 0) > 0.08
-                  o.color = on ? '#ff2a2a' : '#3d7bff'; o.on = on ? (t % 0.4 < 0.2 ? 1 : 0.05) : 0.12
-                }} position={[BODY.x, LED_Y, FRONT + 0.006]}>
+                <Led on="shell" sample={sampleLed} position={[BODY.x, LED_Y, FRONT + 0.006]}>
                   <boxGeometry args={[0.115, 0.045, 0.004]} />
                 </Led>
               </group>
@@ -124,6 +181,8 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
             <ClickablePart id="placa">
               <group rotation={DEITA}>
                 <mesh material={M.pcb} position={[BODY.x, PCB.y, PCB.z]}><boxGeometry args={[PCB.w, PCB.len, 0.022]} /></mesh>
+                {/* o LED de verdade fica na placa, embaixo da janela; com o aparelho explodido, é ele que acende */}
+                <Led on="board" sample={sampleLed} position={[BODY.x, LED_Y, PCB.z + 0.016]}><boxGeometry args={[0.06, 0.035, 0.012]} /></Led>
                 <mesh geometry={spring} material={copper} position={[BODY.x + 0.02, PCB_END - 0.012, PCB.z + 0.03]} />
                 <mesh material={M.chip} position={[BODY.x - 0.12, PCB.y + PCB.len / 2 - 0.09, PCB.z + 0.05]}><boxGeometry args={[0.16, 0.17, 0.08]} /></mesh>
                 {[-0.04, 0.04].map((dy) => <mesh key={dy} material={M.metal} position={[BODY.x - 0.12, PCB.y + PCB.len / 2 - 0.09 + dy, PCB.z + 0.092]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.026, 0.026, 0.008, 10]} /></mesh>)}

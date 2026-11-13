@@ -7,6 +7,7 @@ import { M, fxBasic } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
 import { iconTexture, type IconId } from '../common/textures'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { boxesGeometry, latheZ, ringSectorGeometry, smoothLatheZ, stadiumGeometry, wire, type Block } from '../common/shapes'
 import { DeviceCtx, bump, seg, useActionPhase, type DeviceProps } from '../common/util'
 import type { ActionId } from '../../data/devices'
@@ -71,13 +72,41 @@ function build() {
   // O corpo é feito de duas placas finas no contorno inteiro (com a aba da argola), uma de cada lado da emenda, e
   // de dois ombros arredondados (sólidos de revolução, só no círculo): é por isso que a aba fica fina e o corpo, gordinho.
   // Metade da frente: maciça. Metade de trás: aro grosso com a cavidade da bateria (fechada pela tampa).
+  // casca da frente oca: a placa fina da emenda é só um aro (por dentro fica o vão da placa e do teclado)
   const fs = teardrop(); fs.holes.push(ringHole())
+  const frontHole = new THREE.Path(); frontHole.absarc(0, 0, R - SH.r - 0.01, 0, Math.PI * 2, true); fs.holes.push(frontHole)
   const front = new THREE.ExtrudeGeometry(fs, { depth: 0.05, ...bevel })
   const bs = teardrop(); bs.holes.push(ringHole())
   const cav = new THREE.Path(); cav.absarc(0, 0, 0.61, 0, Math.PI * 2, true); bs.holes.push(cav)
   const back = new THREE.ExtrudeGeometry(bs, { depth: 0.05, ...bevel }); back.translate(0, 0, -0.06)
-  // ombro da frente: da borda até a face plana, fechado no centro
-  const frontDome = latheZ([[R, 0.03], ...shoulder(), [0.001, SH.face]], 96)
+  // ombro da frente: da borda até a face plana, que é aberta em anel onde entra o teclado (como na peça real: o miolo
+  // fica preso por quatro raios em X). Por dentro, a parede do ombro tem a face de dentro (a casca tem ~1,5 mm)
+  const frontDome = latheZ([[R, 0.03], ...shoulder(), [0.64, SH.face]], 96)
+  const innerShoulder = shoulder().map(([r, z]) => [r - 0.035, Math.max(0.05, z - 0.03)] as [number, number])
+  const frontDomeIn = latheZ([[0.64, SH.face - 0.03], ...innerShoulder.reverse(), [R - 0.035, 0.05]], 96)
+  // raios em X que seguram o miolo: ficam nas frestas entre as quatro teclas (a 45°)
+  const spokes = mergeGeometries([45, 135, 225, 315].map((d) => {
+    const b = new THREE.BoxGeometry(0.4, 0.045, 0.03)
+    b.translate(0.455, 0, SH.face - 0.012); b.rotateZ(d * D2R)
+    return b
+  }))
+  // por dentro: parede circular em volta do teclado e os pinos de apoio da placa
+  const innerWall = new THREE.CylinderGeometry(0.665, 0.665, 0.09, 64, 1, true); innerWall.rotateX(Math.PI / 2); innerWall.translate(0, 0, 0.1)
+  const posts = mergeGeometries(Array.from({ length: 8 }, (_, i) => {
+    const a = ((i + 0.5) / 8) * Math.PI * 2, c = new THREE.CylinderGeometry(0.03, 0.03, 0.1, 10)
+    c.rotateX(Math.PI / 2); c.translate(Math.cos(a) * 0.76, Math.sin(a) * 0.76, 0.1)
+    return c
+  }))
+  // miolo: o disco central fixo também tem a face de baixo
+  const hubBack = new THREE.CircleGeometry(0.27, 48); hubBack.rotateY(Math.PI); hubBack.translate(0, KY, SH.face - 0.025)
+  // teclado de borracha: lâmina atrás da face, com um pino embaixo de cada tecla (aperta o domo dourado da placa)
+  const keypadSheet = new THREE.RingGeometry(0.28, 0.645, 64); keypadSheet.translate(0, KY, SH.face - 0.024)
+  const keypadBack = new THREE.RingGeometry(0.28, 0.645, 64); keypadBack.rotateY(Math.PI); keypadBack.translate(0, KY, SH.face - 0.034)
+  const plungers = mergeGeometries([0, 90, 180, 270].map((d) => {
+    const c = new THREE.CylinderGeometry(0.045, 0.05, 0.06, 16); c.rotateX(Math.PI / 2)
+    c.translate(Math.cos(d * D2R) * 0.47, KY + Math.sin(d * D2R) * 0.47, SH.face - 0.06)
+    return c
+  }))
   // ombro de trás: o mesmo perfil espelhado; por dentro, a parede da cavidade da bateria
   const backDome = latheZ([[0.61, -0.05], [0.61, -SH.face], ...shoulder().reverse().map(([r, z]) => [r, -z] as [number, number]), [R, -0.03]], 96)
   // filete azul: anel fino (~1,5 mm) no meio da espessura, quase rente às cascas
@@ -102,7 +131,7 @@ function build() {
   const smdMetal = boxesGeometry([[0, 0.29, -0.042, 0.1, 0.06, 0.016]])
   const smdGold = boxesGeometry([[0.13, 0.29, -0.048, 0.035, 0.035, 0.004], [0.2, 0.29, -0.048, 0.035, 0.035, 0.004]])
   return {
-    front, back, frontDome, backDome, fillet, cover, coverSill, smdTan, smdBlack, smdMetal, smdGold,
+    front, back, frontDome, frontDomeIn, spokes, innerWall, posts, hubBack, keypadSheet, keypadBack, plungers, backDome, fillet, cover, coverSill, smdTan, smdBlack, smdMetal, smdGold,
     sector: ringSectorGeometry(0.3, 0.62, -38 * D2R, 38 * D2R, 0.018, 0.022),
     // disco central fixo: baixo, sem contorno de tecla
     center: smoothLatheZ([[0.27, 0.168], [0.266, 0.182], [0.245, 0.19], [0.001, 0.192]], 96, 24),
@@ -187,6 +216,12 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
         <ClickablePart id="corpo">
           <mesh geometry={g.front} material={bodyMat} castShadow />
           <mesh geometry={g.frontDome} material={bodyMat} castShadow />
+          {/* por dentro: face interna do ombro, raios do miolo, parede em volta do teclado e pinos da placa */}
+          <mesh geometry={g.frontDomeIn} material={bodyMat} />
+          <mesh geometry={g.spokes} material={bodyMat} />
+          <mesh geometry={g.innerWall} material={bodyMat} />
+          <mesh geometry={g.posts} material={bodyMat} />
+          <mesh geometry={g.hubBack} material={bodyMat} />
           {/* linha de partição em volta do teclado */}
           <mesh material={M.groove} position={[0, KY, 0.1705]}><ringGeometry args={[0.652, 0.666, 96]} /></mesh>
         </ClickablePart>
@@ -211,6 +246,13 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
           <Led sample={(t, o) => { o.color = '#3d7bff'; o.on = tx() ? (t % 0.24 < 0.12 ? 1 : 0.1) : 0.05 }} position={[0, 0.687, 0.1735]} rotation={[-0.12, 0, 0]}>
             <boxGeometry args={[0.2, 0.04, 0.004]} />
           </Led>
+        </ClickablePart>
+
+        {/* teclado de borracha atrás da face: a lâmina e os pinos que apertam os domos da placa; sai junto com as teclas */}
+        <ClickablePart follow="btn-panico">
+          <mesh geometry={g.keypadSheet} material={M.blackBtn} />
+          <mesh geometry={g.keypadBack} material={M.blackBtn} />
+          <mesh geometry={g.plungers} material={M.blackBtn} />
         </ClickablePart>
 
         {/* 4 botões em cunha, em X: ✱ em cima, cadeado aberto à esquerda, fechado à direita, casa embaixo */}

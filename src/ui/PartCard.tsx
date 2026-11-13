@@ -46,6 +46,8 @@ export function PartCard() {
             <button className="btn !p-2" aria-label="Voltar à vista inteira" onClick={() => st().selectPart(null)}><Close size={16} /></button>
           </div>
 
+          {/* no celular, durante a ação, o card encolhe para o 3D ficar com quase toda a tela */}
+          {!(sheet && action) && <>
           <p className="text-[0.95em] text-white/85"><span className="mr-1 font-semibold text-brand-glow">O que é:</span>{part.what}</p>
 
           {part.facts.length > 0 && (
@@ -62,6 +64,8 @@ export function PartCard() {
             </p>
           )}
 
+          </>}
+
           {action ? <ActionPanel /> : part.action && (
             // em tela estreita o nome da ação vai para a linha de baixo, em vez de quebrar no meio
             <button className="btn btn-primary mt-3 w-full max-sm:flex-col max-sm:gap-0 max-sm:rounded-2xl" onClick={() => { beep(); st().set({ tour: false }); st().startAction(part.action!) }}>
@@ -76,11 +80,11 @@ export function PartCard() {
               <div className="h-full w-full origin-left bg-accent" style={{ animation: `action-bar ${TOUR_SECONDS}s linear forwards` }} />
             </div>
           )}
-          <div className={`flex items-center justify-between gap-2 border-t border-white/10 pt-3 ${tour && !action ? 'mt-0 border-transparent' : 'mt-3'}`}>
+          {!(sheet && action) && <div className={`flex items-center justify-between gap-2 border-t border-white/10 pt-3 ${tour && !action ? 'mt-0 border-transparent' : 'mt-3'}`}>
             <button className="btn" aria-label="Parte anterior" onClick={() => st().stepPart(-1)}><Chevron dir="left" size={16} /> anterior</button>
             {tour && <span className="text-xs text-accent">Tour ligado</span>}
             <button className="btn" aria-label="Próxima parte" onClick={() => st().stepPart(1)}>próxima <Chevron size={16} /></button>
-          </div>
+          </div>}
         </motion.aside>
       )}
     </AnimatePresence>
