@@ -30,7 +30,7 @@ Vista explodida, de cima para baixo: cúpula; placa (com o cartão do chip um po
 
 ## Fotossensor (68 × 144 × 94 mm com base e placa de fixação; 1 un = 79 mm; frente em +Z)
 
-O corpo (68 × 137 × 78 mm, mais fundo que largo) é uma casca gerada como superfície paramétrica (volta do contorno × altura): frente e laterais arredondadas, traseira mais plana, topo de borda arredondada. O capuz e o rebaixo do PIR (de ~20 a 64 mm de altura, ~61 mm de boca, fundo ~16 mm atrás da frente) são escavados na própria casca, com fundo e paredes; só a cápsula da câmera é saliente. O compartimento das pilhas também é aberto na casca. A casca sai em duas metades (frente e corpo traseiro), que se separam na vista explodida.
+O corpo tem 68 mm de largura, 137 de altura e a planta fecha um círculo: é tão fundo quanto largo, com a frente em meio-cilindro e a traseira bem arredondada. É uma casca gerada como superfície paramétrica (volta do contorno × altura), com a borda do topo arredondada e o sulco fino da tampa de cima. A frente tem três rebaixos, todos para DENTRO do corpo: o capuz raso em arco; dentro dele, o bolso da câmera e do LED, em forma de pera alongada, com o fundo inclinado (raso em cima, mais fundo embaixo), onde ficam a lente e a janela oval do LED (não há peça saliente); e a moldura da lente PIR, um painel fosco grande (~53 × 42 mm), curvo como o corpo e ~3 mm para dentro dele, com a prateleira em cima, os chanfros dos lados e o queixo embaixo, onde fica o logo. O funil que leva até o sensor PIR fica por dentro, atrás da lente.
 
 | part.id | Como é modelada |
 |---|---|
@@ -74,6 +74,8 @@ A traseira também tem os furos quadrados e os ganchos em "L" do encaixe, e a et
 
 ## Controle Remoto (45 × 51 × 13 mm; 1 un = 25,9 mm; frente em +Z)
 
+O corpo é gordinho (um seixo, não uma moeda): duas placas finas no contorno inteiro, com a aba fina da argola, e dois ombros arredondados feitos como sólidos de revolução, um na frente e um atrás. Espessura no meio de ~14 mm.
+
 | part.id | Como é modelada |
 |---|---|
 | `btn-panico`, `btn-desarmar`, `btn-armar`, `btn-parcial` | Setores de anel extrudados, em cruz, com o ícone em textura. |
@@ -96,3 +98,11 @@ A traseira também tem os furos quadrados e os ganchos em "L" do encaixe, e a et
 ## Aplicativo (0,95 × 1,95)
 
 O corpo do celular é uma extrusão de cantos redondos. A tela é React de verdade dentro do 3D (`<Html transform occlude>`, em `src/ui/AppScreen.tsx`), e cada região é uma parte: `sos`, `alarme-geral`, `ultimas-imagens`, `ultimos-eventos` e `menu`.
+
+## Placas internas
+
+Cada placa leva os componentes que aparecem nas fotos reais, em grupos ordenados perto dos CIs: capacitores (bege), resistores e CIs pequenos (pretos), cristal (metal) e pontos de teste (dourados). Os bloquinhos de cada cor são fundidos numa malha só por placa (`boxesGeometry`), sem instâncias. A textura tem trilhas em feixes paralelos com vias. Nada vem do desenho técnico de fábrica e não há texto, etiqueta, QR ou marca.
+
+## Cena "Em ação"
+
+Sala em corte (paredes claras, piso de madeira, rodapé, janela, porta com batente, aparador, sofá e tapete), invasor que anda, leque de detecção do fotossensor no chão e ondas de rádio saindo de quem transmite em cada etapa. O celular acompanha: alarme armado, aviso do disparo e a tela "Imagem" do aplicativo.
