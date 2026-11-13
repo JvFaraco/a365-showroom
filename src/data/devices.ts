@@ -98,7 +98,7 @@ export const DEVICES: Device[] = [
       {
         id: 'base',
         name: 'Base cinza',
-        what: 'Fundo do módulo. Reúne a grade do alto-falante, o bolsão por onde entram o cabo de rede e a fonte, a etiqueta de identificação e os pés de apoio.',
+        what: 'Fundo do módulo. Reúne a grade do alto-falante, o bolsão dos cabos, aberto na borda de trás, por onde entram o cabo de rede e a fonte, a etiqueta de identificação e os pés de apoio.',
         facts: [],
         camera: { position: [2.0, -1.4, 1.9], target: [0, -0.3, 0] },
       },
@@ -113,7 +113,7 @@ export const DEVICES: Device[] = [
       {
         id: 'ethernet',
         name: 'Porta Ethernet',
-        what: 'Entrada para cabo de rede, na parede do bolsão do fundo: o cabo entra deitado.',
+        what: 'Entrada para cabo de rede, na parede do bolsão do fundo: o cabo vem por trás e entra deitado.',
         facts: ['Terceira via de comunicação: cabo de rede'],
         camera: { position: [0.35, -1.7, -2.3], target: [0, -0.36, -0.3] },
         action: 'cabos',
@@ -121,7 +121,7 @@ export const DEVICES: Device[] = [
       {
         id: 'fonte',
         name: 'Entrada da fonte',
-        what: 'Alimentação na tomada. Fica no meio do bolsão do fundo, e o conector entra pela lateral.',
+        what: 'Alimentação na tomada. Fica no bolsão do fundo: o cabo vem por trás e o conector entra pela lateral.',
         facts: [],
         camera: { position: [-0.8, -1.9, -1.6], target: [0.18, -0.36, -0.47] },
         action: 'cabos',

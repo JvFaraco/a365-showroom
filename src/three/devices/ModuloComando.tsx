@@ -104,9 +104,10 @@ function lidGeometry() {
 
 // Fundo (pelo vídeo de fábrica). Tudo em coordenadas do corpo, antes do achatamento em Y.
 const Y_BOT = BOTTOM
-// Visto por baixo, com a antena para cima: o bolsão fica NO MEIO (um nada para a esquerda), encostado na borda de
-// trás; a antena sai ao lado dele, à direita (−X); o furo pequeno fica à esquerda (+X).
-const POCKET = { x0: -0.2, x1: 0.3, z0: -0.76, z1: -0.22, d: 0.3 } // bolsão fundo dos cabos, no meio (vai até a altura da placa)
+// Visto por baixo, com a antena para cima: o bolsão fica NO MEIO (um nada para a esquerda) e é um rasgo aberto na
+// borda de trás, por onde saem os cabos; a antena sai ao lado dele, à direita (−X); o furo pequeno fica à esquerda (+X).
+const POCKET = { x0: -0.2, x1: 0.3, z1: -0.22, d: 0.3 } // bolsão fundo dos cabos, no meio: começa em z1 e vai até a borda de trás, aberto
+const PLATE = { x0: POCKET.x0 + 0.03, x1: POCKET.x1 - 0.03, z0: -0.78, z1: POCKET.z1 + 0.02 } // moldura da grade de som, na face funda
 const LABEL = { x0: -0.3, x1: 0.3, z0: 0.0, z1: 0.3 } // rebaixo raso da etiqueta (fica vazio)
 const RJ = { x: 0.0, y: Y_BOT + 0.145 } // RJ45 deitado, na PAREDE DA FRENTE do bolsão, com a boca virada para dentro dele
 const GRILLE = { x: (POCKET.x0 + POCKET.x1) / 2, z: -0.565, pitch: 0.054 } // grade de som: hexágono de furos na face funda do bolsão
@@ -118,46 +119,103 @@ const JACK = { y: Y_BOT + POCKET.d * 0.5, z: -0.56 } // entrada da fonte na pare
 
 /**
  * Base cinza: parede no contorno em gota, com frisos verticais rasos (os sulcos caem em cima das fendas do fundo),
- * borda de baixo arredondada e fundo com os dois rebaixos abertos. A parede sobe até passar da borda da tampa.
+ * borda de baixo arredondada e fundo com o rebaixo da etiqueta. O bolsão dos cabos é um RASGO: abre no fundo e
+ * atravessa a parede de trás até a borda, que é por onde os cabos saem. A parede sobe até passar da borda da tampa.
  */
 function baseGeometry() {
+  type P = [number, number, number]
   // perfil: [fração do raio, altura, quanto do sulco]
-  const NT = 360, prof: [number, number, number][] = [
+  const NT = 360, prof: P[] = [
     [0.94, 0.13, 0], [0.985, 0.11, 1], [0.985, 0.03, 1], [0.985, -0.05, 1], [0.985, -0.13, 1], [0.985, -0.21, 1], [0.985, -0.3, 0.6],
     [0.975, -0.36, 0], [0.955, -0.39, 0], [0.93, Y_BOT, 0], // os sulcos somem antes da borda de baixo: por baixo, o contorno é liso
   ]
+  const NP = prof.length, yTop = Y_BOT + POCKET.d // yTop: a face funda do bolsão
+  // os frisos somem na largura do bolsão (a borda da abertura é lisa) e voltam aos poucos dos dois lados dela
+  const tA = Math.PI - Math.asin(POCKET.x1 / (RF * 0.93)), tB = Math.PI - Math.asin(POCKET.x0 / (RF * 0.93))
+  const fade = (t: number) => THREE.MathUtils.smoothstep(Math.max(tA - t, t - tB), 0, 8 * DEG)
+  // onde a tampa cobre a base (queixo, cauda e acima da borda), a parede recua para dentro dela
+  const rad = (t: number, k: number, y: number, w: number) => Math.min(outR(t) * (k - 0.02 * w * fade(t) * Math.pow(0.5 + 0.5 * Math.cos(60 * t), 2.5)), lidRadiusAt(t, y) - 0.014)
+  // colunas da parede. Na largura do bolsão a parede só existe acima da face funda: as colunas "abertas" param nela
+  type Col = { p: P[]; open: boolean; edge?: P }
+  const lift = (p: P[], edge: P) => p.map((q) => (q[1] < yTop ? edge : q))
+  const column = (t: number): Col | null => {
+    const p = prof.map(([k, y, w]) => { const r = rad(t, k, y, w); return [r * Math.sin(t), y, r * Math.cos(t)] as P })
+    const inside = Math.cos(t) > 0 ? 0 : p.filter(([x]) => x > POCKET.x0 && x < POCKET.x1).length
+    if (inside === 0) return { p, open: false }
+    if (inside < NP) return null // em cima do batente: dá lugar à coluna exata do batente
+    const rc = rad(t, 0.985, yTop, 1), edge: P = [rc * Math.sin(t), yTop, rc * Math.cos(t)]
+    return { p: lift(p, edge), open: true, edge }
+  }
+  // batente do rasgo: coluna reta, no plano x = xb
+  const jamb = (xb: number) => {
+    const t = Math.PI - Math.asin(xb / (RF * 0.985)), at = (r: number, y: number): P => [xb, y, -Math.sqrt(r * r - xb * xb)]
+    return { p: prof.map(([k, y, w]) => at(rad(t, k, y, w), y)), edge: at(rad(t, 0.985, yTop, 1), yTop) }
+  }
+  const j1 = jamb(POCKET.x1), j0 = jamb(POCKET.x0)
+  const cols: Col[] = []
+  for (let i = 0, where = 0; i <= NT; i++) {
+    const c = column((i / NT) * Math.PI * 2)
+    if (!c) continue
+    if (where === 0 && c.open) { cols.push({ p: j1.p, open: false }, { p: lift(j1.p, j1.edge), open: true, edge: j1.edge }); where = 1 }
+    if (where === 1 && !c.open) { cols.push({ p: lift(j0.p, j0.edge), open: true, edge: j0.edge }, { p: j0.p, open: false }); where = 2 }
+    cols.push(c)
+  }
   const pos: number[] = [], idx: number[] = []
-  for (let i = 0; i <= NT; i++) {
-    const t = (i / NT) * Math.PI * 2, groove = Math.pow(0.5 + 0.5 * Math.cos(60 * t), 2.5)
-    for (const [k, y, w] of prof) {
-      // onde a tampa cobre a base (queixo, cauda e acima da borda), a parede recua para dentro dela
-      const r = Math.min(outR(t) * (k - 0.02 * w * groove), lidRadiusAt(t, y) - 0.014)
-      pos.push(r * Math.sin(t), y, r * Math.cos(t))
+  for (const c of cols) for (const q of c.p) pos.push(...q)
+  for (let i = 0; i < cols.length - 1; i++) {
+    if (cols[i].open !== cols[i + 1].open) continue // os dois lados do batente não se ligam
+    for (let j = 0; j < NP - 1; j++) {
+      if (cols[i].open && prof[j][1] < yTop) continue // abaixo da face funda não há parede
+      const a = i * NP + j, b = a + NP; idx.push(a, a + 1, b, b, a + 1, b + 1)
     }
   }
-  const NP = prof.length
-  for (let i = 0; i < NT; i++) for (let j = 0; j < NP - 1; j++) { const a = i * NP + j, b = a + NP; idx.push(a, a + 1, b, b, a + 1, b + 1) }
   const wall = new THREE.BufferGeometry()
   wall.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); wall.setIndex(idx); wall.computeVertexNormals()
-  // fundo: o contorno com os recortes do bolsão e da etiqueta (no plano x, z)
+  // fundo: os mesmos pontos da parede (sem fresta), com o rasgo do bolsão no contorno e o recorte da etiqueta
   const sh = new THREE.Shape()
-  for (let i = 0; i <= NT; i++) { const t = (i / NT) * Math.PI * 2, r = outR(t) * 0.93; i ? sh.lineTo(r * Math.sin(t), r * Math.cos(t)) : sh.moveTo(r * Math.sin(t), r * Math.cos(t)) } // os mesmos pontos da parede: sem fresta
+  let first = true
+  const to = (x: number, z: number) => { first ? sh.moveTo(x, z) : sh.lineTo(x, z); first = false }
+  cols.forEach((c, i) => {
+    if (c.open) return
+    to(c.p[NP - 1][0], c.p[NP - 1][2])
+    if (cols[i + 1]?.open) { to(POCKET.x1, POCKET.z1); to(POCKET.x0, POCKET.z1) }
+  })
   const rect = (r: { x0: number; x1: number; z0: number; z1: number }) => { const h = new THREE.Path(); h.moveTo(r.x0, r.z0); h.lineTo(r.x1, r.z0); h.lineTo(r.x1, r.z1); h.lineTo(r.x0, r.z1); h.closePath(); return h }
-  sh.holes.push(rect(POCKET), rect(LABEL))
+  sh.holes.push(rect(LABEL))
   const floor = new THREE.ShapeGeometry(sh, 24)
   floor.rotateX(Math.PI / 2); floor.translate(0, Y_BOT, 0)
-  // paredes e teto de cada rebaixo, virados para dentro
+  const pl = (pw: number, ph: number, rot: P, at: P) => { const g = new THREE.PlaneGeometry(pw, ph); g.rotateX(rot[0]); g.rotateY(rot[1]); g.translate(...at); return g }
+  // paredes e teto de um rebaixo fechado, virados para dentro
   const inner = (r: { x0: number; x1: number; z0: number; z1: number }, d: number) => {
     const w = r.x1 - r.x0, l = r.z1 - r.z0, cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2, y = Y_BOT + d / 2
-    const pl = (pw: number, ph: number, rot: [number, number, number], at: [number, number, number]) => { const g = new THREE.PlaneGeometry(pw, ph); g.rotateX(rot[0]); g.rotateY(rot[1]); g.translate(...at); return g }
     return [
       pl(w, l, [Math.PI / 2, 0, 0], [cx, Y_BOT + d, cz]), // teto, virado para baixo
       pl(w, d, [0, 0, 0], [cx, y, r.z0]), pl(w, d, [0, Math.PI, 0], [cx, y, r.z1]), // paredes de trás e da frente
       pl(l, d, [0, Math.PI / 2, 0], [r.x0, y, cz]), pl(l, d, [0, -Math.PI / 2, 0], [r.x1, y, cz]), // paredes dos lados
     ]
   }
-  for (const g of [wall, floor]) g.deleteAttribute('uv')
-  const parts = [wall, floor, ...inner(POCKET, POCKET.d), ...inner(LABEL, 0.018)]
+  // leque de triângulos de um polígono plano, virado para `face`
+  const fan = (pts: P[], face: P) => {
+    const v = pts.map((q) => new THREE.Vector3(...q)), f = new THREE.Vector3(...face), out: number[] = []
+    for (let i = 1; i < v.length - 1; i++) {
+      const tri = [v[0], v[i], v[i + 1]]
+      if (new THREE.Vector3().subVectors(tri[1], tri[0]).cross(new THREE.Vector3().subVectors(tri[2], tri[0])).dot(f) < 0) tri.reverse()
+      for (const q of tri) out.push(q.x, q.y, q.z)
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(out, 3)); g.computeVertexNormals(); return g
+  }
+  // bolsão: parede da frente, face funda até a borda de trás e os dois lados, que vão até a parede de fora
+  const cx = (POCKET.x0 + POCKET.x1) / 2
+  const side = (xb: number, j: { p: P[]; edge: P }, face: P) => fan([[xb, Y_BOT, POCKET.z1], ...j.p.filter((q) => q[1] < yTop).reverse(), j.edge, [xb, yTop, POCKET.z1]], face)
+  const pocket = [
+    pl(POCKET.x1 - POCKET.x0, POCKET.d, [0, Math.PI, 0], [cx, Y_BOT + POCKET.d / 2, POCKET.z1]),
+    fan([[cx, yTop, POCKET.z1], [POCKET.x1, yTop, POCKET.z1], ...cols.filter((c) => c.open).map((c) => c.edge!), [POCKET.x0, yTop, POCKET.z1]], [0, -1, 0]),
+    side(POCKET.x1, j1, [-1, 0, 0]), side(POCKET.x0, j0, [1, 0, 0]),
+  ]
+  // moldura da grade de som: placa de cantos redondos, um degrau abaixo da face funda
+  const plate = roundedRectGeometry(PLATE.x1 - PLATE.x0, PLATE.z1 - PLATE.z0, 0.07, 0.012, 0.004)
+  plate.rotateX(Math.PI / 2); plate.translate((PLATE.x0 + PLATE.x1) / 2, yTop - 0.004, (PLATE.z0 + PLATE.z1) / 2)
+  const parts = [wall, floor, ...pocket, plate, ...inner(LABEL, 0.018)]
   for (const g of parts) g.deleteAttribute('uv')
   return mergeGeometries(parts.map((g) => (g.index ? g.toNonIndexed() : g)))
 }
@@ -185,6 +243,13 @@ function pcbGeometry() {
 const rowX = (x: number, z: number, n: number, dx = 0.045, w = 0.03, d = 0.016, h = 0.012): Block[] => Array.from({ length: n }, (_, i) => [x + i * dx, PCB_Y + h / 2, z, w, h, d] as Block)
 const rowZ = (x: number, z: number, n: number, dz = 0.045, w = 0.016, d = 0.03, h = 0.012): Block[] => Array.from({ length: n }, (_, i) => [x, PCB_Y + h / 2, z + i * dz, w, h, d] as Block)
 const ic = (x: number, z: number, w: number, d = w, h = 0.016): Block => [x, PCB_Y + h / 2, z, w, h, d]
+
+/** Fio dentro do corpo achatado em Y: a seção é compensada para continuar redonda depois do achatamento. */
+function roundWire(points: [number, number, number][], radius: number) {
+  const g = wire(points.map(([x, y, z]) => [x, y * SQUASH, z]), radius)
+  g.scale(1, 1 / SQUASH, 1)
+  return g
+}
 
 type Geo = ReturnType<typeof build>
 let cache: Geo | null = null
@@ -219,9 +284,10 @@ function build() {
     micB: wire([[0.39, -0.2, -0.24], [0.44, -0.1, -0.17], [0.42, PCB_Y + 0.03, -0.1], [0.37, PCB_Y + 0.012, -0.05]], 0.006),
     batA: wire([[0.6, PCB_Y + 0.03, -0.02], [0.7, PCB_Y + 0.03, 0.1], [0.74, PCB_Y - 0.04, 0.22]], 0.008),
     batB: wire([[0.6, PCB_Y + 0.03, -0.06], [0.72, PCB_Y + 0.03, 0.06], [0.76, PCB_Y - 0.04, 0.18]], 0.008),
-    netCable: wire([[0, 0, 0], [0, -0.05, -0.25], [0, -0.02, -0.7], [0.1, 0.02, -1.4]], 0.035),
-    powCable: wire([[0, 0, 0], [-0.12, -0.02, 0], [-0.3, -0.05, -0.12], [-0.42, -0.04, -0.5], [-0.5, 0.02, -1.1]], 0.026),
-    plugCable: wire([[0, 0, 0], [0.5, -0.02, -0.1], [1.3, -0.02, 0.2], [2.4, -0.02, 0.1]], 0.03),
+    // cabos de rede e da fonte: saem deitados pela abertura de trás do bolsão
+    netCable: roundWire([[0, 0, -0.08], [0, -0.03, -0.45], [-0.02, -0.06, -0.9], [-0.1, -0.08, -1.7]], 0.03),
+    powCable: roundWire([[0, 0, -0.16], [0, -0.03, -0.45], [0.03, -0.06, -0.8], [0.16, -0.08, -1.5]], 0.024),
+    plugCable: wire([[0, 0, 0], [-0.03, 0, -0.2], [0, -0.03, -0.5], [0.5, -0.05, -0.95], [1.5, -0.05, -0.9], [2.6, -0.05, -0.6]], 0.03),
   }
 }
 const G = () => (cache ??= build())
@@ -276,12 +342,12 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         o.updateMatrix(); fins.current.setMatrixAt(n++, o.matrix)
       }
       fins.current.count = n
-      // grade de som: 37 furos redondos em hexágono, na face funda do bolsão, virados para quem olha o fundo
+      // grade de som: 37 furos redondos em hexágono, na moldura da face funda do bolsão, virados para quem olha o fundo
       n = 0
       const HS = GRILLE.pitch, rows = [4, 5, 6, 7, 6, 5, 4]
       rows.forEach((cnt, j) => {
         for (let i = 0; i < cnt; i++) {
-          o.position.set(GRILLE.x + (i - (cnt - 1) / 2) * HS, Y_BOT + POCKET.d - 0.002, GRILLE.z + (j - 3) * HS * 0.866)
+          o.position.set(GRILLE.x + (i - (cnt - 1) / 2) * HS, Y_BOT + POCKET.d - 0.016, GRILLE.z + (j - 3) * HS * 0.866)
           o.rotation.set(Math.PI / 2, 0, 0); o.scale.setScalar(1.15)
           o.updateMatrix(); holes.current.setMatrixAt(n++, o.matrix)
         }
@@ -308,17 +374,18 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
     // tomada sai ("sem energia")
     const tb = actionTime('bateria-modulo')
     plug.current.visible = tb >= 0
-    // o plugue da fonte sai de lado e depois desce, para fora do bolsão
-    plug.current.position.set(POW_X - (tb < 0 ? 0 : seg(tb, 0.6, 1.2)) * 0.16, sq(JACK.y) - (tb < 0 ? 0 : seg(tb, 1.2, 1.8)) * 0.6, JACK.z)
+    // o plugue da fonte solta de lado, sai pela abertura de trás do bolsão e fica à vista, ao lado do módulo
+    const off = tb < 0 ? 0 : 1
+    plug.current.position.set(POW_X - off * seg(tb, 0.6, 1.0) * 0.06 + off * seg(tb, 1.5, 2.1) * 0.9, sq(JACK.y), JACK.z - off * seg(tb, 1.0, 1.6) * 0.6)
     // cabos de rede e de energia entram no bolsão e encaixam
     const tc = actionTime('cabos')
     cables.current.visible = tc >= 0
     if (tc >= 0) {
-      // o cabo de rede sobe para dentro do bolsão e entra deitado no RJ45, que fica na parede da frente
-      netRef.current.position.set(RJ.x, RJ.y - (1 - seg(tc, 0.3, 1.0)) * 0.8, NET_Z - (1 - seg(tc, 1.0, 1.4)) * 0.16 + bump(tc, 1.35, 1.5, 1.55, 1.7) * 0.015)
-      // o plugue da fonte sobe para dentro do bolsão e entra de lado, na parede esquerda
-      powRef.current.position.set(POW_X - (1 - seg(tc, 2.2, 2.8)) * 0.16 + bump(tc, 2.75, 2.9, 2.95, 3.1) * 0.02, JACK.y - (1 - seg(tc, 1.6, 2.2)) * 0.7, JACK.z)
-      cables.current.position.y = -seg(tc, 4.6, 5.4) * 1.1
+      // o cabo de rede vem de trás, pela abertura do bolsão, e entra deitado no RJ45, que fica na parede da frente
+      netRef.current.position.set(RJ.x, RJ.y, NET_Z - (1 - seg(tc, 0.3, 1.0)) * 0.75 - (1 - seg(tc, 1.0, 1.4)) * 0.16 + bump(tc, 1.35, 1.5, 1.55, 1.7) * 0.015)
+      // o plugue da fonte vem de trás pelo mesmo caminho e entra de lado, na parede esquerda
+      powRef.current.position.set(POW_X - (1 - seg(tc, 2.2, 2.8)) * 0.06 + bump(tc, 2.75, 2.9, 2.95, 3.1) * 0.01, JACK.y, JACK.z - (1 - seg(tc, 1.6, 2.2)) * 0.8)
+      cables.current.position.z = -seg(tc, 4.6, 5.4) * 1.3
     }
     // abrir: vira de cabeça para baixo, desvira e a cúpula se solta e sobe, mostrando a placa
     const to = actionTau('abrir-modulo')
@@ -542,16 +609,18 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
           <mesh geometry={g.batB} material={M.chip} />
         </ClickablePart>
 
-        {/* cabos que entram no bolsão: plugue de energia em L e cabo de rede */}
+        {/* cabos que entram pela abertura de trás do bolsão: plugue de energia em L e cabo de rede */}
         {interactive && (
           <group ref={cables} visible={false}>
             <group ref={netRef} position={[RJ.x, RJ.y, NET_Z]}>
               <mesh material={M.wireBlue} userData={{ fx: true }}><boxGeometry args={[0.13, 0.14, 0.2]} /></mesh>
-              <mesh material={M.wireBlue} position={[0, -0.58, -0.08]} userData={{ fx: true }} raycast={() => null}><cylinderGeometry args={[0.03, 0.03, 1.1, 10]} /></mesh>
+              <mesh geometry={g.netCable} material={M.wireBlue} userData={{ fx: true }} raycast={() => null} />
             </group>
             <group ref={powRef} position={[POW_X, JACK.y, JACK.z]}>
-              <mesh material={M.chip} position={[0.02, 0, 0]} userData={{ fx: true }}><boxGeometry args={[0.2, 0.1, 0.09]} /></mesh>
-              <mesh material={M.chip} position={[-0.07, -0.55, 0]} userData={{ fx: true }} raycast={() => null}><cylinderGeometry args={[0.025, 0.025, 1.1, 10]} /></mesh>
+              {/* plugue em L: o pino entra de lado na parede do bolsão e o corpo fica deitado, apontando para trás */}
+              <mesh material={M.chip} position={[0.05, 0, 0]} userData={{ fx: true }}><boxGeometry args={[0.14, 0.1, 0.09]} /></mesh>
+              <mesh material={M.chip} position={[0, 0, -0.085]} userData={{ fx: true }}><boxGeometry args={[0.09, 0.1, 0.2]} /></mesh>
+              <mesh geometry={g.powCable} material={M.chip} userData={{ fx: true }} raycast={() => null} />
             </group>
           </group>
         )}
