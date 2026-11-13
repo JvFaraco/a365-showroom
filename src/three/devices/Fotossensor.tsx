@@ -49,6 +49,7 @@ const LOGO_Y = H(13.5)
 // placa de fixação na parede (cinza): ~31 × 67 mm, de h = 0 a 68, ~11 mm de espessura
 const WALL = { hw: mm(15.5), top: H(67), plate: 0.045, rail: 0.085 }
 const HINGE: [number, number, number] = [0, Y0, -(HD + 0.08)] // eixo horizontal no pé da placa: é ali que o sensor inclina
+const UP = 0.22 // na vista explodida tudo sobe um pouco e a base cinza fica embaixo (é como ela "desce" sem entrar no pedestal)
 const FAN_Y = Y0 - 0.01 // altura do chão da cena do PIR
 const personX = (t: number) => -3.4 + seg(t, 2.5, 6.5) * 6.8
 const dogX = (t: number) => -3.4 + seg(t, 8, 12) * 6.8
@@ -364,12 +365,12 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
           <group position={[-HINGE[0], -HINGE[1], -HINGE[2]]}>
             {/* corpo: casca única com o rebaixo do capuz e o compartimento das pilhas; logo, frisos e berço */}
             {/* frente da casca: capuz, rebaixo do PIR, logo. Na vista explodida vai para a frente */}
-            <ClickablePart follow="corpo" explode={[0, 0, 1.0]}>
+            <ClickablePart follow="corpo" explode={[0, UP, 1.05]}>
               <mesh geometry={g.shellFront} material={shellMat} castShadow />
               <LogoGroove r={0.055} position={[0, LOGO_Y, HD + 0.002]} />
             </ClickablePart>
             {/* corpo traseiro: fica parado; leva os frisos, o parafuso lateral e o berço das pilhas */}
-            <ClickablePart follow="corpo">
+            <ClickablePart follow="corpo" explode={[0, UP, 0]}>
               <mesh geometry={g.shellBack} material={shellMat} castShadow />
               <mesh geometry={g.baseSeam} material={M.partition} />
               {/* cabeça de um parafuso pequeno na lateral, junto à base */}

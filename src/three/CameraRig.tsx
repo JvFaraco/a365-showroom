@@ -116,7 +116,9 @@ export function CameraRig() {
         dist = Math.max(fitBox(box, TGT, DIR, PART_FILL), SPH.radius * 2.2, 0.85)
       } else if (!DBOX.isEmpty()) {
         DBOX.getCenter(TGT)
-        DIR.fromArray(d.home.position).sub(new THREE.Vector3().fromArray(d.home.target)).normalize()
+        // na vista explodida, o aparelho pode pedir um ângulo próprio (a fila de peças vista de lado)
+        const hv = s.view === 'exploded' && d.explodeView ? d.explodeView : d.home
+        DIR.fromArray(hv.position).sub(new THREE.Vector3().fromArray(hv.target)).normalize()
         dist = fitBox(DBOX, TGT, DIR, HOME_FILL)
         // o pedestal (disco sob o aparelho) também precisa caber na área livre
         const r = pedestalRadius(s.device), py = d.bottom - 0.2

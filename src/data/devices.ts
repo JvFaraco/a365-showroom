@@ -42,6 +42,7 @@ export type Device = {
   parts: Part[]
   inKit365S: boolean
   home: { position: Vec3; target: Vec3 } // vista inteira
+  explodeView?: { position: Vec3; target: Vec3 } // vista explodida: ângulo próprio, quando a fila de peças pede
   bottom: number // ponto mais baixo do modelo (altura do pedestal)
   kitScale: number // escala relativa nas cenas com o kit completo
 }
@@ -207,6 +208,8 @@ export const DEVICES: Device[] = [
     tagline: 'Detecta, fotografa e confirma.',
     inKit365S: true,
     home: { position: [0.45, 0.4, 4.2], target: [0, 0, -0.1] }, // quase de frente: a cápsula e a lente aparecem no eixo do aparelho
+    // explodido: quase de lado, para a fila de peças no eixo frente–trás aparecer inteira
+    explodeView: { position: [4.4, 1.0, 1.6], target: [0, 0.1, -0.1] },
     bottom: -1.03,
     kitScale: 1.0, // 79 mm/un (referência)
     parts: [
@@ -217,7 +220,7 @@ export const DEVICES: Device[] = [
         facts: ['Fotografa no momento do disparo', 'Ou quando você pede pelo app', 'A IA analisa a foto e identifica pessoas'],
         camera: { position: [0.7, 0.7, 2.0], target: [0, 0.41, 0.5] },
         action: 'camera',
-        explode: [0, 0, 0.45],
+        explode: [0, 0.22, 1.05],
         pin: [0, 0.06, 0],
       },
       {
@@ -227,7 +230,7 @@ export const DEVICES: Device[] = [
         facts: ['Foto nítida mesmo no escuro'],
         camera: { position: [-0.6, 0.35, 1.9], target: [0, 0.18, 0.5] },
         action: 'camera',
-        explode: [0, 0, 0.45],
+        explode: [0, 0.22, 1.05],
         pin: [-0.1, 0.03, 0],
       },
       {
@@ -236,7 +239,7 @@ export const DEVICES: Device[] = [
         what: 'Indica detecção e funcionamento.',
         facts: [],
         camera: { position: [0.5, 0.1, 1.7], target: [0, 0.1, 0.5] },
-        explode: [0, 0, 0.45],
+        explode: [0, 0.22, 1.05],
         pin: [0.1, -0.03, 0],
       },
       {
@@ -246,7 +249,7 @@ export const DEVICES: Device[] = [
         facts: ['Campo de 90°', 'Alcance de 8 a 10 m', 'Pet Immune: ignora animais pequenos'],
         camera: { position: [0.7, -0.3, 2.2], target: [0, -0.48, 0.3] },
         action: 'pir',
-        explode: [0, 0, 0.7],
+        explode: [0, 0.22, 1.05],
       },
       {
         id: 'base',
@@ -265,7 +268,7 @@ export const DEVICES: Device[] = [
         tip: 'Instale no canto, entre 2,10 m e 2,40 m do chão, apontando para o centro da área.',
         camera: { position: [1.5, -0.2, -2.2], target: [0, -0.6, -0.6] },
         action: 'suporte',
-        explode: [0, 0, -1.25],
+        explode: [0, 0.22, -1.15],
         pin: [0.12, -0.2, 0],
       },
       {
@@ -275,7 +278,7 @@ export const DEVICES: Device[] = [
         facts: [],
         camera: { position: [-1.6, 0.6, -2.3], target: [0, 0.25, -0.5] },
         action: 'tampa-foto',
-        explode: [0, 0, -0.75],
+        explode: [0, 0.22, -0.8],
         pin: [0, 0.25, 0],
       },
       {
@@ -285,7 +288,7 @@ export const DEVICES: Device[] = [
         facts: ['Duram até 2 anos, conforme o uso'],
         camera: { position: [-1.3, 0.6, -2.2], target: [0, 0.23, -0.37] },
         internal: true,
-        explode: [0, 0, -0.4],
+        explode: [0, 0.22, -0.42],
         pin: [0, -0.2, 0],
       },
       {
@@ -294,7 +297,7 @@ export const DEVICES: Device[] = [
         what: 'Gabarito para furar a parede e guia para encaixar o sensor.',
         facts: ['Os parafusos de trava impedem que o sensor seja retirado'],
         camera: { position: [-1.3, -0.3, -2.2], target: [0, -0.6, -0.55] },
-        explode: [0, 0, -1.0],
+        explode: [0, 0.22, -1.15],
         pin: [-0.05, 0.15, 0],
       },
       {
@@ -304,7 +307,7 @@ export const DEVICES: Device[] = [
         facts: [],
         camera: { position: [1.0, -0.2, 2.4], target: [0, -0.4, 0.1] },
         internal: true,
-        explode: [0, 0, 0.2],
+        explode: [0, 0.22, 0.3],
       },
       {
         id: 'modulo-camera',
@@ -313,7 +316,7 @@ export const DEVICES: Device[] = [
         facts: [],
         camera: { position: [0.9, 0.7, 2.2], target: [0, 0.4, 0.2] },
         internal: true,
-        explode: [0, 0, 0.2],
+        explode: [0, 0.22, 0.62],
       },
       {
         id: 'sensor-pir',
@@ -322,7 +325,7 @@ export const DEVICES: Device[] = [
         facts: [],
         camera: { position: [0.8, -0.3, 2.0], target: [0, -0.55, 0.15] },
         internal: true,
-        explode: [0, 0, 0.2],
+        explode: [0, 0.22, 0.3],
       },
       {
         id: 'antena',
@@ -331,7 +334,7 @@ export const DEVICES: Device[] = [
         facts: [],
         camera: { position: [0.8, -0.7, 2.0], target: [0, -0.85, 0.2] },
         internal: true,
-        explode: [0, 0, 0.2],
+        explode: [0, 0.22, 0.3],
       },
     ],
   },
