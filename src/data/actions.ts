@@ -15,6 +15,8 @@ export const ACTIONS: Record<ActionId, {
   keepDim?: boolean
   /** câmera própria da ação, quando o efeito não cabe no enquadramento da parte */
   camera?: { position: Vec3; target: Vec3 }
+  /** raio da cena da ação, para caber na tela estreita (padrão: 30% da distância da câmera da ação) */
+  radius?: number
 }> = {
   antena: { label: 'Rosquear a antena e ver as 3 vias', duration: 13, camera: { position: [4.4, 3.4, -5.6], target: [0, 1.3, -0.4] } },
   sos190: { label: 'Acionar o 190' },
@@ -27,8 +29,8 @@ export const ACTIONS: Record<ActionId, {
   camera: { label: 'Tirar uma foto', duration: 7, camera: { position: [1.7, 0.8, 4.2], target: [0.45, 0.3, 0.3] } },
   suporte: { label: 'Inclinar o sensor', duration: 8, camera: { position: [4.6, 0.4, -0.6], target: [0, -0.2, -0.1] } },
   'tampa-foto': { label: 'Abrir a tampa', hold: 3.8, undo: 'Fechar', camera: { position: [1.5, 0.5, 5.6], target: [0, -0.1, 0.4] } },
-  ima: { label: 'Abrir a porta', duration: 7, camera: { position: [-0.6, 0.6, 7.2], target: [0.4, -0.7, 0] } },
-  choque: { label: 'Testar uma batida', camera: { position: [-0.6, 0.6, 7.2], target: [0.4, -0.7, 0] } },
+  ima: { label: 'Abrir a porta', duration: 7, camera: { position: [-1.3, 0.6, 7.2], target: [-0.3, -0.7, 0] }, radius: 3.1 },
+  choque: { label: 'Testar uma batida', camera: { position: [-1.3, 0.6, 7.2], target: [-0.3, -0.7, 0] }, radius: 3.1 },
   som: { label: 'Tocar a sirene', camera: { position: [1.1, 0.4, 3.6], target: [0, 0, 0.2] } },
   encaixe: { label: 'Encaixar no suporte', duration: 4.6, camera: { position: [3.6, 1.5, 6.4], target: [0, 0.9, 0] } },
   'bateria-sirene': { label: 'Retirar a bateria', hold: 4.0, undo: 'Recolocar', camera: { position: [1.8, 1.6, 7.0], target: [0, 0.9, 0] } },
@@ -37,7 +39,7 @@ export const ACTIONS: Record<ActionId, {
   'btn-armar': { label: 'Apertar: armar', duration: 3.2, camera: { position: [1.1, 0.7, 7.2], target: [1.0, 0.2, 0] } },
   'btn-parcial': { label: 'Apertar: armar parcial', duration: 3.2, camera: { position: [1.1, 0.7, 7.2], target: [1.0, 0.2, 0] } },
   panico: { label: 'Acionar o pânico', camera: { position: [1.1, 0.7, 7.2], target: [1.0, 0.2, 0] } },
-  alcance: { label: 'Ver o alcance', duration: 6, camera: { position: [0, 4.6, 6.4], target: [0, -0.4, 0] } },
+  alcance: { label: 'Ver o alcance', duration: 6, camera: { position: [0, 4.6, 6.4], target: [0, -0.4, 0] }, radius: 3.2 },
   'tampa-controle': { label: 'Abrir a tampa', hold: 3.7, undo: 'Fechar', camera: { position: [1.1, 0.6, 5.6], target: [-0.2, -0.15, 0.3] } },
   flip: { label: 'Virar a placa', duration: 5, camera: { position: [0.9, 0.3, 4.0], target: [0, 0, 0] } },
   brilho: { label: 'Ver o brilho', duration: 3, camera: { position: [0.7, 0.2, 3.6], target: [0, 0, 0] } },

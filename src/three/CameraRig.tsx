@@ -35,7 +35,10 @@ function freeRect(w: number, h: number, withCard: boolean, listOpen: boolean) {
   const desktop = w >= 768
   const top = desktop ? 150 : 190
   // embaixo ficam o dock e, acima dele, a dica de uso: a área livre termina antes dos dois
-  const bottom = desktop ? h - 152 : withCard ? h * 0.46 : h - 146
+  // no celular o card é uma folha de baixo de altura variável: a área livre termina no topo dele (medido no DOM)
+  const card = !desktop && withCard && typeof document !== 'undefined' ? document.getElementById('part-card') : null
+  const cardTop = card ? card.getBoundingClientRect().top : h * 0.46
+  const bottom = desktop ? h - 152 : withCard ? Math.max(top + 120, cardTop - 8) : h - 146
   const left = desktop && listOpen && w >= 1024 ? 285 : 12
   const right = desktop && withCard ? w - 400 : w - 12
   return { cx: (left + right) / 2, cy: (top + bottom) / 2, w: Math.max(120, right - left), h: Math.max(120, bottom - top) }
@@ -80,6 +83,7 @@ export function CameraRig() {
     const k = s.view === 'exploded' || s.view === 'manual' ? 1 : 0
     const p = getPart(s.device, s.part)
     const ac = s.action ? ACTIONS[s.action.id].camera : undefined
+    const acRadius = s.action ? ACTIONS[s.action.id].radius : undefined
     const free = freeRect(W, H, !!(p || ac), s.listOpen)
     const tanHalf = Math.tan((cam.fov * Math.PI) / 360)
     const fit = (radius: number, fill: number) => {
@@ -105,7 +109,8 @@ export function CameraRig() {
       TGT.fromArray(ac.target); DIR.fromArray(ac.position).sub(TGT)
       const authored = DIR.length()
       DIR.normalize()
-      dist = Math.max(authored, fit(authored * 0.3, 0.9)) * (portrait ? 1.25 : 1)
+      // a cena da ação tem ~30% da distância do autor de raio; o encaixe na área livre já conta o formato da tela
+      dist = Math.max(authored, fit(acRadius ?? authored * 0.3, 0.9))
     } else {
       const box = p ? partBox(s.device, p.id, k, BOX) : null
       deviceBox(s.device, k, DBOX)
