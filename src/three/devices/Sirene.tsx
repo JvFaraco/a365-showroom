@@ -25,6 +25,8 @@ const LED_Y = -40 / 64 // LED na face, a 40 mm do centro, embaixo (às 6 horas):
 // O miolo e a traseira são desenhados deitados (bateria na horizontal, em cima) e girados 90°: na sirene instalada,
 // com o LED para baixo, a bateria fica em pé de um lado e o elemento sonoro do outro.
 const CORE_ROT = Math.PI / 2
+// por dentro da traseira (pelo CAD): a frente do disco de trás e a altura em que a placa se apoia (~16 mm à frente dele)
+const MOLD_Z0 = BACK + 0.052, BOARD_Z0 = 0.3 - 20.3 / 64
 const rot = ([x, y]: [number, number]): [number, number] => [-y, x] // do miolo para a sirene instalada
 const SOUND: [number, number] = [0.2, -0.42] // centro do elemento sonoro (miolo)
 const BATT_Y = 0.38 // eixo da bateria (miolo)
@@ -134,7 +136,8 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
   const piezo = useMemo(() => smoothLatheZ([[0.04, 0.06], [0.2, 0.06], [0.225, 0.05], [0.23, 0.03], [0.23, -0.04], [0.22, -0.05], [0.001, -0.05]], 48, 24), [])
   const board = useMemo(() => {
     const sh = new THREE.Shape()
-    sh.moveTo(-0.72, 0.22); sh.lineTo(-0.24, 0.22); sh.lineTo(-0.24, 0.1); sh.lineTo(-0.14, 0.1); sh.lineTo(-0.14, -0.42); sh.lineTo(-0.5, -0.42); sh.lineTo(-0.74, -0.05); sh.closePath()
+    // cunha: lado reto rente à meia-cana da bateria, lado reto ao lado do elemento sonoro e o lado inclinado seguindo a borda
+    sh.moveTo(-0.12, 0.18); sh.lineTo(-0.86, 0.18); sh.lineTo(-0.86, -0.07); sh.lineTo(-0.45, -0.55); sh.lineTo(-0.12, -0.55); sh.closePath()
     return new THREE.ExtrudeGeometry(sh, { depth: 0.018, bevelEnabled: false })
   }, [])
   // componentes pequenos da placa, agrupados em volta dos CIs, como na placa real (sem texto): uma malha por cor
@@ -147,9 +150,9 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
       white: boxesGeometry([[-0.27, -0.37, -0.168, 0.12, 0.06, 0.028]]), // conector branco dos dois fios do elemento sonoro
     }
   }, [])
-  const antenna = useMemo(() => wire([[-0.7, 0.2, -0.175], [-0.74, 0.36, -0.14], [-0.66, 0.56, -0.1], [-0.5, 0.74, -0.08], [-0.2, 0.8, -0.06], [0.2, 0.78, -0.06]], 0.01), []) // contorna a bateria
-  const piezoWireA = useMemo(() => wire([[0.0, -0.44, -0.09], [-0.12, -0.5, -0.13], [-0.25, -0.46, -0.17], [-0.3, -0.38, -0.178]], 0.009), [])
-  const piezoWireB = useMemo(() => wire([[0.02, -0.4, -0.09], [-0.1, -0.44, -0.13], [-0.2, -0.42, -0.17], [-0.24, -0.36, -0.178]], 0.009), [])
+  const antenna = useMemo(() => wire([[-0.7, 0.17, -0.175], [-0.74, 0.3, -0.1], [-0.66, 0.56, -0.02], [-0.5, 0.74, -0.02], [-0.2, 0.8, -0.02], [0.2, 0.78, -0.03]], 0.01), []) // passa por cima da meia-cana da bateria
+  const piezoWireA = useMemo(() => wire([[0.0, -0.44, -0.185], [-0.1, -0.5, -0.165], [-0.22, -0.47, -0.16], [-0.3, -0.4, -0.165]], 0.009), [])
+  const piezoWireB = useMemo(() => wire([[0.02, -0.4, -0.185], [-0.08, -0.45, -0.165], [-0.18, -0.43, -0.16], [-0.24, -0.38, -0.165]], 0.009), [])
   const whiteDS = useMemo(() => { const m = M.white.clone(); m.side = THREE.DoubleSide; return m }, [])
   const ringMat = useMemo(() => fxBasic('#8fb4ff', 0), [])
   const sparkMat = useMemo(() => fxBasic('#fff3b0', 0), [])
@@ -221,6 +224,20 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
           ))}
           {/* etiqueta lisa, sem texto */}
           <mesh material={M.whiteRelief} position={[0.7, 0.42, BACK - 0.001]}><boxGeometry args={[0.13, 0.32, 0.004]} /></mesh>
+          {/* por dentro, pelo CAD: a meia-cana que cobre a bateria pela frente (a bateria entra por trás) */}
+          <mesh material={whiteDS} position={[0.0, BATT_Y, BACK + 0.13]} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[0.265, 0.265, 1.1, 28, 1, true, -Math.PI / 2, Math.PI]} /></mesh>
+          {[-1, 1].map((k) => <mesh key={k} material={M.white} position={[0, BATT_Y + k * 0.265, (MOLD_Z0 + BACK + 0.13) / 2]}><boxGeometry args={[1.1, 0.02, BACK + 0.13 - MOLD_Z0]} /></mesh>)}
+          {/* a moldura da janela do tamper sobe até a placa: é nela que a placa se apoia */}
+          {([[-0.43, -0.28, 0.46, 0.023], [-0.43, 0.11, 0.46, 0.023], [-0.65, -0.085, 0.023, 0.39], [-0.21, -0.085, 0.023, 0.39]] as const).map(([x, y, w, h], i) => (
+            <mesh key={i} material={M.white} position={[x, y, (MOLD_Z0 + BOARD_Z0) / 2]}><boxGeometry args={[w, h, BOARD_Z0 - MOLD_Z0]} /></mesh>
+          ))}
+          {/* as duas abas que prendem a borda da placa: uma do lado, outra embaixo (perto do LED) */}
+          {([[-0.885, 0.02, 0.025, 0.1, 0.03, 0], [-0.36, -0.655, 0.1, 0.025, 0, 0.03]] as const).map(([x, y, w, h, lx, ly], i) => (
+            <group key={i}>
+              <mesh material={M.white} position={[x, y, (MOLD_Z0 + BOARD_Z0 + 0.03) / 2]}><boxGeometry args={[w, h, BOARD_Z0 + 0.03 - MOLD_Z0]} /></mesh>
+              <mesh material={M.white} position={[x + lx, y + ly, BOARD_Z0 + 0.026]}><boxGeometry args={[w + 2 * lx, h + 2 * ly, 0.012]} /></mesh>
+            </group>
+          ))}
         </ClickablePart>
 
         {/* encaixe moldado na traseira, atrás do elemento sonoro: disco levemente elevado, um anel e arcos em volta. É
@@ -268,7 +285,7 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
         </ClickablePart>
         <ClickablePart id="placa">
           {/* a placa inteira fica por dentro: contorno em cunha, chips, antena de fio preto e os dois fios brancos do elemento sonoro */}
-          <group position={[0, -0.08, 0]}>
+          <group position={[0, -0.08, BOARD_Z0 + 0.2]}>
             <mesh geometry={board} material={M.pcb} position={[0, 0, -0.2]} />
             {/* o LED de verdade fica na placa, atrás da janela da face; com a sirene explodida, é ele que acende */}
             <Led on="board" sample={sampleLed} boost={4} position={[LED_Y, 0.08, -0.16]}><boxGeometry args={[0.05, 0.035, 0.02]} /></Led>

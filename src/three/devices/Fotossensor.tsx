@@ -81,11 +81,11 @@ const CAM_TILT = Math.atan(POCKET_SLOPE) // a rampa do bolso (a normal aponta pa
 const CAM_ROT: [number, number, number] = [CAM_TILT, 0, 0]
 const LOGO_Y = H(21.5), LOGO_R = mm(5.6)
 // suporte de parede (cinza): ~31 × 67 mm, de h = 0 a 68; com os trilhos, afasta o corpo ~16 mm da parede
-// Suporte de parede em duas peças (medidas externas): a LUVA faz parte da base cinza e sobe pela traseira até h = 68,
+// Suporte de parede em duas peças (medidas externas): a LUVA faz parte da base cinza e sobe pela traseira até a borda da tampa das pilhas,
 // com o encaixe em "Λ" (estreita para cima) e o parafuso de trava; a PLACA DE PAREDE é solta, vai parafusada na
 // parede e tem a guia que entra na luva. As duas têm 31 mm de largura.
 const ZC = (z: number) => (z - 50.9) / 79.07 // profundidade em mm a partir da parede → z do modelo
-const WALL = { hw: mm(15.5), top: H(68), floor: ZC(11), back: ZC(3.5), plate0: ZC(0.5), plate1: ZC(2.3), guide: ZC(10) }
+const WALL = { hw: mm(15.5), top: H(63.5), floor: ZC(11), back: ZC(3.5), plate0: ZC(0.5), plate1: ZC(2.3), guide: ZC(10) }
 /** Meia largura do encaixe da luva na altura h (mm): 13 mm embaixo, 5,5 mm no alto. */
 const slotHW = (h: number) => mm(13 - (7.5 * h) / 68)
 const HINGE: [number, number, number] = [0, Y0, WALL.floor] // eixo horizontal no pé da placa: é ali que o sensor inclina
@@ -276,7 +276,7 @@ function build() {
   const sleeveCore = upright(new THREE.ExtrudeGeometry(core, { depth: WALL.top - Y0, bevelEnabled: false }), Y0)
   const lip = (sx: number) => {
     const sh = new THREE.Shape()
-    sh.moveTo(sx * w, Y0); sh.lineTo(sx * slotHW(0), Y0); sh.lineTo(sx * slotHW(68), WALL.top); sh.lineTo(sx * w, WALL.top); sh.closePath()
+    sh.moveTo(sx * w, Y0); sh.lineTo(sx * slotHW(0), Y0); sh.lineTo(sx * slotHW(63.5), WALL.top); sh.lineTo(sx * w, WALL.top); sh.closePath()
     const g = new THREE.ExtrudeGeometry(sh, { depth: WALL.floor - WALL.back, bevelEnabled: true, bevelSize: 0.004, bevelThickness: 0.004, bevelSegments: 2 })
     g.translate(0, 0, WALL.back)
     return g

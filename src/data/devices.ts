@@ -484,7 +484,7 @@ export const DEVICES: Device[] = [
         camera: { position: [-1.0, 0.6, -2.7], target: [-0.38, 0.02, -0.3] },
         internal: true,
         action: 'bateria-sirene',
-        explode: [0, 0, -0.5],
+        explode: [0, 0, -0.9],
       },
       {
         id: 'placa',
