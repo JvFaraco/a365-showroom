@@ -11,7 +11,7 @@ import { actionTime } from '../../store/showroomStore'
 // chapa pintada: cor viva (um pouco de emissivo) com um leve brilho de verniz. `userData.brand` pede ao ClickablePart
 // a correção que mantém o azul e o amarelo da marca exatos depois do tone mapping (ver `brandPatch`).
 const face = (map: THREE.Texture) => {
-  const m = new THREE.MeshPhysicalMaterial({ color: '#ffffff', map, emissive: '#ffffff', emissiveMap: map, emissiveIntensity: 0.4, roughness: 0.4, clearcoat: 0.3, clearcoatRoughness: 0.3, envMapIntensity: 0.5 })
+  const m = new THREE.MeshPhysicalMaterial({ color: '#ffffff', map, emissive: '#ffffff', emissiveMap: map, emissiveIntensity: 0.4, roughness: 0.4, clearcoat: 0.1, clearcoatRoughness: 0.3, envMapIntensity: 0.25 })
   m.userData.brand = true
   return m
 }

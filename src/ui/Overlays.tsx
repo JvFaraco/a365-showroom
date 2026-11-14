@@ -133,7 +133,7 @@ function ShowroomUI() {
         </p>
       )}
       {presenter && !part && (
-        <p className="pointer-events-none fixed bottom-1 right-3 z-10 hidden text-xs text-white/60 md:block">→ próxima · ← anterior · 1–7 aparelho · E explode · X raio-X · M manual · T tour · R reseta</p>
+        <p className="pointer-events-none fixed bottom-1 right-3 z-10 hidden text-xs text-white/60 md:block">→ próxima · ← anterior · 1–7 aparelho · E explode · X raio-X · T tour · R reseta</p>
       )}
     </>
   )

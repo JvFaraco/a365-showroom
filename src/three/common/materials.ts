@@ -17,6 +17,8 @@ export const M = {
   groove: std({ color: '#23262d', roughness: 0.9 }),
   partition: std({ color: '#7d828c', roughness: 0.9 }),
   logoGroove: std({ color: '#b3b8c2', roughness: 0.75 }),
+  // logo dos aparelhos: na peça real é branco sobre branco (só o sulco faz sombra). Mesmas flags do logoGroove
+  logoLight: std({ color: '#d2d2ce', roughness: 0.75 }),
   logoGrooveDark: std({ color: '#5d626c', roughness: 0.6 }),
   // plástico cinza (base e suportes): fosco, com micro-textura
   grey: std({ color: '#8b8f97', roughness: 0.7, ...N(0.09) }),

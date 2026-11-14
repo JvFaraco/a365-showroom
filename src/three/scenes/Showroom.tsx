@@ -103,6 +103,14 @@ export function Boot() {
     const st = useShowroom.getState
     const n = DEVICES.length
     ;(async () => {
+      // as texturas de canvas (placa, adesivo do módulo) são desenhadas uma vez só: espera as fontes chegarem antes,
+      // senão saem com a fonte de reserva (no máximo 2,5 s; a ordem de carga não muda)
+      if (st().mounted === 0 && typeof document !== 'undefined' && document.fonts) {
+        await Promise.race([
+          Promise.all(['600 64px Poppins', '700 64px Poppins', '400 40px "Encode Sans"', '600 34px "Encode Sans"'].map((f) => document.fonts.load(f, 'AVISO À POLÍCIA Dúvidas 0123456789'))),
+          new Promise((r) => setTimeout(r, 2500)),
+        ]).catch(() => {})
+      }
       for (let i = st().mounted; i < n; i++) {
         if (dead) return
         const id = DEVICES[i].id

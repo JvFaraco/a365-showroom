@@ -184,6 +184,9 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
   const action = useShowroom((s) => (interactive ? s.action?.id : undefined))
   const canArm = action === 'alarme-geral'
   const [notif, setNotif] = useState(false)
+  // as Notificações fecham quando a pessoa escolhe outra parte, outro aparelho ou uma ação
+  const selPart = useShowroom((s) => s.part), selDev = useShowroom((s) => s.device)
+  useEffect(() => setNotif(false), [selPart, selDev, action])
 
   // "Solicitar imagem atualizada": loader de ~4 s no demo
   useEffect(() => {
@@ -357,7 +360,7 @@ export function SabotageScreen({ scale = 0.6 }: { scale?: number }) {
             <span className="flex-1 leading-tight"><span className="block text-[#ff5a5a]">Sabotagem</span><span className="text-[10.5px] text-white/55">Sala de estar · agora</span></span>
           </div>
         </div>
-        <AppNav active={4} />
+        <AppNav />
       </div>
     </div>
   )
