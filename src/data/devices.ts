@@ -713,7 +713,7 @@ export const DEVICES: Device[] = [
         id: 'menu',
         name: 'Menu inferior',
         what: 'Navegação do aplicativo.',
-        facts: ['5 abas: Início, Comandos, Equipamentos, Contatos e Eventos'],
+        facts: ['5 abas: Início, Alarmes, Equipamentos, Contatos e Eventos'],
         camera: { position: [0.20, -0.85, 2.40], target: [0, -0.84, 0.05] },
       },
     ],

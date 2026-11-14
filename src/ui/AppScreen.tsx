@@ -2,7 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { getPart } from '../data/devices'
 import { useShowroom, type ArmState } from '../store/showroomStore'
 import { aiPhotoDataUrl } from '../three/common/textures'
-import { Bell, Clock, Contacts, Devices, Grid, Home, HomePerson, LockClosed, LockOpen, Shield, Speaker, User } from './icons'
+import { AlertCircle, Bell, Chevron, Contacts, Home, HomePerson, LockClosed, LockOpen, Nodes, OrsegupsLogo, Shield, Speaker, User } from './icons'
 import { beep } from './audio'
 
 const ARM: { id: ArmState; label: string; Icon: typeof LockOpen }[] = [
@@ -11,10 +11,38 @@ const ARM: { id: ArmState; label: string; Icon: typeof LockOpen }[] = [
   { id: 'partial', label: 'Armado parcial', Icon: HomePerson },
 ]
 const ARM_TEXT: Record<ArmState, string> = { disarmed: 'Todos os sensores estão desarmados.', armed: 'Todos os sensores estão ativos.', partial: 'Só o perímetro está ativo.' }
-const TABS = [['Início', Home], ['Comandos', Grid], ['Equipamentos', Devices], ['Contatos', Contacts], ['Eventos', Clock]] as const
+const TABS = [['Início', Home], ['Alarmes', LockClosed], ['Equipamentos', Nodes], ['Contatos', Contacts], ['Eventos', AlertCircle]] as const
 
-const LABEL = 'px-1 pb-1 text-[11px] text-slate-500'
-const CARD = 'rounded-xl bg-[#f1f3f6] p-3'
+// como no app: tema escuro, nome de cada seção por fora e cartões cinza-escuros; amarelo da marca na aba atual e nos
+// botões de ação, azul no estado do alarme
+const BG = 'bg-[#151618]'
+const LABEL = 'px-1 pb-1 text-[11px] text-white/75'
+const CARD = 'rounded-xl bg-[#26272b] p-3'
+const ARM_BLUE = '#4d8dff'
+
+/** Topo do app: perfil à esquerda, logo Orsegups no meio e o sino (com o ponto de aviso) à direita. */
+function AppTop() {
+  return (
+    <div className="flex items-center justify-between px-4 pt-3">
+      <span className="grid h-8 w-8 place-items-center rounded-full border border-white/40 text-[12px] text-white/80"><User size={15} /></span>
+      <OrsegupsLogo size={26} />
+      <span className="relative text-white/85"><Bell size={20} /><i className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[#e03131]" /></span>
+    </div>
+  )
+}
+
+/** Menu de baixo, de ponta a ponta: a aba atual em amarelo. */
+function AppNav({ active = 0 }: { active?: number }) {
+  return (
+    <div className={`grid grid-cols-5 border-t border-white/10 ${BG} px-1 pb-3 pt-1.5`}>
+      {TABS.map(([label, Icon], i) => (
+        <div key={label} className={`flex flex-col items-center gap-0.5 text-[8.5px] ${i === active ? 'text-[#F9E000]' : 'text-white/70'}`}>
+          <Icon size={19} />{label}
+        </div>
+      ))}
+    </div>
+  )
+}
 
 /** Barra de status do celular: hora, sinal, 5G e bateria, com o entalhe no meio. Herda a cor do texto da tela. */
 function StatusBar() {
@@ -81,16 +109,16 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
 
   const events = [
     arm === 'disarmed'
-      ? { Icon: LockOpen, color: '#2f6bff', text: 'Desarme' }
-      : { Icon: LockClosed, color: '#e03131', text: arm === 'armed' ? 'Arme' : 'Arme parcial' },
-    { Icon: Speaker, color: '#e03131', text: 'Disparo' },
-    { Icon: Shield, color: '#e8890c', text: 'Alerta' },
+      ? { Icon: LockOpen, color: ARM_BLUE, text: 'Desarme' }
+      : { Icon: LockClosed, color: '#ff5a5a', text: arm === 'armed' ? 'Arme' : 'Arme parcial' },
+    { Icon: Speaker, color: '#ff5a5a', text: 'Disparo' },
+    { Icon: Shield, color: '#ffa53a', text: 'Alerta' },
   ]
 
   return (
-    <div className="relative flex h-[688px] w-[320px] select-none flex-col overflow-hidden rounded-[34px] bg-white font-body text-[#1b2233]" lang="pt-BR">
+    <div className={`relative flex h-[688px] w-[320px] select-none flex-col overflow-hidden rounded-[34px] ${BG} font-body text-white`} lang="pt-BR">
       {/* reflexo do vidro por cima da interface */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 z-10" style={{ background: 'linear-gradient(118deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.16) 44%, rgba(255,255,255,0) 52%)' }} />
+      <div aria-hidden className="pointer-events-none absolute inset-0 z-10" style={{ background: 'linear-gradient(118deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.07) 44%, rgba(255,255,255,0) 52%)' }} />
       {/* aviso do disparo, como a notificação do app: aparece quando a sirene toca */}
       {iaStep === 3 && (
         <div className="absolute inset-x-2 top-8 z-[6] flex items-center gap-2 rounded-2xl bg-[#e03131] px-3 py-2 text-white shadow-lg">
@@ -117,44 +145,46 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
       )}
       {/* barra de status com o entalhe */}
       <StatusBar />
+      <AppTop />
 
-      {/* topo: ícone de perfil e, à direita, o sino (com o ponto de aviso) e o botão SOS; a saudação vem embaixo */}
-      <div className="flex items-center justify-between px-4 pt-4">
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-slate-200 text-slate-500"><User size={17} /></span>
-        <div className="flex items-center gap-2.5 text-slate-600">
-          <span className="relative"><Bell size={20} /><i className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[#e03131] ring-2 ring-white" /></span>
-          <Region id="sos" interactive={interactive} className="!rounded-full">
-            <div className="rounded-full bg-[#e03131] px-4 py-1.5 font-title text-sm font-bold text-white shadow">SOS</div>
-          </Region>
-        </div>
+      {/* saudação e, à direita, o botão SOS (só o contorno, como no app) */}
+      <div className="flex items-center justify-between px-4 pt-3">
+        <div className="text-[20px] font-light text-white/90">Olá!</div>
+        <Region id="sos" interactive={interactive} className="!rounded-lg">
+          <div className="rounded-lg border border-white/35 px-3 py-1 text-[12px] text-white/90">SOS</div>
+        </Region>
       </div>
-      <div className="px-4 pt-2 text-[21px] font-light text-slate-600">Olá!</div>
 
-      {/* como no app: fundo branco, o nome de cada seção por fora e os cartões em cinza bem claro */}
-      <div className="flex flex-1 flex-col gap-1.5 px-3 pt-1.5">
+      <div className="flex flex-1 flex-col gap-1.5 px-3 pt-2">
+        {/* patrimônio: qual casa está sendo controlada (sem endereço) */}
+        <div className={`${CARD} flex items-center !py-2`}>
+          <div className="flex-1 leading-tight"><div className="text-[9.5px] text-white/60">Patrimônio</div><div className="text-[12px] text-white/90">Minha casa</div></div>
+          <Chevron size={14} className="text-white/60" />
+        </div>
+
         <Region id="alarme-geral" interactive={interactive}>
           <div className={LABEL}>Alarme geral</div>
           <div className={CARD}>
             {pending ? (
               <>
-                <div className="flex items-center gap-1.5 font-title text-[15px] font-semibold text-slate-600">
-                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-[#2f6bff] motion-reduce:animate-none" />
+                <div className="flex items-center gap-1.5 text-[14px] text-white/80">
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/25 motion-reduce:animate-none" style={{ borderTopColor: ARM_BLUE }} />
                   {PENDING_TEXT[pending]}
                 </div>
-                <div className="text-[11px] text-slate-500">Enviando o comando ao módulo…</div>
+                <div className="text-[10.5px] text-white/55">Enviando o comando ao módulo…</div>
               </>
             ) : (
               <>
-                <div className="font-title text-[15px] font-semibold" style={{ color: arm === 'disarmed' ? '#2f6bff' : arm === 'armed' ? '#e03131' : '#e8890c' }}>{ARM.find((a) => a.id === arm)!.label}</div>
-                <div className="text-[11px] text-slate-500">{ARM_TEXT[arm]}</div>
+                <div className="text-[14px]" style={{ color: arm === 'disarmed' ? ARM_BLUE : arm === 'armed' ? '#ff5a5a' : '#ffa53a' }}>{ARM.find((a) => a.id === arm)!.label}</div>
+                <div className="text-[10.5px] text-white/55">{ARM_TEXT[arm]}</div>
               </>
             )}
-            <div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-[#e4e7ec] p-1">
+            <div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-[#323337] p-1">
               {ARM.map(({ id, label, Icon }) => (
                 <button key={id} aria-label={label} aria-pressed={arm === id} tabIndex={canArm ? 0 : -1}
                   onClick={(e) => { if (!canArm) return; e.stopPropagation(); beep('ui'); useShowroom.getState().requestArm(id) }}
-                  className={`grid h-10 place-items-center rounded-lg border-[1.5px] transition-colors duration-fast ease-out ${arm === id ? 'border-[#2f6bff] bg-white text-[#2f6bff]' : pending === id ? 'animate-pulse border-[#2f6bff]/50 bg-white/70 text-[#2f6bff] motion-reduce:animate-none' : 'border-transparent text-slate-500'} ${canArm ? 'hover:border-[#2f6bff]' : ''}`}>
-                  <Icon size={20} />
+                  className={`grid h-9 place-items-center rounded-lg border-[1.5px] transition-colors duration-fast ease-out ${arm === id ? 'border-[#4d8dff] bg-[#1d2a44] text-[#4d8dff]' : pending === id ? 'animate-pulse border-[#4d8dff]/50 text-[#4d8dff] motion-reduce:animate-none' : 'border-transparent text-white/60'} ${canArm ? 'hover:border-[#4d8dff]' : ''}`}>
+                  <Icon size={19} />
                 </button>
               ))}
             </div>
@@ -163,58 +193,48 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
 
         <Region id="ultimas-imagens" interactive={interactive}>
           <div className={LABEL}>Últimas imagens</div>
-          <div className={`${CARD} !p-1.5`}>
-            <div className="relative h-[142px] overflow-hidden rounded-lg bg-slate-200">
-              <img src={aiPhotoDataUrl(photo === 'done')} alt="Foto do fotossensor" width={480} height={360} className="h-full w-full object-cover" draggable={false} />
-              {/* etiqueta da foto, no canto: de qual aparelho e de onde */}
-              <div className="absolute left-1.5 top-1.5 rounded-md bg-white/85 px-1.5 py-0.5 leading-tight shadow-sm">
-                <div className="text-[10px] font-semibold text-slate-700">Fotossensor</div>
-                <div className="text-[8.5px] text-slate-500">Sala de estar</div>
-              </div>
-              {photo === 'loading' && (
-                <div className="absolute inset-0 grid place-items-center bg-black/55 text-white">
-                  <div className="flex flex-col items-center gap-2 text-[11px]">
-                    <span className="h-7 w-7 rounded-full border-[3px] border-white/30 border-t-white" style={{ animation: 'spin 0.9s linear infinite' }} />
-                    Solicitando imagem…
-                  </div>
-                </div>
-              )}
-              {photo === 'done' && <div className="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">Pessoa (100% de previsão)</div>}
-              <div className="absolute inset-x-0 bottom-1.5 flex justify-center gap-1" aria-hidden>
-                {[0, 1, 2, 3].map((i) => <i key={i} className={`h-1 w-1 rounded-full ${i === 0 ? 'bg-white' : 'bg-white/50'}`} />)}
-              </div>
+          <div className="relative h-[136px] overflow-hidden rounded-xl bg-[#26272b]">
+            <img src={aiPhotoDataUrl(photo === 'done')} alt="Foto do fotossensor" width={480} height={360} className="h-full w-full object-cover" draggable={false} />
+            {/* etiqueta da foto, no canto, escura como no app: de qual aparelho e quando */}
+            <div className="absolute left-1.5 top-1.5 rounded-md bg-[#1d1e21]/90 px-1.5 py-0.5 leading-tight">
+              <div className="text-[10px] text-white">Fotossensor</div>
+              <div className="text-[8px] text-white/60">{photo === 'done' ? 'agora' : 'hoje'}</div>
             </div>
-            <button tabIndex={action === 'solicitar-imagem' ? 0 : -1}
-              onClick={(e) => { if (action !== 'solicitar-imagem' || photo === 'loading') return; e.stopPropagation(); beep('ui'); useShowroom.getState().set({ appPhoto: 'loading' }) }}
-              className="mt-1.5 w-full rounded-lg bg-[#1E398D] py-2 text-[12px] font-semibold text-white">
-              Solicitar imagem atualizada
-            </button>
+            {photo === 'loading' && (
+              <div className="absolute inset-0 grid place-items-center bg-black/60 text-white">
+                <div className="flex flex-col items-center gap-2 text-[11px]">
+                  <span className="h-7 w-7 rounded-full border-[3px] border-white/30 border-t-white" style={{ animation: 'spin 0.9s linear infinite' }} />
+                  Solicitando imagem…
+                </div>
+              </div>
+            )}
+            {photo === 'done' && <div className="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">Pessoa (100% de previsão)</div>}
           </div>
+          {/* botão amarelo, como em "Histórico de imagens" do app */}
+          <button tabIndex={action === 'solicitar-imagem' ? 0 : -1}
+            onClick={(e) => { if (action !== 'solicitar-imagem' || photo === 'loading') return; e.stopPropagation(); beep('ui'); useShowroom.getState().set({ appPhoto: 'loading' }) }}
+            className="mt-1.5 w-full rounded-lg bg-[#F9E000] py-1.5 text-[11.5px] font-medium text-[#151618]">
+            Solicitar imagem atualizada
+          </button>
         </Region>
 
         <Region id="ultimos-eventos" interactive={interactive}>
           <div className={LABEL}>Últimos eventos</div>
-          <div className={`${CARD} !py-2`}>
-            <div className="text-[11px] font-semibold text-slate-600">Hoje</div>
+          <div className={`${CARD} !py-1.5`}>
             {events.map(({ Icon, color, text }, i) => (
-              <div key={i} className="flex items-center gap-2 border-b border-slate-200 py-1 text-[12px] last:border-0">
-                <span style={{ color }}><Icon size={16} /></span>
-                <span className="flex-1 font-medium">{text}</span>
+              <div key={i} className="flex items-center gap-2 border-b border-white/10 py-1 text-[11.5px] last:border-0">
+                <span style={{ color }}><Icon size={15} /></span>
+                <span className="flex-1 text-white/90">{text}</span>
+                <span className="text-[9.5px] text-white/45">hoje</span>
               </div>
             ))}
           </div>
         </Region>
       </div>
 
-      {/* menu inferior: barra branca de ponta a ponta, com a aba atual em azul */}
-      <Region id="menu" interactive={interactive} className="mt-1.5">
-        <div className="grid grid-cols-5 border-t border-slate-200 bg-white px-1 pb-3 pt-1.5">
-          {TABS.map(([label, Icon], i) => (
-            <div key={label} className={`flex flex-col items-center gap-0.5 text-[8.5px] ${i === 0 ? 'font-semibold text-[#1E398D]' : 'text-slate-500'}`}>
-              <Icon size={19} />{label}
-            </div>
-          ))}
-        </div>
+      {/* menu de baixo: escuro, de ponta a ponta, com a aba atual em amarelo */}
+      <Region id="menu" interactive={interactive} className="mt-1">
+        <AppNav />
       </Region>
     </div>
   )
@@ -228,7 +248,7 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
 export function SabotageScreen({ scale = 0.6 }: { scale?: number }) {
   return (
     <div style={{ width: 320 * scale, height: 300 * scale }} lang="pt-BR">
-      <div className="relative flex h-[300px] w-[320px] origin-top-left select-none flex-col overflow-hidden bg-white font-body text-[#1b2233]" style={{ transform: `scale(${scale})` }}>
+      <div className={`relative flex h-[300px] w-[320px] origin-top-left select-none flex-col overflow-hidden ${BG} font-body text-white`} style={{ transform: `scale(${scale})` }}>
         <StatusBar />
         {/* notificação do app: chega e sobe; o evento fica na lista */}
         <div className="absolute inset-x-2 top-8 z-10 flex items-center gap-2 rounded-2xl bg-[#e03131] px-3 py-2 text-white shadow-lg"
@@ -236,34 +256,19 @@ export function SabotageScreen({ scale = 0.6 }: { scale?: number }) {
           <Bell size={18} />
           <div className="leading-tight"><div className="text-[12px] font-bold">Sabotagem</div><div className="text-[10.5px] opacity-90">Fotossensor · Sala de estar</div></div>
         </div>
-        <div className="flex items-center justify-between px-4 pt-4">
-          <span className="grid h-8 w-8 place-items-center rounded-full bg-slate-200 text-slate-500"><User size={17} /></span>
-          <div className="flex items-center gap-2.5 text-slate-600">
-            <span className="relative"><Bell size={20} /><i className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[#e03131] ring-2 ring-white" /></span>
-            <div className="rounded-full bg-[#e03131] px-4 py-1.5 font-title text-sm font-bold text-white shadow">SOS</div>
-          </div>
-        </div>
-        <div className="px-4 pt-2 text-[21px] font-light text-slate-600">Olá!</div>
-        <div className="flex flex-1 flex-col gap-1.5 px-3 pt-3">
+        <AppTop />
+        <div className="px-4 pt-3 text-[20px] font-light text-white/90">Olá!</div>
+        <div className="flex flex-1 flex-col px-3 pt-3">
           <div className={LABEL}>Últimos eventos</div>
-          <div className={`${CARD} !py-2`}>
-            <div className="text-[11px] font-semibold text-slate-600">Hoje</div>
-            {/* só o evento de sabotagem, entrando na lista */}
-            <div className="-mx-1.5 mt-0.5 flex items-center gap-2 rounded-lg bg-[#e03131]/10 px-1.5 py-1.5 text-[12px]"
-              style={{ animation: 'screen-in 0.5s 2.0s cubic-bezier(.16,.84,.3,1) both' }}>
-              <span className="text-[#e03131]"><Shield size={16} /></span>
-              <span className="flex-1 leading-tight"><span className="block font-semibold text-[#e03131]">Sabotagem</span><span className="text-[10.5px] text-slate-500">Fotossensor · Sala de estar</span></span>
-              <span className="text-[10.5px] text-slate-500">agora</span>
-            </div>
+          {/* só o evento de sabotagem, entrando na lista */}
+          <div className={`${CARD} flex items-center gap-2 !py-2 text-[12px]`}
+            style={{ animation: 'screen-in 0.5s 2.0s cubic-bezier(.16,.84,.3,1) both' }}>
+            <span className="text-[#ff5a5a]"><Shield size={16} /></span>
+            <span className="flex-1 leading-tight"><span className="block text-[#ff5a5a]">Sabotagem</span><span className="text-[10.5px] text-white/55">Fotossensor · Sala de estar</span></span>
+            <span className="text-[10.5px] text-white/45">agora</span>
           </div>
         </div>
-        <div className="grid grid-cols-5 border-t border-slate-200 bg-white px-1 pb-3 pt-1.5">
-          {TABS.map(([label, Icon], i) => (
-            <div key={label} className={`flex flex-col items-center gap-0.5 text-[8.5px] ${i === 0 ? 'font-semibold text-[#1E398D]' : 'text-slate-500'}`}>
-              <Icon size={19} />{label}
-            </div>
-          ))}
-        </div>
+        <AppNav active={4} />
       </div>
     </div>
   )

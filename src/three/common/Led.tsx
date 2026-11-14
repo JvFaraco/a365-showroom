@@ -45,7 +45,7 @@ export function Led({ sample, children, boost = 3.2, baseColor = '#111318', halo
     const m = mesh.current.material as THREE.MeshStandardMaterial
     // miolo quente: perto do máximo, a cor clareia na direção do branco (é o que faz o ponto parecer luz, não tinta)
     const k = Math.min(1, c.on)
-    m.emissive.copy(c.color).lerp(WHITE, k * k * 0.62)
+    m.emissive.copy(c.color).lerp(WHITE, k * k * 0.85)
     m.emissiveIntensity = c.on * boost
     // halo: plano virado para a câmera, um pouco à frente do LED, do tamanho de ~5 vezes o LED (com teto, para não vazar
     // para fora do aparelho). Só aparece com o LED bem aceso: fraco, ele vira uma mancha colorida em volta do ponto
