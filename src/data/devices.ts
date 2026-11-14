@@ -213,7 +213,7 @@ export const DEVICES: Device[] = [
         id: 'bateria',
         name: 'Bateria de lítio',
         what: 'Mantém tudo funcionando sem energia. Fica por baixo da placa.',
-        facts: ['Cerca de 3 horas de autonomia', 'Depende do número de aparelhos e do uso'],
+        facts: ['Cerca de 2 horas de autonomia', 'Depende do número de aparelhos e do uso'],
         camera: { position: [1.7, 0.7, 1.7], target: [0.1, -0.24, 0.1] },
         internal: true,
         action: 'desplugar-bateria',
