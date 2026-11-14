@@ -64,12 +64,14 @@ type State = {
   setLed: (l: LedStateId) => void
   startAction: (id: ActionId) => void
   stopAction: () => void
+  /** Logo depois de uma ação: o aparelho segue inteiro à vista até o próximo clique. */
+  shownAfter: boolean
   undoAction: () => void
   reset: () => void
   set: (p: Partial<State>) => void
 }
 
-const clean = { action: null, holding: false, holdMsg: '' as const, sirenOn: false, knock: null, appPhoto: 'idle' as const }
+const clean = { action: null, holding: false, holdMsg: '' as const, sirenOn: false, knock: null, appPhoto: 'idle' as const, shownAfter: false }
 
 export const useShowroom = create<State>((set, get) => ({
   scene: 'intro',
@@ -111,7 +113,7 @@ export const useShowroom = create<State>((set, get) => ({
     set({ part: p ? p.id : null, view, hovered: null, ...clean })
   },
   setHovered: (hovered) => set({ hovered }),
-  setView: (view) => set({ view }),
+  setView: (view) => set({ view, shownAfter: false }),
   toggleView: (v) => {
     const s = get()
     const d = DEVICE_BY_ID[s.device]
@@ -151,7 +153,9 @@ export const useShowroom = create<State>((set, get) => ({
   },
   setLed: (ledState) => set({ ledState }),
   startAction: (id) => { holdRef.v = 0; set({ ...clean, sirenOn: id === 'som', action: { id, t0: now() } }) },
-  stopAction: () => { holdRef.v = 0; set({ ...clean }) },
+  // ao terminar uma ação, o aparelho continua inteiro à vista (não volta a esmaecer a carcaça de repente, o que fazia as
+  // peças de dentro "atravessarem" a tampa recém-fechada); volta ao normal no próximo clique, vista ou aparelho
+  stopAction: () => { holdRef.v = 0; set({ ...clean, shownAfter: !!get().action }) },
   undoAction: () => { const a = get().action; if (a && !a.undoAt) set({ action: { ...a, undoAt: now() } }) },
   reset: () =>
     set((s) => ({
