@@ -161,7 +161,8 @@ export const useShowroom = create<State>((set, get) => ({
   startAction: (id) => { holdRef.v = 0; set({ ...clean, sirenOn: id === 'som', action: { id, t0: now() } }) },
   // ao terminar uma ação, o aparelho continua inteiro à vista (não volta a esmaecer a carcaça de repente, o que fazia as
   // peças de dentro "atravessarem" a tampa recém-fechada); volta ao normal no próximo clique, vista ou aparelho
-  stopAction: () => { holdRef.v = 0; set({ ...clean, shownAfter: !!get().action }) },
+  // a foto pedida pelo app continua em "Últimas imagens" depois de fechar a ação
+  stopAction: () => { holdRef.v = 0; set({ ...clean, appPhoto: get().appPhoto === 'done' ? 'done' : 'idle', shownAfter: !!get().action }) },
   undoAction: () => { const a = get().action; if (a && !a.undoAt) set({ action: { ...a, undoAt: now() } }) },
   reset: () =>
     set((s) => ({
