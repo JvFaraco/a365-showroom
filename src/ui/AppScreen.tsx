@@ -3,7 +3,7 @@ import { getPart } from '../data/devices'
 import { useShowroom, type ArmState } from '../store/showroomStore'
 import { aiPhotoDataUrl } from '../three/common/textures'
 import { PH } from '../data/inAction'
-import { AlertCircle, Bell, Chevron, CircleX, Contacts, Home, HomePerson, LockClosed, LockOpen, Nodes, OrsegupsLogo, Shield, Speaker, User } from './icons'
+import { AlertCircle, Bell, Camera, Chevron, CircleX, Contacts, DoorSensor, Gear, Home, HomePerson, Hub, LockClosed, LockOpen, Nodes, OrsegupsLogo, Remote, Shield, Speaker, User } from './icons'
 import { beep } from './audio'
 
 const ARM: { id: ArmState; label: string; Icon: typeof LockOpen }[] = [
@@ -139,16 +139,175 @@ function Notifications({ items, onBack }: { items: Ev[]; onBack: () => void }) {
   )
 }
 
-/** Menu de baixo, de ponta a ponta: a aba atual em amarelo. */
-function AppNav({ active = 0 }: { active?: number }) {
+/**
+ * Menu de baixo, de ponta a ponta: a aba atual em amarelo. Com `onTab`, cada aba é um botão que troca a tela; o clique
+ * continua subindo até a Region "menu", que escolhe a parte.
+ */
+function AppNav({ active = 0, onTab }: { active?: number; onTab?: (i: number) => void }) {
+  const down = useRef<[number, number] | null>(null)
   return (
-    <div className={`grid grid-cols-5 border-t border-white/10 ${BG} px-1 pb-3 pt-1.5`}>
-      {TABS.map(([label, Icon], i) => (
-        <div key={label} className={`flex flex-col items-center gap-0.5 text-[8.5px] ${i === active ? 'text-[#F9E000]' : 'text-white/70'}`}>
-          <Icon size={22} />{label}
-        </div>
-      ))}
+    <div className={`grid grid-cols-5 border-t border-white/10 ${BG} px-1 pb-3 pt-1.5`} onPointerDown={(e) => { down.current = [e.clientX, e.clientY] }}>
+      {TABS.map(([label, Icon], i) => {
+        const cls = `flex flex-col items-center gap-0.5 text-[8.5px] transition-colors duration-fast ease-out ${i === active ? 'text-[#F9E000]' : 'text-white/70'}`
+        return onTab ? (
+          <button key={label} aria-label={label} aria-current={i === active ? 'page' : undefined} className={`${cls} cursor-pointer`}
+            onClick={(e) => {
+              const d = down.current
+              if (d && Math.hypot(e.clientX - d[0], e.clientY - d[1]) > 6) return // arrasto (girar), não toque
+              if (i !== active) { beep('ui'); onTab(i) }
+            }}>
+            <Icon size={22} />{label}
+          </button>
+        ) : (
+          <div key={label} className={cls}><Icon size={22} />{label}</div>
+        )
+      })}
     </div>
+  )
+}
+
+/** Título da tela de cada aba, como no app (com a engrenagem à direita em Equipamentos e Contatos). */
+function PageTitle({ title, gear }: { title: string; gear?: boolean }) {
+  return (
+    <div className="flex items-center justify-between px-4 pb-2 pt-3">
+      <div className="text-[20px] text-white/90">{title}</div>
+      {gear && <span className="text-white/80"><Gear size={19} /></span>}
+    </div>
+  )
+}
+
+/**
+ * Cartão "Alarme geral": o estado (ou o comando a caminho) e os três botões. O selecionado tem fundo escuro e só a
+ * borda azul. `onPick` recebe o estado tocado; sem ele, os botões não respondem.
+ */
+function ArmCard({ arm, pending, onPick }: { arm: ArmState; pending: ArmState | null; onPick?: (a: ArmState) => void }) {
+  return (
+    <div className={CARD}>
+      {pending ? (
+        <>
+          <div className="flex items-center gap-1.5 text-[14px] text-white/80">
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/25 motion-reduce:animate-none" style={{ borderTopColor: ARM_BLUE }} />
+            {PENDING_TEXT[pending]}
+          </div>
+          <div className="text-[10.5px] text-white/55">Enviando o comando ao módulo…</div>
+        </>
+      ) : (
+        <>
+          <div className="text-[14px]" style={{ color: arm === 'disarmed' ? ARM_BLUE : arm === 'armed' ? '#ff5a5a' : '#ffa53a' }}>{ARM.find((a) => a.id === arm)!.label}</div>
+          <div className="text-[10.5px] text-white/55">{ARM_TEXT[arm]}</div>
+        </>
+      )}
+      <div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-[#3d4142] p-1">
+        {ARM.map(({ id, label, Icon }) => (
+          <button key={id} aria-label={label} aria-pressed={arm === id} tabIndex={onPick ? 0 : -1}
+            onClick={(e) => { if (!onPick) return; e.stopPropagation(); beep('ui'); onPick(id) }}
+            className={`grid h-9 place-items-center rounded-lg border-[1.5px] transition-colors duration-fast ease-out ${arm === id ? 'border-[#4d8dff] bg-[#242626] text-[#4d8dff]' : pending === id ? 'animate-pulse border-[#4d8dff]/50 text-[#4d8dff] motion-reduce:animate-none' : 'border-transparent text-white/60'} ${onPick ? 'hover:border-[#4d8dff]' : ''}`}>
+            <Icon size={19} />
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** Comandos: o mesmo cartão do Alarme geral, sozinho na tela, como no app. O toque manda o comando direto. */
+function CommandsPage({ arm, pending, interactive }: { arm: ArmState; pending: ArmState | null; interactive: boolean }) {
+  return (
+    <>
+      <PageTitle title="Comandos" />
+      <div className="px-3 pt-2">
+        <div className={LABEL}>Alarme geral</div>
+        <ArmCard arm={arm} pending={pending} onPick={interactive ? (a) => useShowroom.getState().requestArm(a) : undefined} />
+      </div>
+    </>
+  )
+}
+
+// aparelhos do kit como no app: nome da zona em cima e o tipo embaixo; só o fotossensor abre uma tela (o Histórico de imagens)
+const EQUIP: { Icon: typeof LockOpen; name: string; type: string; images?: boolean }[] = [
+  { Icon: Camera, name: 'Sala de estar', type: 'Fotossensor', images: true },
+  { Icon: DoorSensor, name: 'Porta de entrada', type: 'Sensor de abertura' },
+  { Icon: Remote, name: 'Controle 1', type: 'Controle remoto' },
+  { Icon: Hub, name: 'Minha casa', type: 'Módulo de comando' },
+  { Icon: Speaker, name: 'Sirene 1', type: 'Sirene' },
+]
+
+/** Equipamentos e zonas: a lista num cartão só; tocar no fotossensor abre o Histórico de imagens. */
+function EquipmentPage({ onImages }: { onImages?: () => void }) {
+  return (
+    <>
+      <PageTitle title="Equipamentos e zonas" gear />
+      <div className={`${CARD} mx-3 !py-0`}>
+        {EQUIP.map(({ Icon, name, type, images }) => {
+          const open = images && onImages
+          return (
+            <div key={name} role={open ? 'button' : undefined} aria-label={open ? `${name}: histórico de imagens` : undefined}
+              className={`flex items-center gap-3 border-b border-white/10 py-2.5 last:border-0 ${open ? 'cursor-pointer' : ''}`}
+              onClick={(e) => { if (!open) return; e.stopPropagation(); beep('ui'); onImages() }}>
+              <span className="w-6 shrink-0 text-white/75"><Icon size={19} /></span>
+              <span className="flex-1 leading-tight"><span className="block text-[12.5px] text-white/90">{name}</span><span className="block text-[10px] text-white/55">{type}</span></span>
+              {images && <span className="text-white/60"><Chevron size={16} /></span>}
+            </div>
+          )
+        })}
+      </div>
+    </>
+  )
+}
+
+/**
+ * Contatos: o plano de ação (a ordem de quem é avisado num disparo) e os demais contatos com o papel de cada um.
+ * Ilustrativo: rótulos genéricos, sem nome de pessoa nem telefone.
+ */
+function ContactsPage() {
+  const plan: [string, ReactNode][] = [['Você', 'V'], ['Contato 1', 'C'], ['Central de monitoramento', <OrsegupsLogo key="o" size={24} />]]
+  const others: [string, string][] = [['Contato 2', 'Convidado'], ['Contato 3', 'Convidado'], ['Contato 4', 'Administrador']]
+  return (
+    <>
+      <PageTitle title="Contatos" gear />
+      <div className="px-3">
+        <div className={LABEL}>Plano de ação</div>
+        <div className={`${CARD} grid grid-cols-3 gap-2`}>
+          {plan.map(([name, mark], i) => (
+            <div key={i} className="flex flex-col items-center text-center leading-tight">
+              <span className="grid h-12 w-12 place-items-center rounded-xl bg-white/10 text-[20px] font-light text-white/85">{mark}</span>
+              <span className="mt-1.5 text-[11px] text-white/80">{i + 1}º</span>
+              <span className="text-[10.5px] text-white/90">{name}</span>
+            </div>
+          ))}
+        </div>
+        <div className={`${LABEL} mt-3`}>Demais contatos</div>
+        <div className={`${CARD} !py-0`}>
+          {others.map(([name, role]) => (
+            <div key={name} className="border-b border-white/10 py-2.5 leading-tight last:border-0">
+              <span className="block text-[12.5px] text-white/90">{name}</span>
+              <span className="block text-[10px] text-white/55">{role}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  )
+}
+
+/** Histórico: a linha do tempo inteira, um evento por linha (ícone, nome do evento, quem fez e quando). */
+function HistoryPage({ items }: { items: Ev[] }) {
+  return (
+    <>
+      <PageTitle title="Histórico" />
+      <div className={`${CARD} mx-3 mb-1 min-h-0 flex-1 overflow-y-auto !py-0 [scrollbar-width:none]`}>
+        {items.map(({ Icon, color, text, who, day, time }, i) => (
+          <div key={i} className="flex items-center gap-3 border-b border-white/10 py-2 last:border-0">
+            <span className="w-6 shrink-0" style={{ color }}><Icon size={18} /></span>
+            <span className="flex-1 leading-tight">
+              <span className="block text-[12.5px] text-white/90">{text}</span>
+              <span className="block text-[10px] text-white/65">{who}</span>
+              <span className="block text-[9.5px] text-white/50">{day === 'agora' ? 'agora' : `${day} às ${time}`}</span>
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
   )
 }
 
@@ -213,9 +372,18 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
   const action = useShowroom((s) => (interactive ? s.action?.id : undefined))
   const canArm = action === 'alarme-geral'
   const [notif, setNotif] = useState(false)
-  // as Notificações fecham quando a pessoa escolhe outra parte, outro aparelho ou uma ação
+  // aba do menu de baixo (0 = Início) e o Histórico de imagens aberto por Equipamentos
+  const [tab, setTab] = useState(0)
+  const [imgs, setImgs] = useState(false)
+  // as Notificações fecham quando a pessoa escolhe outra parte, outro aparelho ou uma ação; a aba volta para Início
+  // também, menos quando a parte escolhida é o próprio menu (o toque numa aba escolhe o menu)
   const selPart = useShowroom((s) => s.part), selDev = useShowroom((s) => s.device)
-  useEffect(() => setNotif(false), [selPart, selDev, action])
+  useEffect(() => {
+    setNotif(false)
+    if (selPart !== 'menu' || action) { setTab(0); setImgs(false) }
+  }, [selPart, selDev, action])
+  // na cena "Em ação" (e na abertura) a tela fica sempre em Início
+  const page = inAction || !interactive ? 0 : tab
 
   // "Solicitar imagem atualizada": loader de ~4 s no demo
   useEffect(() => {
@@ -285,106 +453,90 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
       {/* barra de status com o entalhe */}
       <StatusBar />
       {notif && <Notifications items={timeline} onBack={() => setNotif(false)} />}
-      {action === 'solicitar-imagem' && <ImageHistory photo={photo} onBack={() => useShowroom.getState().stopAction()} />}
+      {(action === 'solicitar-imagem' || imgs) && <ImageHistory photo={photo} onBack={() => (action === 'solicitar-imagem' ? useShowroom.getState().stopAction() : setImgs(false))} />}
       <AppTop onBell={interactive ? () => setNotif(true) : undefined} />
 
-      {/* saudação e, à direita, o botão SOS (fundo cinza, como no app) */}
-      <div className="flex items-center justify-between px-4 pt-2">
-        <div className="text-[20px] font-light text-white/90">Olá!</div>
-        <Region id="sos" interactive={interactive} className="!rounded-xl">
-          <div className="rounded-xl bg-white/10 px-3 py-2 text-[14px] text-white/90">SOS</div>
-        </Region>
-      </div>
-
-      <div className="flex min-h-0 flex-1 flex-col gap-1 px-3 pt-1.5">
-
-        <Region id="alarme-geral" interactive={interactive}>
-          <div className={LABEL}>Alarme geral</div>
-          <div className={CARD}>
-            {pending ? (
-              <>
-                <div className="flex items-center gap-1.5 text-[14px] text-white/80">
-                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/25 motion-reduce:animate-none" style={{ borderTopColor: ARM_BLUE }} />
-                  {PENDING_TEXT[pending]}
-                </div>
-                <div className="text-[10.5px] text-white/55">Enviando o comando ao módulo…</div>
-              </>
-            ) : (
-              <>
-                <div className="text-[14px]" style={{ color: arm === 'disarmed' ? ARM_BLUE : arm === 'armed' ? '#ff5a5a' : '#ffa53a' }}>{ARM.find((a) => a.id === arm)!.label}</div>
-                <div className="text-[10.5px] text-white/55">{ARM_TEXT[arm]}</div>
-              </>
-            )}
-            {/* botão ativo: fundo escuro neutro (mais escuro que o trilho) e só a borda azul. Fora da ação, o toque
-                escolhe o Alarme geral, abre "Mudar o estado do alarme" e já manda o comando */}
-            <div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-[#3d4142] p-1">
-              {ARM.map(({ id, label, Icon }) => (
-                <button key={id} aria-label={label} aria-pressed={arm === id} tabIndex={interactive ? 0 : -1}
-                  onClick={(e) => {
-                    if (!interactive) return
-                    e.stopPropagation(); beep('ui')
-                    const s = useShowroom.getState()
-                    if (!canArm) { s.selectPart('alarme-geral'); s.startAction('alarme-geral') }
-                    s.requestArm(id)
-                  }}
-                  className={`grid h-9 place-items-center rounded-lg border-[1.5px] transition-colors duration-fast ease-out ${arm === id ? 'border-[#4d8dff] bg-[#242626] text-[#4d8dff]' : pending === id ? 'animate-pulse border-[#4d8dff]/50 text-[#4d8dff] motion-reduce:animate-none' : 'border-transparent text-white/60'} ${interactive ? 'hover:border-[#4d8dff]' : ''}`}>
-                  <Icon size={19} />
-                </button>
-              ))}
-            </div>
+      {page === 0 ? (
+        <>
+          {/* saudação e, à direita, o botão SOS (fundo cinza, como no app) */}
+          <div className="flex items-center justify-between px-4 pt-2">
+            <div className="text-[20px] font-light text-white/90">Olá!</div>
+            <Region id="sos" interactive={interactive} className="!rounded-xl">
+              <div className="rounded-xl bg-white/10 px-3 py-2 text-[14px] text-white/90">SOS</div>
+            </Region>
           </div>
-        </Region>
 
-        <Region id="ultimas-imagens" interactive={interactive}>
-          <div className={LABEL}>Últimas imagens</div>
-          <div className="relative h-[150px] overflow-hidden rounded-xl bg-[#2b2d2c]">
-            {/* na cena "Em ação", antes do disparo a última imagem é a sala vazia (de manhã); depois chega a do disparo */}
-            <img src={inAction ? (iaPhase >= PH.image ? aiPhotoDataUrl(true) : aiPhotoDataUrl(false, true)) : aiPhotoDataUrl(photo === 'done')} alt="Foto do fotossensor" width={480} height={360} className="h-full w-full object-cover" draggable={false} />
-            {/* etiqueta da foto, no canto, escura como no app: de qual aparelho e quando */}
-            <div className="absolute left-1.5 top-1.5 rounded-md bg-[#1d1e21]/90 px-1.5 py-0.5 leading-tight">
-              <div className="text-[10px] text-white">Sala de estar</div>
-              <div className="text-[8px] text-white/60">{photo === 'done' || iaPhase >= PH.image ? 'agora' : inAction ? 'ontem às 20:28' : 'hoje às 07:31'}</div>
-            </div>
-            {photo === 'loading' && (
-              <div className="absolute inset-0 grid place-items-center bg-black/60 text-white">
-                <div className="flex flex-col items-center gap-2 text-[11px]">
-                  <span className="h-7 w-7 rounded-full border-[3px] border-white/30 border-t-white" style={{ animation: 'spin 0.9s linear infinite' }} />
-                  Solicitando imagem…
+          <div className="flex min-h-0 flex-1 flex-col gap-1 px-3 pt-1.5">
+
+            <Region id="alarme-geral" interactive={interactive}>
+              <div className={LABEL}>Alarme geral</div>
+              {/* fora da ação, o toque escolhe o Alarme geral, abre "Mudar o estado do alarme" e já manda o comando */}
+              <ArmCard arm={arm} pending={pending} onPick={interactive ? (id) => {
+                const s = useShowroom.getState()
+                if (!canArm) { s.selectPart('alarme-geral'); s.startAction('alarme-geral') }
+                s.requestArm(id)
+              } : undefined} />
+            </Region>
+
+            <Region id="ultimas-imagens" interactive={interactive}>
+              <div className={LABEL}>Últimas imagens</div>
+              <div className="relative h-[150px] overflow-hidden rounded-xl bg-[#2b2d2c]">
+                {/* na cena "Em ação", antes do disparo a última imagem é a sala vazia (de manhã); depois chega a do disparo */}
+                <img src={inAction ? (iaPhase >= PH.image ? aiPhotoDataUrl(true) : aiPhotoDataUrl(false, true)) : aiPhotoDataUrl(photo === 'done')} alt="Foto do fotossensor" width={480} height={360} className="h-full w-full object-cover" draggable={false} />
+                {/* etiqueta da foto, no canto, escura como no app: de qual aparelho e quando */}
+                <div className="absolute left-1.5 top-1.5 rounded-md bg-[#1d1e21]/90 px-1.5 py-0.5 leading-tight">
+                  <div className="text-[10px] text-white">Sala de estar</div>
+                  <div className="text-[8px] text-white/60">{photo === 'done' || iaPhase >= PH.image ? 'agora' : inAction ? 'ontem às 20:28' : 'hoje às 07:31'}</div>
+                </div>
+                {photo === 'loading' && (
+                  <div className="absolute inset-0 grid place-items-center bg-black/60 text-white">
+                    <div className="flex flex-col items-center gap-2 text-[11px]">
+                      <span className="h-7 w-7 rounded-full border-[3px] border-white/30 border-t-white" style={{ animation: 'spin 0.9s linear infinite' }} />
+                      Solicitando imagem…
+                    </div>
+                  </div>
+                )}
+                {photo === 'done' && <div className="absolute bottom-5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">Pessoa (100% de previsão)</div>}
+                <div className="absolute inset-x-0 bottom-1.5 flex justify-center gap-1" aria-hidden>
+                  {[0, 1, 2, 3, 4].map((i) => <i key={i} className={`h-1.5 w-1.5 rounded-full ${i === 0 ? 'bg-white/90' : 'bg-white/45'}`} />)}
                 </div>
               </div>
-            )}
-            {photo === 'done' && <div className="absolute bottom-5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">Pessoa (100% de previsão)</div>}
-            <div className="absolute inset-x-0 bottom-1.5 flex justify-center gap-1" aria-hidden>
-              {[0, 1, 2, 3, 4].map((i) => <i key={i} className={`h-1.5 w-1.5 rounded-full ${i === 0 ? 'bg-white/90' : 'bg-white/45'}`} />)}
-            </div>
-          </div>
-        </Region>
+            </Region>
 
-        <Region id="ultimos-eventos" interactive={interactive}>
-          <div className={LABEL}>Últimos eventos</div>
-          {/* agrupados por dia, com o título "Hoje" (e "Ontem", se aparecer) dentro do cartão; embaixo do nome, só a hora */}
-          <div className={`${CARD} !py-1.5`}>
-            {events.map(({ Icon, color, text, who, day, time }, i) => {
-              const group = dayGroup(day)
-              const first = i === 0 || dayGroup(events[i - 1].day) !== group
-              const last = i === events.length - 1 || dayGroup(events[i + 1].day) !== group
-              return (
-                <div key={i}>
-                  {first && <div className={`pb-0.5 text-[11px] leading-4 text-white/90 ${i ? 'pt-1' : ''}`}>{group}</div>}
-                  <div className={`flex items-center gap-2.5 py-1 ${last ? '' : 'border-b border-white/10'}`}>
-                    <span className="w-5 shrink-0" style={{ color }}><Icon size={16} /></span>
-                    <span className="flex-1 leading-tight"><span className="block text-[12px] text-white/90">{text}</span><span className="block text-[9.5px] text-white/50">{who} · {day === 'agora' ? 'agora' : time}</span></span>
-                  </div>
-                </div>
-              )
-            })}
+            <Region id="ultimos-eventos" interactive={interactive}>
+              <div className={LABEL}>Últimos eventos</div>
+              {/* agrupados por dia, com o título "Hoje" (e "Ontem", se aparecer) dentro do cartão; embaixo do nome, só a hora */}
+              <div className={`${CARD} !py-1.5`}>
+                {events.map(({ Icon, color, text, who, day, time }, i) => {
+                  const group = dayGroup(day)
+                  const first = i === 0 || dayGroup(events[i - 1].day) !== group
+                  const last = i === events.length - 1 || dayGroup(events[i + 1].day) !== group
+                  return (
+                    <div key={i}>
+                      {first && <div className={`pb-0.5 text-[11px] leading-4 text-white/90 ${i ? 'pt-1' : ''}`}>{group}</div>}
+                      <div className={`flex items-center gap-2.5 py-1 ${last ? '' : 'border-b border-white/10'}`}>
+                        <span className="w-5 shrink-0" style={{ color }}><Icon size={16} /></span>
+                        <span className="flex-1 leading-tight"><span className="block text-[12px] text-white/90">{text}</span><span className="block text-[9.5px] text-white/50">{who} · {day === 'agora' ? 'agora' : time}</span></span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </Region>
           </div>
-        </Region>
-      </div>
+        </>
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {page === 1 && <CommandsPage arm={arm} pending={pending} interactive={interactive} />}
+          {page === 2 && <EquipmentPage onImages={interactive ? () => setImgs(true) : undefined} />}
+          {page === 3 && <ContactsPage />}
+          {page === 4 && <HistoryPage items={timeline} />}
+        </div>
+      )}
 
       {/* menu de baixo: escuro, de ponta a ponta, com a aba atual em amarelo */}
       <Region id="menu" interactive={interactive} className="mt-1">
-        <AppNav />
+        <AppNav active={page} onTab={interactive && !inAction ? setTab : undefined} />
       </Region>
     </div>
   )
