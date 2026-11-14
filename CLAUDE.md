@@ -227,6 +227,9 @@ Frente sempre em +Z. As medidas citadas são externas, em mm. Detalhe de cada pa
 
 **Render e interface**
 
+- A tela do app (HTML em CSS 3D, `<Html transform>`) sai deslocada no Safari do iPhone, mas não no Chrome; os testes
+  daqui (Chromium) não mostram. Não tirar o `useScreenAlign` do `Smartphone.tsx`.
+
 - O sinal do deslocamento vertical da câmera estava invertido (no `camera-controls`, Y positivo desce a câmera): no
   celular, o aparelho ficava escondido atrás do card. Confira prints em 390 × 844 com o card aberto.
 - Texto com gênero errado ("parte do placa"): use `fem` do aparelho.
@@ -243,7 +246,10 @@ Frente sempre em +Z. As medidas citadas são externas, em mm. Detalhe de cada pa
   correção do hover do branch `otimizacao` e um perfil leve para celular).
 - **Pendente do usuário:** a prévia `/preview/` não publica: o ambiente `github-pages` só aceita a `main` (liberar o
   branch `acabamento-4` em Settings → Environments → github-pages).
-- **Pendente do usuário:** print do app "saindo da tela do celular" (não reproduz aqui), foto do outro lado da placa
+- App saindo da tela do celular (só no Safari do iPhone, ~45 px para baixo): corrigido em `Smartphone.tsx`
+  (`useScreenAlign` compara a tela HTML com os cantos projetados do vidro e desloca a camada); falta o usuário confirmar
+  no iPhone.
+- **Pendente do usuário:** foto do outro lado da placa
   do magnético (posição do LED), gravações dos sons do módulo e da sirene (para imitar por síntese) e o que ele quis
   dizer com "o LED da sirene" (mensagem cortada).
 - Decisões do usuário nesta rodada: o fotossensor NÃO tem tamper (abrir a tampa não dispara); a bateria da sirene não
