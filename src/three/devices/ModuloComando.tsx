@@ -25,6 +25,9 @@ const YC = 0.39 // altura do topo (antes do achatamento): plano e nivelado
 const TILT = 0 // o topo não é rampa: fica paralelo à base
 const CAPSULE_Z = 0.63 // a cápsula do LED/190 fica na frente, rente à borda do topo plano
 const PCB_Y = -0.08 // topo da placa
+// borda da placa onde o cabo da bateria sobe; o trecho por cima da placa gira aqui quando o plugue é puxado
+const BAT_PIVOT: [number, number, number] = [0.7625, PCB_Y + 0.03, 0.1725]
+const BAT_AXIS = new THREE.Vector3(0.23, 0, -0.165).normalize()
 const VIAS_TO: [number, number, number][] = [[-1.5, 1.9, -0.6], [0, 2.3, -0.9], [1.5, 1.9, -0.6]]
 const VIAS_FROM: [number, number, number] = [0, 0.2, 0]
 
@@ -335,8 +338,12 @@ function build() {
     micA: wire([[0.36, -0.2, -0.26], [0.4, -0.1, -0.2], [0.38, PCB_Y + 0.03, -0.12], [0.33, PCB_Y + 0.012, -0.08]], 0.006),
     micB: wire([[0.39, -0.2, -0.24], [0.44, -0.1, -0.17], [0.42, PCB_Y + 0.03, -0.1], [0.37, PCB_Y + 0.012, -0.05]], 0.006),
     // cabo da bateria: sai da ponta da bateria (embaixo da placa), sobe por fora da borda e passa por cima da placa até o conector
-    batA: wire([[0.36, -0.2, 0.2], [0.6, -0.17, 0.23], [0.755, -0.12, 0.21], [0.765, PCB_Y + 0.03, 0.19], [0.68, PCB_Y + 0.03, 0.09], [0.615, PCB_Y + 0.025, 0.005]], 0.008),
-    batB: wire([[0.36, -0.2, 0.16], [0.6, -0.17, 0.19], [0.75, -0.12, 0.175], [0.76, PCB_Y + 0.03, 0.155], [0.665, PCB_Y + 0.03, 0.06], [0.585, PCB_Y + 0.025, 0.005]], 0.008),
+    // cabo da bateria em dois trechos: da bateria até a borda da placa (fixo) e, por cima da placa, até o plugue (gira
+    // na borda quando o plugue é puxado do conector)
+    batA: wire([[0.36, -0.2, 0.2], [0.6, -0.17, 0.23], [0.755, -0.12, 0.21], [0.765, PCB_Y + 0.03, 0.19]], 0.008),
+    batB: wire([[0.36, -0.2, 0.16], [0.6, -0.17, 0.19], [0.75, -0.12, 0.175], [0.76, PCB_Y + 0.03, 0.155]], 0.008),
+    batA2: wire([[0.765, PCB_Y + 0.03, 0.19], [0.68, PCB_Y + 0.03, 0.09], [0.615, PCB_Y + 0.025, 0.005]], 0.008),
+    batB2: wire([[0.76, PCB_Y + 0.03, 0.155], [0.665, PCB_Y + 0.03, 0.06], [0.585, PCB_Y + 0.025, 0.005]], 0.008),
     // cabos de rede e da fonte: saem deitados pela abertura de trás do bolsão
     netCable: roundWire([[0, 0, -0.08], [0, -0.03, -0.45], [-0.02, -0.06, -0.9], [-0.1, -0.08, -1.7]], 0.03),
     powCable: roundWire([[0, 0, -0.16], [0, -0.03, -0.45], [0.03, -0.06, -0.8], [0.16, -0.08, -1.5]], 0.024),
@@ -377,6 +384,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
   const stickerMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.5, map: duvidasStickerTexture() }), [])
   const viasPhase = useActionPhase('antena', [4, 7.5, 10])
   const audioPhase = useActionPhase('audio', [1.2])
+  const unplugPhase = useActionPhase('desplugar-bateria', [2.0], true)
+  const batPlug = useRef<THREE.Group>(null!)
   const batPhase = useActionPhase('bateria-modulo', [2.2])
   const sosActive = useActionPhase('sos190') >= 0
   const hold = {
@@ -445,7 +454,11 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
     // abrir: vira de cabeça para baixo, desvira e a cúpula se solta e sobe, mostrando a placa
     const to = actionTau('abrir-modulo')
     root.current.rotation.z = to < 0 ? 0 : (seg(to, 0, 0.8) - seg(to, 1.2, 2.0)) * Math.PI
-    const up = to < 0 ? 0 : seg(to, 2.1, 3.1)
+    // desplugar a bateria: a cúpula sobe e o plugue do cabo da bateria sai do conector da placa
+    const td = actionTau('desplugar-bateria')
+    const up = Math.max(to < 0 ? 0 : seg(to, 2.1, 3.1), td < 0 ? 0 : seg(td, 0.1, 1.0))
+    const pull = td < 0 ? 0 : seg(td, 1.3, 1.9)
+    batPlug.current.quaternion.setFromAxisAngle(BAT_AXIS, pull * 0.42)
     lid.current.position.set(0, up * 1.35, -up * 0.35)
     lid.current.rotation.x = -up * 0.35
   })
@@ -586,6 +599,17 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         </ClickablePart>
 
         {/* ================= interior ================= */}
+        {/* anti-sabotagem: micro-chave preta com o pino para cima, à esquerda, logo atrás da placa do Wi-Fi; a tampa a mantém
+            apertada */}
+        <ClickablePart id="tamper">
+          <mesh material={M.chip} position={[-0.45, PCB_Y + 0.02, 0.03]}><boxGeometry args={[0.09, 0.04, 0.07]} /></mesh>
+          <mesh material={M.greyDark} position={[-0.45, PCB_Y + 0.05, 0.03]}><cylinderGeometry args={[0.018, 0.018, 0.03, 12]} /></mesh>
+        </ClickablePart>
+        {/* botão de reset: embaixo da placa, sobre o furo do fundo (base preta e botão azul, como na foto da placa) */}
+        <ClickablePart id="reset">
+          <mesh material={M.chip} position={[-0.42, PCB_Y - 0.04, -0.56]}><boxGeometry args={[0.08, 0.03, 0.08]} /></mesh>
+          <mesh material={M.wireBlue} position={[-0.42, PCB_Y - 0.065, -0.56]}><cylinderGeometry args={[0.024, 0.024, 0.025, 14]} /></mesh>
+        </ClickablePart>
         <ClickablePart id="placa-principal">
           <mesh geometry={g.pcb} material={M.pcb} position={[0, PCB_Y, 0]} />
           {/* placa limpa: verde liso, poucos componentes grandes. RJ45 (caixa metálica) no fundo do recorte e o jack
@@ -687,9 +711,18 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         <ClickablePart id="bateria">
           <RoundedBox args={[0.6, 0.1, 0.34]} radius={0.03} smoothness={3} position={[0.1, -0.25, 0.12]} material={M.cell} />
           <mesh material={M.orange} position={[0.1, -0.1985, 0.12]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.32, 0.14]} /></mesh>
-          <RoundedBox args={[0.07, 0.04, 0.09]} radius={0.008} smoothness={2} position={[0.6, PCB_Y + 0.02, -0.04]} material={M.white} />
           <mesh geometry={g.batA} material={M.red} />
           <mesh geometry={g.batB} material={M.chip} />
+          {/* plugue branco e o trecho do cabo por cima da placa: giram na borda da placa quando o plugue é puxado */}
+          <group position={BAT_PIVOT}>
+            <group ref={batPlug}>
+              <group position={[-BAT_PIVOT[0], -BAT_PIVOT[1], -BAT_PIVOT[2]]}>
+                <RoundedBox args={[0.07, 0.04, 0.09]} radius={0.008} smoothness={2} position={[0.6, PCB_Y + 0.02, -0.04]} material={M.white} />
+                <mesh geometry={g.batA2} material={M.red} />
+                <mesh geometry={g.batB2} material={M.chip} />
+              </group>
+            </group>
+          </group>
         </ClickablePart>
 
         {/* cabos que entram pela abertura de trás do bolsão: plugue de energia em L e cabo de rede */}
@@ -728,10 +761,17 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
             </Html>
           )}
           <VoiceWaves on={() => actionTime('audio') >= 0.4} position={[GRILLE.x, -0.44, GRILLE.z]} rotation={[-0.5, 0, Math.PI]} />
+          {unplugPhase >= 0 && (
+            <Html position={[0.6, 0.55, 0]} center style={{ pointerEvents: 'none' }}>
+              <div className="fx-tag rounded-full bg-black/75 px-4 py-1.5 text-sm font-semibold text-white">Cabo da bateria desconectado</div>
+            </Html>
+          )}
+          {/* a Central fala pelo alto-falante do módulo: balão de conversa (o LED pisca vermelho enquanto a ligação dura) */}
           {audioPhase >= 0 && (
-            <Html position={[0.5, -1.0, -1.3]} center style={{ pointerEvents: 'none' }}>
-              <div className="fx-tag rounded-2xl rounded-bl-none bg-white px-4 py-2 text-sm font-semibold text-[#1E398D] shadow-lg">
-                Central Orsegups: Olá, está tudo bem?
+            <Html position={[0.95, 0.95, 0.1]} center style={{ pointerEvents: 'none' }}>
+              <div className="fx-tag relative rounded-2xl rounded-bl-none bg-white px-4 py-2 text-left shadow-lg" style={{ animation: 'screen-in 0.4s cubic-bezier(.16,.84,.3,1) both' }}>
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Central Orsegups</div>
+                <div className="text-sm font-bold text-[#1E398D]">Alarme 365, identifique-se.</div>
               </div>
             </Html>
           )}

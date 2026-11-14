@@ -5,7 +5,7 @@ export type Vec3 = [number, number, number]
 
 export type ActionId =
   // Módulo de Comando
-  | 'antena' | 'sos190' | 'led' | 'audio' | 'bateria-modulo' | 'abrir-modulo' | 'cabos'
+  | 'antena' | 'sos190' | 'led' | 'audio' | 'bateria-modulo' | 'abrir-modulo' | 'cabos' | 'desplugar-bateria'
   // Fotossensor
   | 'pir' | 'camera' | 'suporte' | 'tampa-foto'
   // Sensor magnético
@@ -125,7 +125,7 @@ export const DEVICES: Device[] = [
         what: 'Alimentação na tomada. Fica no bolsão do fundo: o cabo vem por trás e o conector entra pela lateral.',
         facts: [],
         camera: { position: [-0.8, -1.9, -1.6], target: [0.18, -0.36, -0.47] },
-        action: 'cabos',
+        action: 'bateria-modulo',
       },
       {
         id: 'placa-principal',
@@ -182,6 +182,24 @@ export const DEVICES: Device[] = [
         explode: [0, 0.75, 0], // ligado na placa pelos fios: sai junto com ela
       },
       {
+        id: 'tamper',
+        name: 'Anti-sabotagem (tamper)',
+        what: 'Botão na placa, à esquerda, logo atrás do Wi-Fi. A tampa o mantém apertado: se o módulo for aberto, ele solta e o sistema avisa.',
+        facts: [],
+        camera: { position: [-1.7, 1.3, 1.5], target: [-0.45, -0.05, 0.05] },
+        internal: true,
+        explode: [0, 0.75, 0],
+      },
+      {
+        id: 'reset',
+        name: 'Botão de reset',
+        what: 'Fica embaixo da placa, sobre o furo do fundo, ao lado da antena.',
+        facts: [],
+        camera: { position: [-1.4, -1.8, -1.6], target: [-0.42, -0.3, -0.5] },
+        internal: true,
+        explode: [0, 0.75, 0],
+      },
+      {
         id: 'microfone',
         name: 'Microfone',
         what: 'A Central ouve o ambiente em tempo real.',
@@ -197,7 +215,7 @@ export const DEVICES: Device[] = [
         facts: ['Cerca de 3 horas de autonomia', 'Depende do número de aparelhos e do uso'],
         camera: { position: [1.7, 0.7, 1.7], target: [0.1, -0.24, 0.1] },
         internal: true,
-        action: 'bateria-modulo',
+        action: 'desplugar-bateria',
         explode: [0, 0.75, 0], // presa embaixo da placa pelo cabo: sai junto com ela
       },
     ],
@@ -384,6 +402,15 @@ export const DEVICES: Device[] = [
         what: 'Lê o ímã e avisa a central pelo rádio.',
         facts: [],
         camera: { position: [0.6, 0.4, 2.4], target: [0, -0.19, 0] },
+        internal: true,
+        explode: [0, 0, 0.32],
+      },
+      {
+        id: 'tamper',
+        name: 'Anti-sabotagem (tamper)',
+        what: 'Botão na placa, apertado por um pino da base. Se a tampa for separada da base, ele solta e o sistema avisa.',
+        facts: [],
+        camera: { position: [0.9, -0.5, 2.2], target: [-0.6, -0.19, -0.1] },
         internal: true,
         explode: [0, 0, 0.32],
       },

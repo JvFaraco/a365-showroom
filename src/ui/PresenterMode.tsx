@@ -49,7 +49,6 @@ export function PresenterMode() {
       if (/^[1-7]$/.test(k)) return s.setDevice(DEVICES[Number(k) - 1].id)
       if (k === 'e') return s.toggleView('exploded')
       if (k === 'x') return s.toggleView('xray')
-      if (k === 'm') { s.selectPart(null); return s.toggleView('manual') }
       if (k === 't') return s.setTour(!s.tour)
       if (k === 'r') return s.reset()
       if (k === 'escape') {
