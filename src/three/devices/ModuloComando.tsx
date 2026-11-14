@@ -537,8 +537,9 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
                 <mesh geometry={g.capsuleRim} material={M.logoGroove} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]} />
                 <group ref={pressA} {...hold}>
                   <mesh geometry={g.capsule} material={M.white} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]} />
-                  {/* guia de luz: pino de cristal que leva a luz do LED da placa até o ponto no centro da tecla */}
-                  <mesh material={M.crystal} position={[0, -0.215, 0]}><cylinderGeometry args={[0.03, 0.03, 0.4, 14]} /></mesh>
+                  {/* guia de luz: pino de cristal que leva a luz do LED da placa até o ponto no centro da tecla. Medidas
+                      externas do CAD: haste de 3,4 mm de diâmetro e ~12 mm de comprimento (0,25 antes do achatamento) */}
+                  <mesh material={M.crystal} position={[0, -0.14, 0]}><cylinderGeometry args={[0.021, 0.021, 0.25, 14]} /></mesh>
                 </group>
                 {interactive && <HoldRing radius={0.26} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} />}
               </group>
