@@ -55,3 +55,7 @@ canvas { touch-action: none; }
 /* barra de progresso (ação e tour): só transform, nunca width */
 @keyframes action-bar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes blink { 50% { opacity: 0.15; } }
+/* a foto chega no celular: o celular vem de longe até a frente da pessoa, depois a tela da imagem entra */
+@keyframes phone-in { from { opacity: 0; transform: translate(60%, 45%) scale(0.3) rotate(16deg); } 45% { opacity: 1; } to { opacity: 1; transform: none; } }
+@keyframes screen-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes notif-out { 0%, 70% { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-12px); } }

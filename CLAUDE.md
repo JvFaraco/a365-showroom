@@ -95,7 +95,8 @@ partes de cada aparelho; este arquivo é o complemento para quem vai trabalhar n
   numa tela de 60 Hz. Para a meta de 60, o limite candidato é ~55 (`&fpsmin=55`), a confirmar com a medição.
 - **React fora do caminho do quadro:** o hover não pode passar por estado ou contexto que envolva a cena toda. O
   contorno era um `<Selection>`/`<Select>` em volta de tudo e re-renderizava centenas de partes a cada passada do
-  mouse (picos de 20 a 40 ms); agora é controlado direto no efeito (`common/outline.ts`).
+  mouse (picos de 20 a 40 ms). A correção (contorno controlado direto no efeito, `common/outline.ts`) está no branch
+  `otimizacao`, **ainda fora da `main`**: espera a medição do usuário (precisa de rebase na `main` antes).
 - A contagem de programas de shader varia ±2 entre rodadas, conforme o momento em que é feita. Compare sempre na
   mesma etapa (por exemplo, logo depois de entrar no showroom) e nas duas versões.
 
@@ -226,6 +227,9 @@ Frente sempre em +Z. As medidas citadas são externas, em mm. Detalhe de cada pa
 
 **Render e interface**
 
+- A tela do app (HTML em CSS 3D, `<Html transform>`) sai deslocada no Safari do iPhone, mas não no Chrome; os testes
+  daqui (Chromium) não mostram. Não tirar o `useScreenAlign` do `Smartphone.tsx`.
+
 - O sinal do deslocamento vertical da câmera estava invertido (no `camera-controls`, Y positivo desce a câmera): no
   celular, o aparelho ficava escondido atrás do card. Confira prints em 390 × 844 com o card aberto.
 - Texto com gênero errado ("parte do placa"): use `fem` do aparelho.
@@ -236,9 +240,21 @@ Frente sempre em +Z. As medidas citadas são externas, em mm. Detalhe de cada pa
 
 - A rodada de acabamento está mesclada na `main`: os 5 aparelhos com as medidas externas, a placa e o app pelas
   artes oficiais, e os acertos de interface. O usuário considera os modelos 3D ok; o que vem agora é ajuste fino.
-- Números na `main` (do `?debug=1`): 57 programas de shader; triângulos na abertura 249.173; módulo 61.741,
-  fotossensor 63.180, magnético 17.008, sirene 32.826, controle 73.238.
-- **Pendente do usuário:** medir a fluidez com `?perf=1` no PC e no celular e mandar os resultados.
+- Números (do `?debug=1`, 14/11): 57 programas de shader; triângulos na abertura ~260 mil; módulo ~63,6 mil,
+  fotossensor ~65,5 mil, magnético ~18,3 mil, sirene ~31,4 mil, controle ~80,5 mil.
+- **Pendente do usuário:** medir a fluidez com `?perf=1` no PC e no celular e mandar os resultados (depois disso, a
+  correção do hover do branch `otimizacao` e um perfil leve para celular).
+- **Pendente do usuário:** a prévia `/preview/` não publica: o ambiente `github-pages` só aceita a `main` (liberar o
+  branch `acabamento-4` em Settings → Environments → github-pages).
+- App saindo da tela do celular (só no Safari do iPhone, ~45 px para baixo): corrigido em `Smartphone.tsx`
+  (`useScreenAlign` compara a tela HTML com os cantos projetados do vidro e desloca a camada); falta o usuário confirmar
+  no iPhone.
+- **Pendente do usuário:** foto do outro lado da placa
+  do magnético (posição do LED), gravações dos sons do módulo e da sirene (para imitar por síntese) e o que ele quis
+  dizer com "o LED da sirene" (mensagem cortada).
+- Decisões do usuário nesta rodada: o fotossensor NÃO tem tamper (abrir a tampa não dispara); a bateria da sirene não
+  é trocada pelo usuário; o suporte do fotossensor é fixo e o sensor gira em pé sobre ele; a sirene toca assim que o
+  magnético detecta a porta abrindo; o LED do magnético pisca em azul; não há modo Manual.
 - O azul da placa ainda sai um pouco mais claro que o da arte.
 - As pendências de conteúdo a confirmar com a Orsegups estão no fim do `README.md` (destino do QR, cor do filete do
   controle, logo no disco central, lado do borne do magnético, posição exata de peças internas).

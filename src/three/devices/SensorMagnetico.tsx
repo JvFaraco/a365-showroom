@@ -174,6 +174,8 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
                   <mesh material={M.white} position={[0, mm(-22.5), mm(0.8)]}><boxGeometry args={[mm(6), mm(1.6), mm(1.6)]} /></mesh>
                   <mesh material={M.white} position={[0, mm(35.5), mm(3)]}><boxGeometry args={[BODY.w - 2 * WALL_T, mm(1.6), mm(6)]} /></mesh>
                   <mesh material={M.hole} position={[0, mm(31.5), 0.001]} rotation={[0, 0, Math.PI / 2]}><planeGeometry args={[mm(13), mm(3)]} /></mesh>
+                  {/* pino que aperta o anti-sabotagem da placa (pelo CAD: a 39 mm do meio, do lado do LED) */}
+                  <mesh material={M.white} position={[0, mm(39), (PCB.z - 0.045 - (BACK + FLOOR_T)) / 2]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(1.7), mm(1.7), PCB.z - 0.045 - (BACK + FLOOR_T), 12]} /></mesh>
                   <mesh material={M.hole} position={[0, mm(39), 0.001]}><circleGeometry args={[mm(2.6), 16]} /></mesh>
                   <mesh material={M.metal} position={[0, mm(39), mm(0.6)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(2.2), mm(2.2), mm(1.2), 16]} /></mesh>
                   {[-11.5, 25.5].flatMap((y) => [-1, 1].map((sx) => (
@@ -202,9 +204,8 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
             <ClickablePart id="led">
               <group rotation={DEITA}>
                 <mesh geometry={slit} material={M.blackGloss} position={[BODY.x, LED_Y, FRONT - 0.007]} />
-                <Led on="shell" sample={sampleLed} position={[BODY.x, LED_Y, FRONT + 0.006]}>
-                  <boxGeometry args={[0.115, 0.045, 0.004]} />
-                </Led>
+                {/* o LED em si: ponto pequeno e forte no meio da janela (como o do módulo); a janela fica escura */}
+                <Led on="shell" sample={sampleLed} boost={9} baseColor="#14161b" position={[BODY.x, LED_Y, FRONT + 0.0035]}><circleGeometry args={[0.017, 24]} /></Led>
               </group>
             </ClickablePart>
             {/* placa eletrônica: comprida e estreita (~74 × 19 mm). Numa ponta, o borne preto de 2 parafusos, no canto; da
@@ -222,6 +223,13 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
                 <mesh geometry={smd.pads} material={M.metal} />
                 <mesh geometry={smd.black} material={M.chip} />
                 <mesh geometry={smd.tan} material={M.smdTan} />
+              </group>
+            </ClickablePart>
+            {/* anti-sabotagem: micro-chave atrás da placa, perto da ponta do LED, apertada pelo pino da base (pelo CAD) */}
+            <ClickablePart id="tamper">
+              <group rotation={DEITA}>
+                <mesh material={M.chip} position={[BODY.x, mm(39), PCB.z - 0.011 - 0.012]}><boxGeometry args={[mm(6), mm(6), 0.024]} /></mesh>
+                <mesh material={M.greyDark} position={[BODY.x, mm(39), PCB.z - 0.011 - 0.024 - 0.01]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(1.3), mm(1.3), 0.02, 12]} /></mesh>
               </group>
             </ClickablePart>
             {/* sensor de choque: um CI pequeno na placa */}

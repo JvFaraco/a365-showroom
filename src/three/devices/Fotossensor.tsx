@@ -88,7 +88,8 @@ const ZC = (z: number) => (z - 50.9) / 79.07 // profundidade em mm a partir da p
 const WALL = { hw: mm(15.5), top: H(63.5), floor: ZC(11), back: ZC(3.5), plate0: ZC(0.5), plate1: ZC(2.3), guide: ZC(10) }
 /** Meia largura do encaixe da luva na altura h (mm): 13 mm embaixo, 5,5 mm no alto. */
 const slotHW = (h: number) => mm(13 - (7.5 * h) / 68)
-const HINGE: [number, number, number] = [0, Y0, WALL.floor] // pé do suporte: é ali que o suporte articulado gira para os lados
+// eixo vertical no centro do corpo (redondo): o sensor gira sobre o suporte, para a esquerda e para a direita
+const PAN: [number, number, number] = [0, Y0, 0]
 const PCB_DZ = -0.17 // a placa principal fica ~5 mm atrás do eixo do aparelho; o funil vem da lente até o sensor, na frente dela
 const BOARD = { y0: H(24), y1: H(128), hw: mm(27), z: PCB_DZ + 0.1 } // placa principal: da altura do funil até o topo
 const UP = 0.22 // na vista explodida tudo sobe um pouco e a base cinza fica embaixo (é como ela "desce" sem entrar no pedestal)
@@ -367,12 +368,13 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
 
   useFrame((_, dt) => {
     if (!interactive) return
-    // suporte: o fotossensor fica parado; quem vai para a esquerda e para a direita é o suporte articulado (a luva e a
-    // peça de fixação), girando no pé, atrás da base
+    // suporte: fica parado; o fotossensor gira sobre ele para a esquerda e para a direita, sempre em pé (não inclina),
+    // em torno do próprio eixo vertical. A luva, que está no mesmo grupo do corpo, gira de volta para ficar parada
     const ts = actionTime('suporte')
     const amp = ts < 0 ? 0 : bump(ts, 0, 0.8, 7, 8)
-    const sw = Math.sin(ts * 1.3) * 0.28 * amp
-    for (const g of swing.current) if (g) g.rotation.z = sw
+    const pan = Math.sin(ts * 1.3) * 0.45 * amp
+    tilt.current.rotation.y = pan
+    if (swing.current[0]) swing.current[0].rotation.y = -pan
     ruler.current.visible = ts >= 0
     // troca das pilhas: o sensor vira de costas; aperta-se a aba de cima e a tampa abre pelo alto, girando nas
     // presilhas de baixo (~30°), e sai para cima e para trás. As 3 pilhas velhas saem uma a uma, as novas entram, a
@@ -427,9 +429,9 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   return (
     <DeviceCtx.Provider value={{ deviceId: 'fotossensor', interactive }}>
       <group ref={flip}>
-      <group position={HINGE}>
+      <group position={PAN}>
         <group ref={tilt}>
-          <group position={[-HINGE[0], -HINGE[1], -HINGE[2]]}>
+          <group position={[-PAN[0], -PAN[1], -PAN[2]]}>
             {/* corpo: casca única com o rebaixo do capuz e o compartimento das pilhas; logo, frisos e berço */}
             {/* frente da casca: capuz, rebaixo do PIR, logo. Na vista explodida vai para a frente */}
             <ClickablePart follow="corpo" explode={[0, UP, 1.05]}>
@@ -554,7 +556,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
 
             {/* luva do suporte de parede: faz parte da base cinza; o encaixe em Λ e o parafuso de trava ficam atrás */}
             <ClickablePart id="suporte">
-              <group position={HINGE}><group ref={(gr) => { swing.current[0] = gr }}><group position={[-HINGE[0], -HINGE[1], -HINGE[2]]}>
+              <group position={PAN}><group ref={(gr) => { swing.current[0] = gr }}><group position={[-PAN[0], -PAN[1], -PAN[2]]}>
                 <mesh geometry={g.sleeve} material={mountMat} castShadow />
                 <group position={[0, H(25), WALL.floor - 0.001]} rotation={[0, Math.PI, 0]}>
                   <mesh material={M.metal} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, mm(0.6)]}><cylinderGeometry args={[mm(3), mm(3), mm(1.2), 20]} /></mesh>
@@ -611,7 +613,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
       {/* placa de parede (solta): fica parafusada na parede e parada quando o sensor inclina; a guia entra no encaixe
           da luva. Na frente da guia, os dois furos dos parafusos da parede */}
       <ClickablePart id="fixacao">
-        <group position={HINGE}><group ref={(gr) => { swing.current[1] = gr }}><group position={[-HINGE[0], -HINGE[1], -HINGE[2]]}>
+        <group>
           <mesh geometry={g.plate} material={mountMat} castShadow />
           {[[13, 1.6], [55, 1]].map(([h, sx]) => (
             <group key={h} position={[0, H(h), WALL.guide + 0.004]} scale={[sx, 1, 1]}>
@@ -619,7 +621,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
               <mesh material={M.metal} position={[0, 0, 0.001]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(2.6), mm(2.6), mm(0.6), 16]} /></mesh>
             </group>
           ))}
-        </group></group></group>
+        </group>
       </ClickablePart>
 
       </group>
@@ -630,10 +632,16 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
           {/* a foto chega no aplicativo: a tela "Imagem", com a pessoa marcada pela IA (como no app oficial) */}
           {camPhase === 0 && (
             <Html position={[1.55, LENS_Y - 0.15, HD + 0.2]} center style={{ pointerEvents: 'none' }}>
-              <div className="fx-tag w-44 overflow-hidden rounded-[22px] border-[5px] border-[#1b1d22] bg-[#0b0c10] text-white shadow-2xl" lang="pt-BR">
+              {/* o celular vem de longe até a frente; chega a notificação e, em seguida, abre a tela "Imagem" com a foto */}
+              <div className="fx-tag relative w-48 overflow-hidden rounded-[24px] border-[5px] border-[#1b1d22] bg-[#0b0c10] text-white shadow-2xl" lang="pt-BR"
+                style={{ animation: 'phone-in 0.9s cubic-bezier(.16,.84,.3,1) both' }}>
                 <div className="flex items-center justify-between px-3 pt-1.5 text-[8px] font-semibold"><span>08:08</span><span>●●● ▮</span></div>
+                <div className="absolute inset-x-2 top-6 z-10 rounded-xl bg-white/95 px-2 py-1.5 text-[9px] text-slate-700 shadow" style={{ animation: 'notif-out 0.6s 0.9s ease-in both' }}>
+                  <b className="text-[#e03131]">Alarme 365</b> · Nova imagem do fotossensor
+                </div>
+                <div style={{ animation: 'screen-in 0.5s 1.3s cubic-bezier(.16,.84,.3,1) both' }}>
                 <div className="flex items-center gap-2 px-2.5 py-1.5 text-[11px]"><span className="text-base leading-none">‹</span><span className="flex-1">Imagem</span><span>⋮</span></div>
-                <img src={aiPhotoDataUrl(true)} alt="" width={166} height={124} className="block w-full" />
+                <img src={aiPhotoDataUrl(true)} alt="" width={182} height={136} className="block w-full" />
                 <div className="mx-2 my-2 rounded-xl bg-white/5 px-2 py-1.5 text-center text-[9px] leading-snug">
                   <div className="mx-auto mb-1 h-0.5 w-6 rounded bg-white/30" />
                   <div>Agora</div>
@@ -641,6 +649,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
                   <div className="text-white/50">1 detecção · Sala de estar</div>
                   <div className="mt-1.5 font-semibold">Pessoa (100% de previsão)</div>
                   <div className="mt-1 flex justify-center gap-1"><span className="h-1 w-1 rounded-full bg-white" /><span className="h-1 w-1 rounded-full bg-white/30" /><span className="h-1 w-1 rounded-full bg-white/30" /></div>
+                </div>
                 </div>
               </div>
             </Html>

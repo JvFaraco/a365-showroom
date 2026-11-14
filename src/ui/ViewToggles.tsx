@@ -1,9 +1,9 @@
 import { DEVICE_BY_ID, hasInternal } from '../data/devices'
 import { useShowroom, type View } from '../store/showroomStore'
 import { beep } from './audio'
-import { Explode, Manual, Play, Xray } from './icons'
+import { Explode, Play, Xray } from './icons'
 
-/** Explodir, Raio-X, Modo Manual e Tour. */
+/** Explodir, Raio-X e Tour. */
 export function ViewToggles() {
   const view = useShowroom((s) => s.view)
   const tour = useShowroom((s) => s.tour)
@@ -14,7 +14,6 @@ export function ViewToggles() {
   const all: { v: View; label: string; key: string; Icon: typeof Explode }[] = [
     { v: 'exploded', label: 'Explodir', key: 'E', Icon: Explode },
     { v: 'xray', label: 'Raio-X', key: 'X', Icon: Xray },
-    { v: 'manual', label: 'Manual', key: 'M', Icon: Manual },
   ]
   const items = all.filter((it) => it.v !== 'xray' || internal)
   return (

@@ -21,10 +21,10 @@ O demo tem três cenas, nesta ordem: **Showroom → Em ação → Encerramento**
 |---|---|---|
 | Girar, aproximar | arrastar, roda ou pinça | |
 | Resetar a vista | duplo clique | `R` reseta tudo |
-| Ver uma parte | clicar nela, num pino do Modo Manual ou na lista "Partes" | `→` / `espaço` próxima, `←` anterior |
+| Ver uma parte | clicar nela ou na lista "Partes" | `→` / `espaço` próxima, `←` anterior |
 | Voltar à vista inteira | botão Voltar | `ESC` |
 | Trocar de aparelho | faixa inferior | `1` a `7` |
-| Explodir, Raio-X, Manual, Tour | botões no topo | `E`, `X`, `M`, `T` |
+| Explodir, Raio-X, Tour | botões no topo | `E`, `X`, `T` |
 | Modo apresentação (tela cheia, textos maiores) | botão no canto | `P` |
 
 A câmera só gira quando alguém arrasta: não há giro automático.
