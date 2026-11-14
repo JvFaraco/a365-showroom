@@ -707,10 +707,10 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
           <mesh geometry={g.micB} material={M.chip} />
         </ClickablePart>
 
-        {/* bateria por baixo da placa; conector branco de 2 pinos na borda, fios vermelho e preto */}
+        {/* bateria (pacote amarelo) por baixo da placa; conector branco de 2 pinos na borda, fios vermelho e preto */}
         <ClickablePart id="bateria">
-          <RoundedBox args={[0.6, 0.1, 0.34]} radius={0.03} smoothness={3} position={[0.1, -0.25, 0.12]} material={M.cell} />
-          <mesh material={M.orange} position={[0.1, -0.1985, 0.12]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.32, 0.14]} /></mesh>
+          {/* pacote amarelo, como nas fotos do módulo aberto */}
+          <RoundedBox args={[0.6, 0.1, 0.34]} radius={0.03} smoothness={3} position={[0.1, -0.25, 0.12]} material={M.yellow} />
           <mesh geometry={g.batA} material={M.red} />
           <mesh geometry={g.batB} material={M.chip} />
           {/* plugue branco e o trecho do cabo por cima da placa: giram na borda da placa quando o plugue é puxado */}
