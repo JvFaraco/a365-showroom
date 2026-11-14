@@ -202,17 +202,12 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
       {/* saudação e, à direita, o botão SOS (só o contorno, como no app) */}
       <div className="flex items-center justify-between px-4 pt-2">
         <div className="text-[20px] font-light text-white/90">Olá!</div>
-        <Region id="sos" interactive={interactive} className="!rounded-lg">
-          <div className="rounded-lg border border-white/35 px-3 py-1 text-[12px] text-white/90">SOS</div>
+        <Region id="sos" interactive={interactive} className="!rounded-xl">
+          <div className="rounded-xl bg-white/10 px-3 py-2 text-[14px] text-white/90">SOS</div>
         </Region>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-1 px-3 pt-1.5">
-        {/* patrimônio: qual casa está sendo controlada (sem endereço) */}
-        <div className={`${CARD} flex items-center !py-2`}>
-          <div className="flex-1 leading-tight"><div className="text-[9.5px] text-white/60">Patrimônio</div><div className="text-[12px] text-white/90">Minha casa</div></div>
-          <Chevron size={14} className="text-white/60" />
-        </div>
 
         <Region id="alarme-geral" interactive={interactive}>
           <div className={LABEL}>Alarme geral</div>
@@ -245,7 +240,7 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
 
         <Region id="ultimas-imagens" interactive={interactive}>
           <div className={LABEL}>Últimas imagens</div>
-          <div className="relative h-[110px] overflow-hidden rounded-xl bg-[#26272b]">
+          <div className="relative h-[150px] overflow-hidden rounded-xl bg-[#26272b]">
             <img src={aiPhotoDataUrl(photo === 'done')} alt="Foto do fotossensor" width={480} height={360} className="h-full w-full object-cover" draggable={false} />
             {/* etiqueta da foto, no canto, escura como no app: de qual aparelho e quando */}
             <div className="absolute left-1.5 top-1.5 rounded-md bg-[#1d1e21]/90 px-1.5 py-0.5 leading-tight">
@@ -260,14 +255,17 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
                 </div>
               </div>
             )}
-            {photo === 'done' && <div className="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">Pessoa (100% de previsão)</div>}
+            {photo === 'done' && <div className="absolute bottom-5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">Pessoa (100% de previsão)</div>}
+            <div className="absolute inset-x-0 bottom-1.5 flex justify-center gap-1" aria-hidden>
+              {[0, 1, 2, 3, 4].map((i) => <i key={i} className={`h-1.5 w-1.5 rounded-full ${i === 0 ? 'bg-white/90' : 'bg-white/45'}`} />)}
+            </div>
           </div>
           {/* botão amarelo, como em "Histórico de imagens" do app */}
-          <button tabIndex={action === 'solicitar-imagem' ? 0 : -1}
+          {action === 'solicitar-imagem' && <button
             onClick={(e) => { if (action !== 'solicitar-imagem' || photo === 'loading') return; e.stopPropagation(); beep('ui'); useShowroom.getState().set({ appPhoto: 'loading' }) }}
             className="mt-1.5 w-full rounded-lg bg-[#F9E000] py-1.5 text-[11.5px] font-medium text-[#151618]">
             Solicitar imagem atualizada
-          </button>
+          </button>}
         </Region>
 
         <Region id="ultimos-eventos" interactive={interactive}>

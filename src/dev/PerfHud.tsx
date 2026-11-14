@@ -122,10 +122,10 @@ export function PerfHud() {
   }
 
   return (
-    <div className="fixed bottom-2 left-2 z-[60] max-w-[calc(100vw-1rem)] rounded-xl bg-black/80 p-2 font-mono text-[11px] leading-snug text-white shadow-lg">
+    <div className="fixed right-2 top-[6.5rem] z-[60] max-w-[calc(100vw-1rem)] rounded-xl border border-accent/60 bg-black/85 p-2.5 font-mono text-[12px] leading-snug text-white shadow-lg sm:max-w-sm">
       <div ref={live}>medindo…</div>
       <div className="mt-1 flex gap-2">
-        <button className="rounded bg-accent px-2 py-1 font-semibold text-ink disabled:opacity-50" disabled={running} onClick={() => void run()}>{running ? 'Testando… (~45 s, não mexa)' : 'Testar fluidez'}</button>
+        <button className="rounded-lg bg-accent px-3 py-2 text-[13px] font-semibold text-ink disabled:opacity-50" disabled={running} onClick={() => void run()}>{running ? 'Testando… (~45 s, não mexa)' : 'Testar fluidez'}</button>
         {report && <button className="rounded bg-white/15 px-2 py-1" onClick={() => void copy()}>{copied ? 'Copiado' : 'Copiar resultado'}</button>}
         {report && <button className="rounded bg-white/15 px-2 py-1" onClick={() => setReport(null)}>Fechar</button>}
       </div>
