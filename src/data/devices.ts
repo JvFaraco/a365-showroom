@@ -7,7 +7,7 @@ export type ActionId =
   // Módulo de Comando
   | 'antena' | 'sos190' | 'led' | 'audio' | 'bateria-modulo' | 'abrir-modulo' | 'cabos' | 'desplugar-bateria'
   // Fotossensor
-  | 'pir' | 'camera' | 'suporte' | 'tampa-foto' | 'sabotagem'
+  | 'pir' | 'camera' | 'suporte' | 'tampa-foto' | 'sabotagem' | 'sensibilidade'
   // Sensor magnético
   | 'ima' | 'choque'
   // Sirene
@@ -28,6 +28,7 @@ export type Part = {
   camera: { position: Vec3; target: Vec3 }
   internal?: boolean // só clicável explodido / raio-X
   action?: ActionId // micro-animação do "Ver em ação"
+  more?: ActionId[] // outras ações da mesma parte (botões a mais no card)
   explode?: Vec3 // deslocamento da parte na vista explodida (0..1)
   pin?: Vec3 // Modo Manual: desloca o pino a partir do centro da parte (para não cair em cima de outro)
 }
@@ -265,9 +266,10 @@ export const DEVICES: Device[] = [
         id: 'pir',
         name: 'Lente PIR',
         what: 'Sensor infravermelho de movimento.',
-        facts: ['Campo de 90°', 'Alcance de 8 a 10 m', 'Pet Immune: ignora animais pequenos'],
+        facts: ['Campo de 90°', 'Alcance de 8 a 10 m', 'Pet Immune: ignora animais pequenos', 'Sensibilidade ajustável'],
         camera: { position: [0.7, -0.3, 2.2], target: [0, -0.48, 0.3] },
         action: 'pir',
+        more: ['sensibilidade'],
         explode: [0, 0.22, 1.05],
       },
       {

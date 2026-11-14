@@ -30,6 +30,7 @@ export const ACTIONS: Record<ActionId, {
   camera: { label: 'Tirar uma foto', duration: 7, camera: { position: [1.7, 0.8, 4.2], target: [0.45, 0.3, 0.3] } },
   suporte: { label: 'Girar o sensor', duration: 8, camera: { position: [1.4, 1.1, 5.0], target: [0, -0.1, 0] } },
   'tampa-foto': { label: 'Trocar as pilhas', duration: 9, camera: { position: [1.5, 0.5, 5.6], target: [0, -0.1, 0.4] } },
+  sensibilidade: { label: 'Ajustar a sensibilidade', camera: { position: [5.6, 4.4, 7.4], target: [0.6, -0.5, 1.8] } },
   sabotagem: { label: 'Mexer no sensor', duration: 9, camera: { position: [1.2, 0.5, 3.9], target: [-0.6, -0.05, 0.2] } },
   ima: { label: 'Abrir a porta', duration: 7, camera: { position: [-1.1, 0.7, 7.2], target: [-0.6, -0.2, 0] }, radius: 2.4 },
   choque: { label: 'Testar uma batida', camera: { position: [-1.1, 0.7, 7.2], target: [-0.6, -0.2, 0] }, radius: 2.4 },

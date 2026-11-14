@@ -34,6 +34,7 @@ type State = {
   sirenLevel: 1 | 2 | 3
   sirenOn: boolean
   shockLevel: 1 | 2 | 3 // 1 baixa, 2 média, 3 alta
+  pirLevel: 1 | 2 | 3 // sensibilidade do PIR: 1 baixa, 2 média, 3 alta
   knock: { t0: number; fired: boolean } | null
   appPhoto: 'idle' | 'loading' | 'done'
   iaPlaying: boolean
@@ -88,6 +89,7 @@ export const useShowroom = create<State>((set, get) => ({
   iaPlaying: false,
   iaStep: 0,
   shockLevel: 2,
+  pirLevel: 2,
   presenter: false,
   sound: false,
   quality: 0,

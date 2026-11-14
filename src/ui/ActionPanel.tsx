@@ -101,6 +101,7 @@ export function ActionPanel() {
   const sirenOn = useShowroom((s) => s.sirenOn)
   const sirenLevel = useShowroom((s) => s.sirenLevel)
   const shock = useShowroom((s) => s.shockLevel)
+  const pirLevel = useShowroom((s) => s.pirLevel)
   const arm = useShowroom((s) => s.armState)
   const pending = useShowroom((s) => s.armPending)
   const photo = useShowroom((s) => s.appPhoto)
@@ -139,6 +140,15 @@ export function ActionPanel() {
             <button className="btn flex-1" onClick={() => knock(1)}>Batida leve</button>
             <button className="btn flex-1" onClick={() => knock(2)}>Batida forte</button>
           </div>
+        </div>
+      )}
+      {action.id === 'sensibilidade' && (
+        <div className="space-y-2">
+          <label className="block text-xs text-white/70">Sensibilidade do PIR: <b className="text-white">{LEVELS[pirLevel - 1]}</b>
+            <input type="range" min={1} max={3} step={1} value={pirLevel} aria-label="Sensibilidade do sensor PIR"
+              onChange={(e) => { beep('click'); set({ pirLevel: Number(e.target.value) as 1 | 2 | 3 }) }} className="mt-1 w-full accent-[#F9E000]" />
+          </label>
+          <p className="text-xs text-white/60">Mais sensível, o sensor percebe movimento mais longe e com menos esforço. Menos sensível, precisa de mais movimento para disparar.</p>
         </div>
       )}
       {action.id === 'alarme-geral' && (

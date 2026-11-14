@@ -326,9 +326,24 @@ const G = () => (cache ??= build())
 
 /** Alerta do PIR durante a ação: a pessoa está dentro do leque de 90°? */
 function pirAlert() {
+  if (sensDetect()) return 1
   const t = actionTime('pir')
   if (t < 2.5 || t > 6.5) return 0
   return Math.abs(personX(t)) < PERSON_Z ? 1 : 0
+}
+
+// ---------- ação "Ajustar a sensibilidade" ----------
+// Uma pessoa vai e volta numa linha fixa na frente do sensor. O leque mostra até onde o PIR percebe movimento em cada
+// nível (sem medida: só a proporção). Na alta e na média ele a alcança; na baixa ela passa sem disparar.
+const SENS_REACH = [0.55, 0.78, 1] // fração do leque cheio, por nível
+const FAN_LEN = 4.2, FAN_Z = HD - 0.1, SENS_Z = FAN_Z + 2.65
+const sensX = (t: number) => Math.sin(t * 0.9) * 2.0
+function sensDetect() {
+  const t = actionTime('sensibilidade')
+  if (t < 1.2) return false
+  const x = sensX(t), dz = SENS_Z - FAN_Z
+  const reach = FAN_LEN * SENS_REACH[useShowroom.getState().pirLevel - 1]
+  return Math.abs(x) < dz && Math.hypot(x, dz) < reach
 }
 
 // ---------- mão da ação "Mexer no sensor" (efeito, fora do aparelho) ----------
@@ -402,6 +417,9 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   const arrowPhase = useActionPhase('tampa-foto', [0.8, 1.5], true)
   const person = useRef<THREE.Group>(null!)
   const dog = useRef<THREE.Group>(null!)
+  const walker = useRef<THREE.Group>(null!)
+  const sensTag = useRef<HTMLDivElement>(null)
+  const sensShow = useRef(0)
   const ruler = useRef<THREE.Group>(null!)
   const alertV = useRef(0)
   const hand = useRef<THREE.Group>(null!)
@@ -421,6 +439,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   const supPhase = useActionPhase('suporte')
   const camPhase = useActionPhase('camera', [1.0, 6.4])
   const sabPhase = useActionPhase('sabotagem', [1.7, 2.6, 8.6])
+  const sensPhase = useActionPhase('sensibilidade')
 
   const flashPower = () => {
     if (flash) return flash()
@@ -488,6 +507,23 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
       dog.current.position.y = FAN_Y + Math.abs(Math.sin(tp * 10)) * 0.04
     }
     alertV.current += (pirAlert() - alertV.current) * Math.min(1, dt * 10)
+    // sensibilidade: o leque cresce ou encolhe suave conforme o nível; a pessoa vai e volta
+    const tsn = actionTime('sensibilidade')
+    const target = tsn < 0 ? 0 : SENS_REACH[useShowroom.getState().pirLevel - 1] * Math.min(1, tsn / 0.8)
+    sensShow.current += (target - sensShow.current) * Math.min(1, dt * 6)
+    walker.current.visible = warm || tsn >= 0
+    if (tsn >= 0) {
+      walker.current.position.x = sensX(tsn)
+      walker.current.position.y = FAN_Y + Math.abs(Math.sin(tsn * 6)) * 0.03
+      walker.current.rotation.y = Math.cos(tsn * 0.9) >= 0 ? 0 : Math.PI
+    }
+    const tag = sensTag.current
+    if (tag) {
+      const on = sensDetect()
+      tag.textContent = tsn < 1.2 ? '' : on ? 'Movimento detectado' : 'Fora do alcance: não dispara'
+      tag.style.background = on ? 'hsl(0 84% 60%)' : 'rgba(0,0,0,.65)'
+      tag.style.opacity = tsn < 1.2 ? '0' : '1'
+    }
   })
 
   // LED de status: verde piscando; vermelho fixo no alerta do PIR
@@ -745,7 +781,13 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
             </Html>
           )}
           <DetectionFan position={[0, FAN_Y, HD - 0.1]} length={4.2} labels={pirPhase >= 0} alert={() => alertV.current}
-            show={() => { const t = actionTime('pir'); return t < 0 ? 0 : bump(t, 0, 1.2, 13, 14) }} />
+            show={() => { const t = actionTime('pir'); return t < 0 ? sensShow.current : bump(t, 0, 1.2, 13, 14) }} />
+          <group ref={walker} position={[0, FAN_Y, SENS_Z]} visible={false}><LowPolyPerson scale={1.5} /></group>
+          {sensPhase === 0 && (
+            <Html position={[0, 1.0, SENS_Z]} center style={{ pointerEvents: 'none' }}>
+              <div ref={sensTag} className="fx-tag whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-bold text-white transition-colors" style={{ opacity: 0 }} />
+            </Html>
+          )}
           <group ref={person} position={[0, FAN_Y, PERSON_Z]} visible={false}><LowPolyPerson scale={1.5} /></group>
           <group ref={dog} position={[0, FAN_Y, 2.0]} visible={false}><LowPolyDog scale={1.1} /></group>
           {pirPhase === 1 && alertBadge()}

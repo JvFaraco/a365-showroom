@@ -73,6 +73,12 @@ export function PartCard() {
               <span className="font-normal opacity-70"><span className="max-sm:hidden">· </span>{ACTIONS[part.action].label}</span>
             </button>
           )}
+          {/* outras ações da mesma parte: botões secundários */}
+          {!action && part.more?.map((id) => (
+            <button key={id} className="btn mt-2 w-full" onClick={() => { beep(); st().set({ tour: false }); st().startAction(id) }}>
+              <Play size={14} /> {ACTIONS[id].label}
+            </button>
+          ))}
 
           {/* tour: barra fina mostrando quando vem a próxima parte */}
           {tour && !action && (
