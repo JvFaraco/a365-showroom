@@ -217,7 +217,7 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
                 <mesh material={M.white} position={[BODY.x + BODY.w / 2 + mm(0.4), CAP_Y, (SPLIT + FRONT - mm(1.5)) / 2]}><boxGeometry args={[mm(0.8), mm(1), FRONT - mm(1.5) - SPLIT]} /></mesh>
                 {/* entalhe na quina da face, na ponta oposta ao LED (versão simples: um bloco escuro rente à frente e à ponta,
                     cobrindo a quina arredondada, de raio 0,045) */}
-                <mesh material={M.hole} position={[BODY.x, -BODY.len / 2 + mm(0.9) - 0.0005, FRONT - 0.045 / 2 + 0.00025]}><boxGeometry args={[mm(9.5), mm(1.8), 0.045 + 0.0005]} /></mesh>
+                <mesh material={M.partition} position={[BODY.x, -BODY.len / 2 + mm(0.9) - 0.0005, FRONT - 0.045 / 2 + 0.00025]}><boxGeometry args={[mm(9.5), mm(1.8), 0.045 + 0.0005]} /></mesh>
               </group>
             </ClickablePart>
             {/* janela do LED: pequena (~8 × 4 mm), atravessada na face, entre o logo e a ponta */}

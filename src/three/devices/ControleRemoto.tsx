@@ -123,14 +123,14 @@ function build() {
   const bs = teardrop(); bs.holes.push(ringHole(0.02))
   const cav = new THREE.Path(); cav.absarc(0, 0, 0.61, 0, Math.PI * 2, true); bs.holes.push(cav)
   const back = new THREE.ExtrudeGeometry(bs, { depth: 0.05, ...bevel }); back.translate(0, 0, -0.06)
-  // olhal da argola: peça grossa (~6,8 mm) de borda redonda, que vai afinando até sumir dentro do ombro e das placas
-  // no pescoço. O chanfro engorda o contorno e aperta o furo (0,04): por fora fica rente às placas e o furo, no meio
+  // olhal da argola: peça de borda redonda, grossa no pescoço (~10 mm, fundindo no ombro) e afinando até ~6 mm na
+  // ponte, como nas medidas externas. O chanfro engorda o contorno e aperta o furo (0,04): por fora fica rente às placas e o furo, no meio
   // da espessura, fica com ~6,2 × 3,9 mm. A borda redonda do furo é o chanfro dele
   const es = eyeShape()
   const eh = new THREE.Path(); eh.absellipse(0, HOLE_Y, 0.16, 0.115, 0, Math.PI * 2, true, 0); es.holes.push(eh)
   const eyeRaw = new THREE.ExtrudeGeometry(es, { depth: 0.1, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 4, curveSegments: 28 }); eyeRaw.translate(0, 0, -0.05)
   const ep = eyeRaw.attributes.position
-  for (let i = 0; i < ep.count; i++) ep.setZ(i, ep.getZ(i) * (0.72 + 0.28 * seg(-ep.getY(i), 0.76, 0.86)))
+  for (let i = 0; i < ep.count; i++) ep.setZ(i, ep.getZ(i) * (1.5 - 0.65 * seg(-ep.getY(i), 0.81, 1.0)))
   // normais suaves na borda redonda (sem as faixas da extrusão)
   eyeRaw.deleteAttribute('uv'); eyeRaw.deleteAttribute('normal')
   const eye = mergeVertices(eyeRaw); eye.computeVertexNormals(); eyeRaw.dispose()

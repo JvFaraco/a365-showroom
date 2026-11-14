@@ -68,13 +68,13 @@ function pocketFloor(h: number) {
 /** Ressalto do capuz (sem o bolso): o menor entre a sobrancelha, que desce do alto, e a borda inclinada do bolso. */
 function hoodBoss(dx: number, h: number) {
   const brow = 0.83 * (130.8 - h) - (0.021 + 0.0015 * (128.2 - h)) * dx * dx
-  const rim = 0.58 * (h - 96.9) * smooth(0, 4, 16.2 - Math.abs(dx))
+  const rim = 0.58 * (h - 96.9) * smooth(0, 4, 16.2 + 1.4 * smooth(105, 112, h) - Math.abs(dx)) // pera: mais larga no alto
   const k = 1.2, m = Math.min(brow, rim)
   return Math.max(0, m - k * Math.log(Math.exp(-(brow - m) / k) + Math.exp(-(rim - m) / k))) // mínimo suave: sem vinco
 }
 /** Quanto a frente sai (+) ou entra (−) do cilindro no capuz e no bolso da câmera, em mm. */
 function hoodOffset(dx: number, h: number) {
-  if (h < CAM.y0 || h > 131 || Math.abs(dx) > 17) return 0
+  if (h < CAM.y0 || h > 131 || Math.abs(dx) > 19) return 0
   const boss = hoodBoss(dx, h), d = camInside(dx, h)
   const wall = 6.5 + 2.5 * smooth(100, 110, h) // largura da parede do bolso: mais aberta em cima, sob a sobrancelha
   return d <= 0 ? boss : boss + (pocketFloor(h) - boss) * Math.pow(smooth(0, wall, d), 0.8)
@@ -435,6 +435,8 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   const winBoard = useMemo(() => { const m = M.hole.clone(); m.color.set('#1f4d2b'); return m }, [])
   const springMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#b87333', roughness: 0.38, metalness: 1 }), [])
   const shellMat = useMemo(() => { const m = M.white.clone(); m.side = THREE.DoubleSide; return m }, [])
+  // cristal da janela do LED/flash: bem fino, para a placa verde e o flash amarelo aparecerem (como nas fotos). Mesmas flags
+  const winGlass = useMemo(() => { const m = M.crystal.clone(); m.opacity = 0.15; return m }, [])
   const lensBack = useMemo(() => new THREE.MeshStandardMaterial({ color: '#bfc4ca', roughness: 0.7 }), []) // janela translúcida, um pouco mais escura que o corpo (fotos)
   const pirMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#f1f2f3', roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12, transparent: true, opacity: 0.8, envMapIntensity: 1.4 }), [])
   const pirPhase = useActionPhase('pir', [0, 3.1, 5.9])
@@ -581,7 +583,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
             <ClickablePart id="flash">
               <group position={camAt(LEDWIN_H)} rotation={CAM_ROT}>
                 <mesh geometry={g.win} material={winBoard} position={[0, 0, -0.008]} />
-                <mesh geometry={g.win} material={M.crystal} position={[0, 0, -0.004]} />
+                <mesh geometry={g.win} material={winGlass} position={[0, 0, -0.004]} />
                 <Led sample={(_, o) => { const p = flashPower(); o.color = '#fff6c8'; o.on = p * 3 }} baseColor="#d8c040" position={[0, -mm(3.2), 0.004]}>
                   <boxGeometry args={[mm(3), mm(3), 0.003]} />
                 </Led>

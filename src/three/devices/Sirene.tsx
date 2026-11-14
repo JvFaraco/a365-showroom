@@ -337,7 +337,7 @@ export function Sirene({ interactive = false, sounding, waves = [5, 1.9] }: Devi
         <mesh material={whiteDS} position={[-(BATT_Y - 0.015), -0.01, SEAM - 0.03]} scale={[1, 1, 0.55]}><cylinderGeometry args={[0.215, 0.215, 1.22, 20, 1, false, Math.PI / 2, Math.PI]} /></mesh>
         {/* parafusos, no fundo de cada pé */}
         {FOOT_AT.map((a) => (
-          <mesh key={a} material={M.metal} position={[0.82 * Math.cos(a), 0.82 * Math.sin(a), WALL + 0.03]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.04, 0.04, 0.02, 12]} /></mesh>
+          <mesh key={a} material={M.metal} position={[0.82 * Math.cos(a), 0.82 * Math.sin(a), WALL + 0.032]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.04, 0.04, 0.02, 12]} /></mesh>
         ))}
         {/* travas do encaixe */}
         {LATCHES.map(([x, y], i) => (

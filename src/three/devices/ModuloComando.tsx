@@ -173,7 +173,7 @@ const ANT_Z = 0.09 - Math.sqrt(baseR(Math.PI + Math.asin(-ANT_X / 0.82), -0.14) 
 /** Altura depois do achatamento do corpo (para o que fica fora do grupo achatado). */
 const sq = (y: number) => BOTTOM + (y - BOTTOM) * SQUASH
 const NET_Z = POCKET.z1 - 0.13, POW_X = POCKET.x1 - 0.15 // posição encaixada dos plugues
-const JACK = { y: Y_BOT + POCKET.d * 0.5, z: -0.56 } // entrada da fonte na parede esquerda (+X), a meia altura
+const JACK = { y: Y_BOT + POCKET.d * 0.5, z: -0.28 } // entrada da fonte na parede esquerda (+X), a meia altura, logo atrás do RJ45 (vídeo e foto da placa)
 
 /**
  * Base cinza: tambor redondo, logo por dentro da tampa (a tampa encaixa rente nela), com frisos verticais (os sulcos caem em cima das fendas do fundo),
@@ -630,7 +630,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         {/* ================= base cinza: tambor redondo rente à tampa, fendas na borda, pés, rebaixos ================= */}
         <ClickablePart id="base">
           <mesh geometry={g.base} material={baseMat} castShadow />
-          <instancedMesh ref={fins} args={[g.slit, baseDark, 60]} />
+          <instancedMesh ref={fins} args={[g.slit, baseMat, 60]} />
         </ClickablePart>
         <ClickablePart follow="base">
           {/* pés redondos e baixos, com o furo do parafuso no centro */}
