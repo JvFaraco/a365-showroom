@@ -133,7 +133,7 @@ function stickerGeometry() {
 // Fundo (pelo vídeo de fábrica). Tudo em coordenadas do corpo, antes do achatamento em Y.
 const Y_BOT = BOTTOM
 // Visto por baixo, com a antena para cima: o bolsão fica NO MEIO (um nada para a esquerda) e é um rasgo aberto na
-// borda de trás, por onde saem os cabos; a antena sai ao lado dele, à direita (−X), e o furo do reset fica do mesmo lado, mais para a frente.
+// borda de trás, por onde saem os cabos; a antena sai ao lado dele, à direita (−X), e o furo do reset fica do outro lado, junto da entrada da fonte.
 const POCKET = { x0: -0.2, x1: 0.3, z1: -0.22, d: 0.3 } // bolsão fundo dos cabos, no meio: começa em z1 e vai até a borda de trás, aberto
 const PLATE = { x0: POCKET.x0 + 0.03, x1: POCKET.x1 - 0.03, z0: -0.78, z1: POCKET.z1 + 0.02 } // moldura da grade de som, na face funda
 const LABEL = { x0: -0.365, x1: 0.375, z0: 0.075, z1: 0.425 } // rebaixo raso da etiqueta (fica vazio): ~59 × 28 mm, à frente do bolsão
@@ -595,8 +595,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
               <mesh material={M.hole} position={[0, -0.0305, 0]} rotation={[Math.PI / 2, 0, 0]}><circleGeometry args={[0.02, 12]} /></mesh>
             </group>
           ))}
-          {/* furo do botão de reset (o botão fica na placa, logo acima): do lado da antena, ao lado do bolsão */}
-          <mesh material={M.hole} position={[-0.42, Y_BOT - 0.001, -0.56]} rotation={[Math.PI / 2, 0, 0]}><circleGeometry args={[0.022, 14]} /></mesh>
+          {/* furo do botão de reset (o botão fica na placa, logo acima): do lado da entrada da fonte, ao lado do bolsão */}
+          <mesh material={M.hole} position={[0.44, Y_BOT - 0.001, -0.47]} rotation={[Math.PI / 2, 0, 0]}><circleGeometry args={[0.022, 14]} /></mesh>
           {/* ressalto da rosca da antena: bloco de face plana na borda de trás, à direita do bolsão; aparece sob o arco de trás da tampa */}
           <RoundedBox args={[0.16, 0.341, 0.122]} radius={0.03} smoothness={3} position={[ANT_X, -0.2255, -0.679]} material={M.grey} />
           {/* duas travas cinza, em lados opostos, que prendem a placa */}
@@ -642,8 +642,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         </ClickablePart>
         {/* botão de reset: embaixo da placa, sobre o furo do fundo (base preta e botão azul, como na foto da placa) */}
         <ClickablePart id="reset">
-          <mesh material={M.chip} position={[-0.42, PCB_Y - 0.04, -0.56]}><boxGeometry args={[0.08, 0.03, 0.08]} /></mesh>
-          <mesh material={M.wireBlue} position={[-0.42, PCB_Y - 0.065, -0.56]}><cylinderGeometry args={[0.024, 0.024, 0.025, 14]} /></mesh>
+          <mesh material={M.chip} position={[0.44, PCB_Y - 0.04, -0.47]}><boxGeometry args={[0.08, 0.03, 0.08]} /></mesh>
+          <mesh material={M.wireBlue} position={[0.44, PCB_Y - 0.065, -0.47]}><cylinderGeometry args={[0.024, 0.024, 0.025, 14]} /></mesh>
         </ClickablePart>
         <ClickablePart id="placa-principal">
           <mesh geometry={g.pcb} material={M.pcb} position={[0, PCB_Y, 0]} />
@@ -842,7 +842,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
               <mesh geometry={g.powRibs} material={M.chip} position={[0, -0.34, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[0.6, 0.6, 0.8]} userData={{ fx: true }} raycast={() => null} />
             </group>
           </group>
-          {interactive && <TamperTag id="tamper-modulo" openAt={0.6} position={[-0.1, 0.55, 0.35]} />}
+          {interactive && <TamperTag id="tamper-modulo" openAt={0.25} position={[-0.1, 0.55, 0.35]} />}
           {batPhase >= 0 && (
             <Html position={[0, 1.15, 0]} center style={{ pointerEvents: 'none' }}>
               <div className="fx-tag flex items-center gap-3 rounded-2xl bg-black/75 px-4 py-2 text-white">

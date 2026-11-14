@@ -110,7 +110,8 @@ function build() {
   // miolo: o disco central fixo também tem a face de baixo
   const hubBack = new THREE.CircleGeometry(0.27, 48); hubBack.rotateY(Math.PI); hubBack.translate(0, KY, SH.face - 0.025)
   // teclado de borracha: lâmina atrás da face, com um pino embaixo de cada tecla (aperta o domo dourado da placa)
-  const keypadSheet = new THREE.RingGeometry(0.2, 0.69, 64) // vai até embaixo da borda da abertura: nada da placa aparece nas fendas; keypadSheet.translate(0, KY, SH.face - 0.024)
+  const keypadSheet = new THREE.RingGeometry(0.2, 0.69, 64) // vai até embaixo da borda da abertura: nada da placa aparece nas fendas
+  keypadSheet.translate(0, KY, SH.face - 0.024)
   const keypadBack = new THREE.RingGeometry(0.2, 0.69, 64); keypadBack.rotateY(Math.PI); keypadBack.translate(0, KY, SH.face - 0.034)
   // fundo do teclado: anel com espessura (as duas faces), logo abaixo das teclas, preso na casca da frente
   const ring = new THREE.Shape().absarc(0, 0, 0.69, 0, Math.PI * 2, false)
@@ -124,7 +125,7 @@ function build() {
   // ombro de trás: o mesmo perfil espelhado; por dentro, a parede da cavidade da bateria
   const backDome = latheZ([[0.61, -0.05], [0.61, -SH.face], ...shoulder().reverse().map(([r, z]) => [r, -z] as [number, number]), [R, -0.03]], 96)
   // filete azul: anel fino (~1,5 mm) no meio da espessura, quase rente às cascas
-  const fl = teardrop(0.03)
+  const fl = teardrop(0.008) // o filete fica rente às cascas (de frente não vira contorno azul)
   // é um anel de verdade (não um disco): na vista explodida aparece fino, só o contorno
   fl.holes.push(new THREE.Path(teardrop(-0.05).getPoints(120).reverse()))
   const fillet = new THREE.ExtrudeGeometry(fl, { depth: 0.03, bevelEnabled: true, bevelSize: 0.004, bevelThickness: 0.004, bevelSegments: 2, curveSegments: 64 }); fillet.translate(0, 0, -0.015)

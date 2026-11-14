@@ -562,9 +562,9 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
               {CELL_X.map((x, i) => (
                 <group key={x}>
                   {[0.008, 0.02].map((d) => (
-                    <mesh key={d} material={M.metal} position={[x, CELL.y + (i % 2 ? 1 : -1) * (CELL.len / 2 + d + 0.006), -CELL.s]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.05 - d * 0.6, 0.006, 6, 20]} /></mesh>
+                    <mesh key={d} material={M.metal} position={[x, CELL.y + (i % 2 ? -1 : 1) * (CELL.len / 2 + d + 0.006), -CELL.s]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.05 - d * 0.6, 0.006, 6, 20]} /></mesh>
                   ))}
-                  <mesh material={M.metal} position={[x, CELL.y + (i % 2 ? -1 : 1) * (CELL.len / 2 + 0.034), -CELL.s]}><boxGeometry args={[0.09, 0.006, 0.09]} /></mesh>
+                  <mesh material={M.metal} position={[x, CELL.y + (i % 2 ? 1 : -1) * (CELL.len / 2 + 0.034), -CELL.s]}><boxGeometry args={[0.09, 0.006, 0.09]} /></mesh>
                 </group>
               ))}
             </ClickablePart>
@@ -696,7 +696,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
             <ClickablePart id="pilhas">
               {CELL_X.map((x, i) => (
                 <group key={x} ref={(gr) => { cellRefs.current[i] = gr }}>
-                  <group position={[x, CELL.y, -CELL.s]} rotation={[0, 0, i % 2 ? Math.PI : 0]}>
+                  <group position={[x, CELL.y, -CELL.s]} rotation={[0, 0, i % 2 ? 0 : Math.PI]}>
                     <mesh geometry={g.cell} material={M.black} />
                     <mesh material={M.gold} position={[0, CELL.len * 0.32, 0]}><cylinderGeometry args={[CELL.r + 0.0012, CELL.r + 0.0012, CELL.len * 0.36, 32, 1, true]} /></mesh>
                     <mesh material={M.metal} position={[0, CELL.len / 2 + 0.012, 0]}><cylinderGeometry args={[0.03, 0.03, 0.024, 16]} /></mesh>

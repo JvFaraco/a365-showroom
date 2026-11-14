@@ -195,9 +195,9 @@ export const DEVICES: Device[] = [
       {
         id: 'reset',
         name: 'Botão de reset',
-        what: 'Fica embaixo da placa, sobre o furo do fundo, ao lado da antena.',
+        what: 'Fica embaixo da placa, sobre o furo do fundo, do lado da entrada da fonte.',
         facts: [],
-        camera: { position: [-1.4, -1.8, -1.6], target: [-0.42, -0.3, -0.5] },
+        camera: { position: [1.4, -1.8, -1.6], target: [0.44, -0.3, -0.47] },
         internal: true,
         explode: [0, 0.75, 0],
       },
@@ -208,7 +208,7 @@ export const DEVICES: Device[] = [
         facts: [],
         camera: { position: [1.4, 1.2, -0.9], target: [0.36, -0.1, -0.2] },
         internal: true,
-        explode: [0, 0.5, 0],
+        explode: [0, 0.75, 0], // ligado na placa pelos fios: sai junto com ela
       },
       {
         id: 'bateria',
@@ -448,6 +448,8 @@ export const DEVICES: Device[] = [
     tagline: 'Até 110 dB de alerta.',
     inKit365S: true,
     home: { position: [1.5, 0.5, 3.7], target: [0, 0, 0] },
+    // explodida: de lado e um pouco de trás, para a fila cúpula → placa → traseira → bateria → suporte aparecer
+    explodeView: { position: [4.3, 1.1, -0.4], target: [0, 0, -0.25] },
     bottom: -1.03,
     kitScale: 0.81, // 64 mm/un: tamanho real
     parts: [
@@ -455,8 +457,9 @@ export const DEVICES: Device[] = [
         id: 'corpo',
         name: 'Corpo / face',
         what: 'Sirene sem fio.',
-        facts: ['Funciona independente do painel', 'Por isso é difícil de neutralizar'],
+        facts: ['Toca em caso de disparo ou anormalidade do sistema', 'Comunicação por radiofrequência', 'Sistema anti-sabotagem'],
         camera: { position: [0.9, 0.4, 2.7], target: [0, 0, 0.3] },
+        action: 'som',
         explode: [0, 0, 0.6],
       },
       {
@@ -569,7 +572,7 @@ export const DEVICES: Device[] = [
         id: 'btn-parcial',
         name: 'Casa com pessoa',
         what: 'Armar parcial.',
-        facts: ['Só o perímetro fica ativo', 'Você circula dentro de casa'],
+        facts: ['Só os dispositivos definidos ficam ativos', 'No módulo, o LED fica laranja'],
         tip: 'Funciona se o arme parcial estiver configurado.',
         camera: { position: [0.3, -0.7, 2.0], target: [0, -0.38, 0.2] },
         action: 'btn-parcial',
