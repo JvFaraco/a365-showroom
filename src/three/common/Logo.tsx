@@ -69,7 +69,7 @@ function logoGrooveGeometries() {
  * Logo Orsegups feito só com sulcos finos, sem relevo alto e sem cor: um círculo, o círculo interno
  * e o arco em crescente. Aparece pela luz e pela sombra. Plano XY, virado para +Z; `r` = raio externo.
  */
-export function LogoGroove({ r = 0.3, material = M.logoGroove, ...props }: { r?: number; material?: THREE.Material } & JSX.IntrinsicElements['group']) {
+export function LogoGroove({ r = 0.3, material = M.logoLight, ...props }: { r?: number; material?: THREE.Material } & JSX.IntrinsicElements['group']) {
   const geos = logoGrooveGeometries()
   return (
     <group {...props}>
