@@ -22,7 +22,7 @@ A tampa é uma superfície só: topo plano e nivelado, de 58,5 mm de raio, e lat
 | `chip-4g` (i) | Cartão verde do modem espetado num slot preto, suporte metálico com o SIM e cabo coaxial; na outra ponta, a presilha metálica (base e duas travas nos cantos) que segura o cartão. Sai junto com a placa na vista explodida. |
 | `wifi` (i) | Blindagem prateada com etiqueta lisa, conector dourado, coaxial e LEDs verdes. |
 | `radio` (i) | Blindagem quadrada com furinhos (instanciados), chip ao lado e a antena de fio amarelo, soldada atrás do rádio e correndo pela borda de trás, por cima da caixinha do alto-falante (pela foto da placa aberta). |
-| `speaker` (i) | Caixinha cinza no recorte da placa, cone preto e ímã cromado em `LatheGeometry`, dois fios. |
+| `speaker` (i) | Cone preto e ímã cromado em `LatheGeometry`, com dois fios. A caixinha cinza onde ele fica, no recorte da placa, é da base e não sai com ele na vista explodida. |
 | `microfone` (i) | Cápsula pequena e dois fios, ao lado do alto-falante. |
 | `bateria` (i) | Bloco por baixo da placa, com o cabo vermelho e preto que sai da ponta dela, sobe por fora da borda e passa por cima da placa até o conector branco de 2 pinos. Sai junto com a placa na vista explodida. |
 
@@ -39,7 +39,7 @@ O corpo é um cilindro de 68 mm de diâmetro e 137 de altura (medidas externas d
 | `led` | Ponto emissivo abaixo do flash. |
 | `pir` | Janela leitosa curva como o corpo, no fundo da moldura (~9 mm atrás da linha do corpo). A faixa em trapézio embaixo é o queixo em rampa. |
 | `base` | Base cinza fosca em `LatheGeometry`: quase rente ao corpo em cima e ~4 mm mais estreita embaixo, com o canto arredondado. Fechada em cima, como no CAD: borda e um fundo rebaixado em prato onde o corpo assenta. A linha da emenda com o corpo fica presa nela (na vista explodida não sobe com o corpo). |
-| `suporte` | Luva cinza que faz parte da base: sobe pela traseira até h = 68 mm, com 31 mm de largura, e encosta no corpo. Por trás, dois lábios formam o encaixe em Λ (26 mm de vão embaixo, 11 mm no alto), onde entra a guia da peça de fixação; no fundo do encaixe, o parafuso de trava. Inclina junto com o corpo e não se separa da base na vista explodida. |
+| `suporte` | Luva cinza que faz parte da base: sobe pela traseira até a borda de baixo da tampa das pilhas (sem entrar nela), com 31 mm de largura, e encosta no corpo. Por trás, dois lábios formam o encaixe em Λ (26 mm de vão embaixo, 11 mm no alto), onde entra a guia da peça de fixação; no fundo do encaixe, o parafuso de trava. Inclina junto com o corpo e não se separa da base na vista explodida. |
 | `placas` (i) | Placa principal em pé, ~5 mm atrás do eixo do aparelho e quase da altura do corpo (de h = 24 a 128 mm), com o sensor PIR no fundo do funil. Presos nela, e explodindo junto: o suporte branco da câmera na parte de cima (abas que encostam na placa, paredes dos lados e a frente com janela), a câmera pequena (plaquinha de ~14 mm com a lente de ~7 mm, apoiada em dois pinos logo atrás do furo do capuz), a plaquinha verde dos LEDs na janela de baixo e a antena em mola, soldada na borda de baixo. Posições aproximadas, sem etiquetas. |
 | `tampa-traseira` | Acompanha a curva de trás (~54 mm de largura), da metade da altura até o sulco perto do topo: trava no topo, duas abas embaixo, nervuras e etiqueta lisa por dentro. Em volta da metade de trás, perto da base, a faixa de frisos verticais finos. |
 | `pilhas` (i) | 3 pilhas AA na vertical, nas proporções reais (50,5 × 14,5 mm), com polaridades alternadas, num berço preto com mola e contato; pino do anti-sabotagem no alto. Corpo preto com faixa dourada no lado do +, sem marca nem texto. Não saem do compartimento. |
@@ -68,7 +68,8 @@ São duas peças. A sirene em si é só a cúpula, de 36 mm de altura: face plan
 | `encaixe-suporte` (i) | Disco levemente elevado, anel e arcos na traseira, atrás do elemento sonoro: plástico fixo, que entra no furo redondo do prato e centraliza a sirene no suporte. Não é o tamper. |
 | `elemento-sonoro` (i) | Por dentro, pastilha branca redonda com furo no centro (`LatheGeometry`), ligada à placa por dois fios brancos; na traseira, o círculo em relevo com anéis concêntricos. |
 | `bateria` (i) | Cilindro preto com etiqueta laranja, em pé num berço da traseira (de um lado, com o LED para baixo); metade dele entra na calha do suporte. |
-| `placa` (i) | Placa verde em cunha por dentro, com chips, pontos de teste e antena de fio preto; o trecho com o conector branco de 2 fios aparece na traseira, ao lado da bateria. |
+| `placa` (i) | Placa verde em cunha, ~16 mm à frente da traseira, na parte de baixo (entre a bateria, o elemento sonoro e a borda, perto do LED), como no CAD: apoiada na moldura da janela do tamper e presa por duas abas da traseira. Chips, pontos de teste, o LED embaixo da janela da face, a antena de fio preto passando por cima da meia-cana da bateria e os dois fios brancos do elemento sonoro. |
+| traseira, por dentro | A meia-cana que cobre a bateria pela frente (a bateria entra por trás), a moldura da janela do tamper e as duas abas da placa. |
 
 A traseira também tem os furos quadrados e os ganchos em "L" do encaixe, e a etiqueta como um retângulo liso.
 
@@ -108,6 +109,10 @@ O corpo do celular é uma extrusão de cantos redondos com aro metálico, botão
 
 Cada placa leva os componentes que aparecem nas fotos reais, em grupos ordenados perto dos CIs: capacitores (bege), resistores e CIs pequenos (pretos), cristal (metal) e pontos de teste (dourados). Os bloquinhos de cada cor são fundidos numa malha só por placa (`boxesGeometry`), sem instâncias. A textura tem trilhas em feixes paralelos com vias. Nada vem do desenho técnico de fábrica e não há texto, etiqueta, QR ou marca.
 
+## LEDs
+
+`Led` (`common/Led.tsx`): a luz sobe e desce numa rampa curta (acende em ~25 ms, apaga em ~70 ms), a cor passa suave, o miolo clareia na direção do branco quando está forte e há um halo virado para a câmera, com a cor do LED. O halo só é desenhado com o LED bem aceso e usa o mesmo programa de shader do brilho do palco (básico, com textura, aditivo).
+
 ## Cena "Em ação"
 
-Sala em corte (paredes claras, piso de madeira, rodapé, janela, porta com batente, aparador, sofá e tapete), invasor que anda, leque de detecção do fotossensor no chão e ondas de rádio saindo de quem transmite em cada etapa. O celular acompanha: alarme armado, aviso do disparo e a tela "Imagem" do aplicativo.
+Sala em corte à noite (paredes claras, piso de madeira, rodapé, janela, porta com batente, aparador, sofá e tapete), leque de detecção do fotossensor no chão e ondas de rádio saindo de quem transmite em cada etapa. O invasor espera do lado de fora, abre a porta, entra em curva desacelerando (virado para onde anda), protege o rosto no flash, olha em volta e, quando a sirene toca, se assusta, vira e foge correndo pela porta; tudo calculado direto do tempo, então pular na linha do tempo não deixa ele de lado errado. A luz da sala (a do cômodo, que existe sempre) fica mais baixa e azulada, clareia no flash e pisca em vermelho com a sirene: só muda cor e intensidade, nada recompila. O celular acompanha: alarme armado, aviso do disparo e a tela "Imagem" do aplicativo.

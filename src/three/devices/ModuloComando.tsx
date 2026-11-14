@@ -658,13 +658,19 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
           <mesh geometry={g.yellow} material={M.yellow} />
         </ClickablePart>
 
-        {/* alto-falante: caixinha cinza no recorte da placa, logo acima da grade do bolsão; cone preto e ímã cromado */}
-        <ClickablePart id="speaker">
+        {/* caixinha cinza do alto-falante, no recorte da placa, logo acima da grade do bolsão: é da base e fica nela na
+            vista explodida; só o alto-falante sai */}
+        <ClickablePart follow="base" internal>
           <group position={[GRILLE.x, -0.02, -0.5]}>
             <RoundedBox args={[0.44, 0.15, 0.5]} radius={0.04} smoothness={4} material={M.grey} />
+            <mesh material={M.groove} position={[0, 0.0755, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.186, 0.196, 48]} /></mesh>
+          </group>
+        </ClickablePart>
+        {/* alto-falante: cone preto e ímã cromado */}
+        <ClickablePart id="speaker">
+          <group position={[GRILLE.x, -0.02, -0.5]}>
             <mesh geometry={g.cone} material={M.black} position={[0, 0.045, 0]} />
             <mesh geometry={g.magnet} material={M.chrome} position={[0, 0.05, 0]} />
-            <mesh material={M.groove} position={[0, 0.0755, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.186, 0.196, 48]} /></mesh>
           </group>
           <mesh geometry={g.spkA} material={M.wireBlue} />
           <mesh geometry={g.spkB} material={M.brown} />
