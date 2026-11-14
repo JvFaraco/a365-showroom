@@ -5,11 +5,11 @@ export type Vec3 = [number, number, number]
 
 export type ActionId =
   // Módulo de Comando
-  | 'antena' | 'sos190' | 'led' | 'audio' | 'bateria-modulo' | 'abrir-modulo' | 'cabos' | 'desplugar-bateria'
+  | 'antena' | 'sos190' | 'led' | 'audio' | 'bateria-modulo' | 'abrir-modulo' | 'cabos' | 'desplugar-bateria' | 'tamper-modulo'
   // Fotossensor
   | 'pir' | 'camera' | 'suporte' | 'tampa-foto' | 'sabotagem' | 'sensibilidade'
   // Sensor magnético
-  | 'ima' | 'choque'
+  | 'ima' | 'choque' | 'tamper-mag'
   // Sirene
   | 'som' | 'encaixe' | 'bateria-sirene' | 'tamper'
   // Controle remoto
@@ -185,9 +185,10 @@ export const DEVICES: Device[] = [
       {
         id: 'tamper',
         name: 'Anti-sabotagem (tamper)',
-        what: 'Botão na placa, à esquerda, logo atrás do Wi-Fi. A tampa o mantém apertado: se o módulo for aberto, ele solta e o sistema avisa.',
+        what: 'Pino com mola na placa, à esquerda, logo atrás do Wi-Fi. Com a tampa fechada, ela empurra o pino para baixo: tamper fechado. Se o módulo for aberto, o pino sobe e o sistema avisa: tamper aberto.',
         facts: [],
         camera: { position: [-1.7, 1.3, 1.5], target: [-0.45, -0.05, 0.05] },
+        action: 'tamper-modulo',
         internal: true,
         explode: [0, 0.75, 0],
       },
@@ -412,9 +413,10 @@ export const DEVICES: Device[] = [
       {
         id: 'tamper',
         name: 'Anti-sabotagem (tamper)',
-        what: 'Botão na placa, apertado por um pino da base. Se a tampa for separada da base, ele solta e o sistema avisa.',
+        what: 'Chave com pino de mola atrás da placa, apertada pelo pino da base: tamper fechado. Se a tampa for separada da base, o pino sobe e o sistema avisa: tamper aberto.',
         facts: [],
         camera: { position: [0.9, -0.5, 2.2], target: [-0.6, -0.19, -0.1] },
+        action: 'tamper-mag',
         internal: true,
         explode: [0, 0, 0.32],
       },
@@ -489,7 +491,7 @@ export const DEVICES: Device[] = [
       {
         id: 'tamper',
         name: 'Anti-sabotagem (tamper)',
-        what: 'Micro-chave que o suporte mantém apertada; se a sirene sai do suporte, o sistema é avisado.',
+        what: 'Chave com pino de mola na traseira: o suporte mantém o pino apertado (tamper fechado). Se a sirene sai do suporte, o pino sobe e o sistema é avisado (tamper aberto).',
         facts: ['Fica numa plaquinha na traseira, ao lado do conector da bateria'],
         tip: 'Com a sirene aberta, não é possível armar.',
         camera: { position: [-0.6, -0.2, -2.4], target: [-0.08, -0.5, -0.3] },
