@@ -166,7 +166,9 @@ function build() {
   }))
   // atrás da placa: suporte da bateria-moeda (moldura marrom aberta de um lado, por onde a bateria sai) e a lâmina dourada
   const holder = ringSectorGeometry(0.395, 0.435, -140 * D2R, 140 * D2R, PCB.z0 + 0.062, 0.004); holder.translate(0, COIN_C, -0.066)
-  const clip = boxesGeometry([[0.16, COIN_C, -0.069, 0.62, 0.22, 0.006], [0.465, COIN_C, -0.023, 0.012, 0.2, 0.094]])
+  // contatos do suporte: a lâmina da lateral e, EMBAIXO da pilha (entre ela e a placa), a alavanquinha de mola que se
+  // pressiona para a pilha encaixar no lugar; a ponta dela sai pela borda da pilha, dobrada para trás (não há tira por cima)
+  const clip = boxesGeometry([[0.465, COIN_C, -0.023, 0.012, 0.2, 0.094], [0, COIN_C - 0.32, 0.021, 0.12, 0.26, 0.004], [0, COIN_C - 0.465, 0.0, 0.12, 0.03, 0.044]])
   return {
     front, back, frontDome, frontDomeIn, spokes, posts, hubRing, hubBack, keypadSheet, keypadBack, keypadFloor, plungers, backDome, fillet, cover, coverSill,
     pcb, smdTan, smdBlack, smdMetal, smdGold, swBase, swDome, holder, clip,
