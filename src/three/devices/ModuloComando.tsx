@@ -801,14 +801,15 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
           <CommLinks from={VIAS_FROM} to={VIAS_TO} state={(i) => {
             const t = actionTime('antena')
             if (t < 4.2 + i * 0.7) return 0
-            if (i === 0 && t > 7.5 && t < 10.5) return 2
-            if (i === 1 && t > 8.3 && t < 10.5) return 3
+            // caem o cabo e o Wi-Fi; o chip 4G, de reserva, assume
+            if (i < 2 && t > 7.5 && t < 10.5) return 2
+            if (i === 2 && t > 8.3 && t < 10.5) return 3
             return 1
           }} />
           {viasPhase >= 1 && (
             <Html position={[0, 2.9, -0.7]} center style={{ pointerEvents: 'none' }}>
               <div className="fx-tag rounded-full bg-black/70 px-4 py-1.5 text-sm font-semibold text-white">
-                {viasPhase === 1 ? 'Caiu o 4G? Outra via assume.' : 'Três vias: sempre conectado.'}
+                {viasPhase === 1 ? 'Caiu a internet? O chip 4G assume.' : 'Três vias: sempre conectado.'}
               </div>
             </Html>
           )}

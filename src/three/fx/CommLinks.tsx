@@ -4,7 +4,8 @@ import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import { fxBasic } from '../common/materials'
 
-export const VIAS = ['1. Chip 4G', '2. Wi-Fi', '3. Ethernet'] as const
+// o dia a dia vai pelo cabo e pelo Wi-Fi; o chip 4G é a reserva, que assume quando os dois caem
+export const VIAS = ['1. Ethernet', '2. Wi-Fi', '3. Chip 4G (reserva)'] as const
 
 /**
  * As 3 vias de comunicação: feixes que saem de `from` até `to[i]`.
