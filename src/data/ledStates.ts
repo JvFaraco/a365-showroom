@@ -14,7 +14,8 @@ export type LedState = {
   pattern: LedPattern
 }
 
-const AZUL = '#2f6bff', VERMELHO = '#ff2a2a', LARANJA = '#ff8a1a', AMARELO = '#ffd60a', BRANCO = '#ffffff', VERDE = '#27d455'
+// cores na faixa em que o tone mapping (ACES) não as desbota: azul com um toque de verde (o azul puro vira roxo)
+const AZUL = '#0f5bff', VERMELHO = '#ff1f1f', LARANJA = '#ff7a10', AMARELO = '#ffd000', BRANCO = '#ffffff', VERDE = '#18d24a'
 
 export const LED_STATES: LedState[] = [
   { id: 'desarmado', label: 'Azul', meaning: 'Desarmado', colors: [AZUL], pattern: 'solid' },
