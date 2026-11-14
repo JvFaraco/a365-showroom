@@ -227,8 +227,8 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
  */
 export function SabotageScreen({ scale = 0.6 }: { scale?: number }) {
   return (
-    <div style={{ width: 320 * scale, height: 400 * scale }} lang="pt-BR">
-      <div className="relative flex h-[400px] w-[320px] origin-top-left select-none flex-col overflow-hidden bg-white font-body text-[#1b2233]" style={{ transform: `scale(${scale})` }}>
+    <div style={{ width: 320 * scale, height: 300 * scale }} lang="pt-BR">
+      <div className="relative flex h-[300px] w-[320px] origin-top-left select-none flex-col overflow-hidden bg-white font-body text-[#1b2233]" style={{ transform: `scale(${scale})` }}>
         <StatusBar />
         {/* notificação do app: chega e sobe; o evento fica na lista */}
         <div className="absolute inset-x-2 top-8 z-10 flex items-center gap-2 rounded-2xl bg-[#e03131] px-3 py-2 text-white shadow-lg"
