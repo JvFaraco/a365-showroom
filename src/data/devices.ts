@@ -638,20 +638,11 @@ export const DEVICES: Device[] = [
     parts: [
       {
         id: 'logo',
-        name: 'Logo',
+        name: 'Logo e marca',
         what: 'Identifica a proteção Orsegups.',
         facts: [],
         camera: { position: [0.3, 0.6, 2.4], target: [0, 0.5, 0.04] },
         action: 'flip',
-        explode: [0, 0, 0.3],
-      },
-      {
-        id: 'faixa',
-        name: 'Faixa "Aviso à polícia"',
-        what: 'Avisa que o local tem registro de imagem.',
-        facts: ['Desestimula a invasão'],
-        camera: { position: [0.4, -0.4, 1.9], target: [0, -0.49, 0.04] },
-        explode: [0, 0, 0.5],
       },
       {
         id: 'telefone',
@@ -659,7 +650,20 @@ export const DEVICES: Device[] = [
         what: 'Contato Orsegups.',
         facts: ['4020.4411'],
         camera: { position: [-0.35, -0.1, 1.6], target: [0, -0.2, 0.04] },
-        explode: [0, 0, 0.3],
+      },
+      {
+        id: 'faixa',
+        name: 'Faixa "Aviso à polícia"',
+        what: 'Avisa que o local tem registro de imagem.',
+        facts: ['Desestimula a invasão'],
+        camera: { position: [0.4, -0.4, 1.9], target: [0, -0.49, 0.04] },
+      },
+      {
+        id: 'rodape',
+        name: 'Alarme 365 e QR Code',
+        what: 'Nome do produto e um QR Code.',
+        facts: [],
+        camera: { position: [0.3, -0.95, 1.9], target: [0, -0.84, 0.04] },
       },
       {
         id: 'verso',
@@ -669,7 +673,6 @@ export const DEVICES: Device[] = [
         tip: 'Instale a placa visível, ao lado da entrada principal.',
         camera: { position: [0.7, 0.1, -2.9], target: [0, 0, -0.04] },
         action: 'flip',
-        explode: [0, 0, -0.35],
       },
     ],
   },
