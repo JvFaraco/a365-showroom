@@ -38,8 +38,8 @@ const MINI: [number, number, number] = [-2.0, 1.05, 1.0]
 const CAP_Y = BODY.len / 2 - mm(12.3) // friso de alinhamento na lateral virada para o ímã (a ~12 mm da ponta do LED)
 const PCB = { len: mm(74), w: mm(19), y: BODY.len / 2 - mm(3) - mm(74) / 2, z: BACK + mm(14) }
 const PCB_END = PCB.y - PCB.len / 2 // borda da placa do lado da antena
-const CELL = { r: mm(5.2), len: mm(31), y: mm(6.5) } // pilha cilíndrica, deitada atrás da placa, entre as duas presilhas
-const CELL_Z = PCB.z - 0.02 - CELL.r // centro da pilha em Z (mesma folga de antes, agora do lado de trás)
+const CELL = { r: mm(5.2), len: mm(31), y: -mm(4) } // pilha cilíndrica deitada na frente da placa (lado da tampa), entre as duas presilhas; fica longe do LED
+const CELL_Z = PCB.z + 0.02 + CELL.r // centro da pilha em Z: na face da placa virada para a tampa (como o usuário mostrou)
 
 /** Retângulo de cantos redondos centrado (contorno de casca). */
 function rrect(w: number, h: number, r: number, hole = false) {
@@ -262,7 +262,7 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
                 <mesh material={M.chip} position={[BODY.x + 0.05, PCB_END + 0.2, PCB.z + 0.021]}><boxGeometry args={[0.1, 0.1, 0.02]} /></mesh>
               </group>
             </ClickablePart>
-            {/* pilha cilíndrica deitada atrás da placa, presa por duas presilhas metálicas; corpo preto e faixa dourada no + */}
+            {/* pilha cilíndrica deitada na frente da placa, presa por duas presilhas metálicas; corpo preto e faixa dourada no + */}
             <ClickablePart id="bateria">
               <group rotation={DEITA}>
                 <mesh material={M.black} position={[BODY.x, CELL.y, CELL_Z]}><cylinderGeometry args={[CELL.r, CELL.r, CELL.len, 24]} /></mesh>
@@ -271,7 +271,7 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
                 {[1, -1].map((sy) => (
                   <group key={sy} position={[BODY.x, CELL.y + sy * (CELL.len / 2 + 0.035), CELL_Z]}>
                     <mesh material={M.metal}><boxGeometry args={[0.24, 0.018, 0.21]} /></mesh>
-                    <mesh material={M.metal} position={[0, -sy * 0.07, CELL.r + 0.004]}><boxGeometry args={[0.24, 0.16, 0.012]} /></mesh>
+                    <mesh material={M.metal} position={[0, -sy * 0.07, -CELL.r - 0.004]}><boxGeometry args={[0.24, 0.16, 0.012]} /></mesh>
                   </group>
                 ))}
               </group>

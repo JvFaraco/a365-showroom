@@ -404,6 +404,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
   const tPin = useRef<THREE.Group>(null!)
   const antenna = useRef<THREE.Group>(null!)
   const paddle = useRef<THREE.Group>(null!)
+  const resetBtn = useRef<THREE.Group>(null!)
+  const pick = useRef<THREE.Group>(null!)
   const batWA = useRef<THREE.Group>(null!)
   const batWB = useRef<THREE.Group>(null!)
   const pressA = useRef<THREE.Group>(null!)
@@ -431,6 +433,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
   const batPlug = useRef<THREE.Group>(null!)
   const batPhase = useActionPhase('bateria-modulo', [2.2])
   const sosActive = useActionPhase('sos190') >= 0
+  const resetPhase = useActionPhase('reset-modulo', [0, 1.9, 4.1])
   const hold = {
     onPointerDown: (e: { stopPropagation: () => void }) => { if (sosActive) { e.stopPropagation(); useShowroom.getState().set({ holding: true, holdMsg: '' }) } },
     onPointerUp: () => { if (sosActive) useShowroom.getState().set({ holding: false }) },
@@ -508,6 +511,15 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
     // desplugar a bateria: a cúpula sobe e o plugue do cabo da bateria sai do conector da placa
     const td = actionTau('desplugar-bateria')
     const tt = actionTau('tamper-modulo')
+    // reset: um palito entra pelo furo do fundo, aperta o botão (que afunda um pouco) e sai
+    const tr = actionTime('reset-modulo')
+    if (pick.current) {
+      const warm = useShowroom.getState().warm
+      pick.current.visible = warm || (tr >= 0 && tr < 5.6)
+      const tip = tr < 0 ? -1.1 : -1.1 + 1.05 * seg(tr, 0.2, 1.2) + 0.195 * seg(tr, 1.3, 1.9) - 0.195 * seg(tr, 4.0, 4.5) - 1.05 * seg(tr, 4.6, 5.5)
+      pick.current.position.y = tip
+      resetBtn.current.position.y = tr < 0 ? 0 : 0.012 * (seg(tr, 1.75, 1.9) - seg(tr, 4.0, 4.15))
+    }
     const up = Math.max(to < 0 ? 0 : seg(to, 2.1, 3.1), td < 0 ? 0 : seg(td, 0.1, 1.0), tt < 0 ? 0 : seg(tt, 0.1, 1.0))
     // anti-sabotagem: a cúpula fechada mantém a alavanquinha escondida na chave; quando ela sobe, a alavanca sai (~2,5 mm)
     tPin.current.position.y = Math.min(1, up * 8) * 0.05
@@ -676,8 +688,18 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         {/* botão de reset: embaixo da placa, sobre o furo do fundo (base preta e botão azul, como na foto da placa) */}
         <ClickablePart id="reset">
           <mesh material={M.chip} position={[0.44, PCB_Y - 0.04, -0.47]}><boxGeometry args={[0.08, 0.03, 0.08]} /></mesh>
-          <mesh material={M.wireBlue} position={[0.44, PCB_Y - 0.065, -0.47]}><cylinderGeometry args={[0.024, 0.024, 0.025, 14]} /></mesh>
+          <group ref={resetBtn}>
+            <mesh material={M.wireBlue} position={[0.44, PCB_Y - 0.065, -0.47]}><cylinderGeometry args={[0.024, 0.024, 0.025, 14]} /></mesh>
+          </group>
         </ClickablePart>
+        {/* palito de dente da ação "Apertar o reset": vem de baixo, entra no furo do fundo e aperta o botão. Fica sem o
+            achatamento do corpo (escala inversa), com a ponta na origem do grupo */}
+        <group position={[0.44, Y_BOT, -0.47]} scale={[1, 1 / SQUASH, 1]}>
+          <group ref={pick} visible={false}>
+            <mesh material={M.smdTan} position={[0, -0.33, 0]} userData={{ fx: true }} raycast={() => null}><cylinderGeometry args={[0.011, 0.011, 0.6, 10]} /></mesh>
+            <mesh material={M.smdTan} position={[0, -0.015, 0]} userData={{ fx: true }} raycast={() => null}><cylinderGeometry args={[0.002, 0.011, 0.03, 10]} /></mesh>
+          </group>
+        </group>
         <ClickablePart id="placa-principal">
           <mesh geometry={g.pcb} material={M.pcb} position={[0, PCB_Y, 0]} />
           {/* placa limpa: verde liso, poucos componentes grandes. RJ45 (caixa metálica) no fundo do recorte e o jack
@@ -880,6 +902,11 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
             </group>
           </group>
           {interactive && <TamperTag id="tamper-modulo" openAt={0.25} position={[-0.1, 0.55, 0.35]} />}
+          {resetPhase === 1 && (
+            <Html position={[0.44, -1.0, -0.47]} center style={{ pointerEvents: 'none' }}>
+              <div className="fx-tag whitespace-nowrap rounded-full bg-black/75 px-4 py-1.5 text-sm font-semibold text-white">Botão de reset apertado pelo furo do fundo</div>
+            </Html>
+          )}
           {batPhase >= 0 && (
             <Html position={[0, 1.15, 0]} center style={{ pointerEvents: 'none' }}>
               <div className="fx-tag flex items-center gap-3 rounded-2xl bg-black/75 px-4 py-2 text-white">
