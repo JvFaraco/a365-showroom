@@ -7,7 +7,7 @@ import { M, fxBasic } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
 import { iconTexture, type IconId } from '../common/textures'
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { boxesGeometry, latheZ, ringSectorGeometry, smoothLatheZ, stadiumGeometry, wire, type Block } from '../common/shapes'
 import { DeviceCtx, bump, seg, useActionPhase, type DeviceProps } from '../common/util'
 import type { ActionId } from '../../data/devices'
@@ -31,27 +31,37 @@ const cmdTime = () => { for (const c of CMD) { const t = actionTime(c); if (t >=
 // Medidas externas: 44 de largura × 51 de altura (com o olhal da argola) × 13 mm de espessura. 1 unidade = 25,9 mm.
 // As bordas da frente e de trás são arredondadas (um seixo, não uma moeda); a frente e as costas são quase planas.
 const THICK = 1.45 // a espessura modelada (0,34) vira ~13 mm no meio
-// ombro arredondado do corpo: quanto a borda recua (no raio) e sobe (na espessura) até a face plana
-const SH = { r: 0.15, z: 0.11, z0: 0.06, face: 0.17 }
-/** Perfil do ombro, da borda (raio R) até a face plana: quarto de elipse. Pontos [raio, z ≥ 0]. */
-const shoulder = (n = 14): [number, number][] => Array.from({ length: n + 1 }, (_, i) => { const a = (i / n) * (Math.PI / 2); return [R - SH.r * (1 - Math.cos(a)), SH.z0 + SH.z * Math.sin(a)] as [number, number] })
-const KY = 0 // o teclado (~32 mm de diâmetro) fica no centro do corpo
-// corpo redondo (raio 22 mm) que vira gota embaixo: o olhal da argola é um círculo de ~6 mm de raio com o centro
-// quase na borda do corpo, ligado a ele por concordâncias largas. Altura total ≈ 1,15× a largura
-const R = 0.853, TAIL_Y = -0.861, TAIL_R = 0.24, FILLET = 0.15
-const HOLE_Y = -0.95 // furo da argola: oval deitado (~6,5 × 4 mm), perto da ponta
+const cm = (v: number) => v / 25.9, zm = (v: number) => v / 37.6
+// face da frente (e das costas): o alto do ombro, a ~6,4 mm da emenda
+const SH = { face: 0.17 }
+// ombro do corpo pelas medidas externas (raio → meia espessura, em mm): desce quase reto perto da borda, como um seixo
+const SHOULDER_MM: [number, number][] = [[22.1, 2.2], [21.5, 3.0], [21, 3.9], [20.5, 4.6], [20, 5.15], [19.5, 5.9], [19, 6.2], [18.5, 6.39]]
+const SHOULDER = new THREE.SplineCurve(SHOULDER_MM.map(([r, z]) => new THREE.Vector2(cm(r), zm(z)))).getPoints(20).map((p) => [p.x, p.y] as [number, number])
+/** Perfil do ombro, da borda até o alto do aro. Pontos [raio, z ≥ 0]. */
+const shoulder = (): [number, number][] => SHOULDER.map(([r, z]) => [r, z])
+const KY = 0 // o teclado (~29 mm de diâmetro) fica no centro do corpo
+// abertura do teclado (14,75 mm de raio): o aro desce ~1 mm do alto do ombro até ela
+const KEY_OPEN: [number, number] = [0.57, 0.143]
+// corpo redondo (raio 22 mm) que vira gota embaixo: o olhal da argola é um círculo de ~7 mm de raio com o centro
+// quase na borda do corpo, ligado a ele por concordâncias largas (o pescoço é largo). Altura total ≈ 1,15× a largura
+const R = 0.853, TAIL_Y = -0.831, TAIL_R = 0.27, FILLET = 0.55
+const HOLE_Y = -0.9 // furo da argola: oval deitado (~6,2 × 3,9 mm), com ~3 mm de ponte até a ponta
 // tampa da bateria, atrás: disco com um lado reto (onde ela engancha) e a presilha de abrir no lado oposto; fica
 // girada 45° em relação ao olhal
-const COVER_ROT = -Math.PI / 4, CHORD = 0.382
+const COVER_ROT = -Math.PI / 4, CHORD = 0.405
 // Placa redonda (~38 mm), 1 mm à frente da emenda das cascas: encosta atrás na parede da cavidade da bateria e na
 // frente nos pinos do miolo. Teclas a 14 mm do centro. Em Z o modelo é escalado por THICK (1 mm = 1/37,6).
-const cm = (v: number) => v / 25.9, zm = (v: number) => v / 37.6
 const PCB = { r: cm(18.9), z0: zm(0.9), t: zm(1.6) }
 const PCB_F = PCB.z0 + PCB.t // face da frente da placa (a dos componentes, virada para o teclado)
 const SW_R = cm(14.1)
 // os componentes seguem a foto da placa, girada 135°: o LED fica embaixo da fenda e o entalhe da borda, do lado da argola
 const LAYOUT_ROT = Math.PI * 0.75
 const COIN_C = -0.03 // centro da bateria-moeda (e do suporte), atrás da placa
+const HOLDER_ROT = -Math.PI * 0.75 // giro do suporte: o lado aberto (antes a 180°) vai para 45°
+const COIN_R = 0.42 * 0.92 // raio da bateria no modelo
+// topo do pedestal no referencial do corpo: 0,08 abaixo do `bottom` do aparelho (−1,08), e o corpo está 0,1 acima
+const PED_TOP = -1.08 - 0.08 - 0.1
+const U45 = Math.SQRT1_2 // direção de saída da bateria (45°): (U45, U45)
 
 /**
  * Contorno do corpo: um círculo com uma aba curta embaixo (o olhal da argola), ligada por duas concordâncias
@@ -72,7 +82,31 @@ function teardrop(grow = 0) {
   s.closePath()
   return s
 }
-const ringHole = () => { const h = new THREE.Path(); h.absellipse(0, HOLE_Y, 0.125, 0.08, 0, Math.PI * 2, true, 0); return h }
+// furo da argola; `grow` alarga o oval (nas placas, que ficam escondidas dentro do olhal)
+const ringHole = (grow = 0) => { const h = new THREE.Path(); h.absellipse(0, HOLE_Y, 0.12 + grow, 0.075 + grow, 0, Math.PI * 2, true, 0); return h }
+/**
+ * Olhal da argola, por cima das placas: as duas concordâncias e a aba do contorno em gota (um pouco para dentro: o
+ * chanfro devolve), fechadas por uma reta logo abaixo da placa, com quinas arredondadas. A reta e as quinas ficam
+ * escondidas dentro do ombro e das placas.
+ */
+const EYE = { grow: -0.032, y: -0.765, rho: 0.05 }
+function eyeShape() {
+  const R0 = R + EYE.grow, r = TAIL_R + EYE.grow, f = FILLET - EYE.grow
+  const cy = ((R0 + f) ** 2 - (r + f) ** 2 + TAIL_Y * TAIL_Y) / (2 * TAIL_Y)
+  const cx = Math.sqrt((R0 + f) ** 2 - cy * cy)
+  const a1 = Math.atan2(cy - TAIL_Y, cx)
+  // quina: círculo de raio rho encostado na reta (por baixo) e na concordância (por fora)
+  const yr = EYE.y - EYE.rho, xr = cx - Math.sqrt((f + EYE.rho) ** 2 - (yr - cy) ** 2)
+  const b = Math.atan2(yr - cy, xr - cx)
+  const s = new THREE.Shape()
+  s.absarc(-cx, cy, f, Math.PI - b, -a1, true)
+  s.absarc(0, TAIL_Y, r, Math.PI - a1, Math.PI * 2 + a1, false)
+  s.absarc(cx, cy, f, Math.PI + a1, b, true)
+  s.absarc(xr, yr, EYE.rho, b - Math.PI, Math.PI / 2, false)
+  s.absarc(-xr, yr, EYE.rho, Math.PI / 2, Math.PI * 2 - b, false)
+  s.closePath()
+  return s
+}
 
 type Geo = ReturnType<typeof build>
 let cache: Geo | null = null
@@ -82,44 +116,61 @@ function build() {
   // de dois ombros arredondados (sólidos de revolução, só no círculo): é por isso que a aba fica fina e o corpo, gordinho.
   // Metade da frente: maciça. Metade de trás: aro grosso com a cavidade da bateria (fechada pela tampa).
   // casca da frente oca: a placa fina da emenda é só um aro (por dentro fica o vão da placa e do teclado)
-  const fs = teardrop(); fs.holes.push(ringHole())
+  // as placas têm o furo da argola um pouco maior: por dentro do olhal elas não aparecem
+  const fs = teardrop(); fs.holes.push(ringHole(0.02))
   const frontHole = new THREE.Path(); frontHole.absarc(0, 0, cm(19.6), 0, Math.PI * 2, true); fs.holes.push(frontHole)
   const front = new THREE.ExtrudeGeometry(fs, { depth: 0.05, ...bevel })
-  const bs = teardrop(); bs.holes.push(ringHole())
+  const bs = teardrop(); bs.holes.push(ringHole(0.02))
   const cav = new THREE.Path(); cav.absarc(0, 0, 0.61, 0, Math.PI * 2, true); bs.holes.push(cav)
   const back = new THREE.ExtrudeGeometry(bs, { depth: 0.05, ...bevel }); back.translate(0, 0, -0.06)
-  // ombro da frente: da borda até a face plana, que é aberta em anel onde entra o teclado (como na peça real: o miolo
+  // olhal da argola: peça grossa (~6,8 mm) de borda redonda, que vai afinando até sumir dentro do ombro e das placas
+  // no pescoço. O chanfro engorda o contorno e aperta o furo (0,04): por fora fica rente às placas e o furo, no meio
+  // da espessura, fica com ~6,2 × 3,9 mm. A borda redonda do furo é o chanfro dele
+  const es = eyeShape()
+  const eh = new THREE.Path(); eh.absellipse(0, HOLE_Y, 0.16, 0.115, 0, Math.PI * 2, true, 0); es.holes.push(eh)
+  const eyeRaw = new THREE.ExtrudeGeometry(es, { depth: 0.1, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 4, curveSegments: 28 }); eyeRaw.translate(0, 0, -0.05)
+  const ep = eyeRaw.attributes.position
+  for (let i = 0; i < ep.count; i++) ep.setZ(i, ep.getZ(i) * (0.72 + 0.28 * seg(-ep.getY(i), 0.76, 0.86)))
+  // normais suaves na borda redonda (sem as faixas da extrusão)
+  eyeRaw.deleteAttribute('uv'); eyeRaw.deleteAttribute('normal')
+  const eye = mergeVertices(eyeRaw); eye.computeVertexNormals(); eyeRaw.dispose()
+  // ombro da frente: da borda até o alto do aro, que desce até a abertura do teclado (como na peça real: o miolo
   // fica preso por quatro raios em X). Por dentro, a parede do ombro tem a face de dentro (a casca tem ~1,5 mm)
-  const frontDome = latheZ([[R, 0.03], ...shoulder(), [0.64, SH.face]], 96)
+  const frontDome = latheZ([[R, 0.03], ...shoulder(), KEY_OPEN], 96)
   const innerShoulder = shoulder().map(([r, z]) => [r - 0.035, Math.max(0.05, z - 0.03)] as [number, number])
-  const frontDomeIn = latheZ([[0.64, SH.face - 0.03], ...innerShoulder.reverse(), [R - 0.035, 0.05]], 96)
-  // raios em X que seguram o miolo: ficam nas frestas entre as quatro teclas (a 45°)
+  const frontDomeIn = latheZ([[KEY_OPEN[0], KEY_OPEN[1] - 0.03], ...innerShoulder.reverse(), [R - 0.035, 0.05]], 96)
+  // raios em X que seguram o miolo: ficam nas frestas entre as quatro teclas (a 45°), um pouco abaixo delas
   const spokes = mergeGeometries([45, 135, 225, 315].map((d) => {
-    const b = new THREE.BoxGeometry(0.4, 0.045, 0.03)
-    b.translate(0.455, 0, SH.face - 0.012); b.rotateZ(d * D2R)
+    const b = new THREE.BoxGeometry(0.3, 0.05, 0.03)
+    b.translate(0.42, 0, 0.148); b.rotateZ(d * D2R)
     return b
   }))
   // por dentro: parede circular em volta do teclado e os pinos de apoio da placa
-  // pinos das cascas, por fora da borda da placa, e o anel do miolo que encosta na frente da placa (em volta do CI)
+  // pinos das cascas, por fora da borda da placa (curtos: não chegam à face de fora do ombro), e o anel do miolo que
+  // encosta na frente da placa (em volta do CI)
   const posts = mergeGeometries([90, 38, 142, 195, 345, 245, 296].map((d) => {
-    const c = new THREE.CylinderGeometry(0.03, 0.03, 0.1, 10)
-    c.rotateX(Math.PI / 2); c.translate(Math.cos(d * D2R) * 0.78, Math.sin(d * D2R) * 0.78, 0.1)
+    const c = new THREE.CylinderGeometry(0.03, 0.03, 0.075, 10)
+    c.rotateX(Math.PI / 2); c.translate(Math.cos(d * D2R) * 0.78, Math.sin(d * D2R) * 0.78, 0.0575)
     return c
   }))
   const hubRing = latheZ([[0.218, PCB_F + 0.003], [0.261, PCB_F + 0.003], [0.261, SH.face - 0.02], [0.218, SH.face - 0.02], [0.218, PCB_F + 0.003]], 48)
   // miolo: o disco central fixo também tem a face de baixo
   const hubBack = new THREE.CircleGeometry(0.27, 48); hubBack.rotateY(Math.PI); hubBack.translate(0, KY, SH.face - 0.025)
-  // teclado de borracha: lâmina atrás da face, com um pino embaixo de cada tecla (aperta o domo dourado da placa)
-  const keypadSheet = new THREE.RingGeometry(0.2, 0.69, 64) // vai até embaixo da borda da abertura: nada da placa aparece nas fendas
-  keypadSheet.translate(0, KY, SH.face - 0.024)
-  const keypadBack = new THREE.RingGeometry(0.2, 0.69, 64); keypadBack.rotateY(Math.PI); keypadBack.translate(0, KY, SH.face - 0.034)
-  // fundo do teclado: anel com espessura (as duas faces), logo abaixo das teclas, preso na casca da frente
+  // teclado de borracha: lâmina logo abaixo das teclas, com um pino embaixo de cada tecla (aperta o domo dourado da
+  // placa). Vai do anel do miolo até embaixo do aro: nada da placa aparece nas fendas
+  const keypadSheet = new THREE.RingGeometry(0.265, 0.69, 64)
+  keypadSheet.translate(0, KY, 0.112)
+  const keypadBack = new THREE.RingGeometry(0.265, 0.69, 64); keypadBack.rotateY(Math.PI); keypadBack.translate(0, KY, 0.104)
+  // fundo do teclado: anel com espessura (as duas faces), abaixo da lâmina e acima dos domos, preso na casca da
+  // frente, com um furo para cada pino
   const ring = new THREE.Shape().absarc(0, 0, 0.69, 0, Math.PI * 2, false)
-  ring.holes.push(new THREE.Path().absarc(0, 0, 0.2, 0, Math.PI * 2, true))
-  const keypadFloor = new THREE.ExtrudeGeometry(ring, { depth: 0.008, bevelEnabled: false, curveSegments: 48 }); keypadFloor.translate(0, KY, SH.face - 0.045)
+  ring.holes.push(new THREE.Path().absarc(0, 0, 0.265, 0, Math.PI * 2, true))
+  for (const d of [0, 90, 180, 270]) ring.holes.push(new THREE.Path().absarc(Math.cos(d * D2R) * SW_R, Math.sin(d * D2R) * SW_R, 0.056, 0, Math.PI * 2, true))
+  const keypadFloor = new THREE.ExtrudeGeometry(ring, { depth: 0.006, bevelEnabled: false, curveSegments: 48 }); keypadFloor.translate(0, KY, 0.096)
+  // pinos: do topo do domo (~0,094) até dentro da lâmina
   const plungers = mergeGeometries([0, 90, 180, 270].map((d) => {
-    const c = new THREE.CylinderGeometry(0.045, 0.05, 0.06, 16); c.rotateX(Math.PI / 2)
-    c.translate(Math.cos(d * D2R) * SW_R, KY + Math.sin(d * D2R) * SW_R, SH.face - 0.05)
+    const c = new THREE.CylinderGeometry(0.045, 0.05, 0.017, 16); c.rotateX(Math.PI / 2)
+    c.translate(Math.cos(d * D2R) * SW_R, KY + Math.sin(d * D2R) * SW_R, 0.103)
     return c
   }))
   // ombro de trás: o mesmo perfil espelhado; por dentro, a parede da cavidade da bateria
@@ -133,9 +184,10 @@ function build() {
   const cs = new THREE.Shape(), ca = Math.asin(CHORD / 0.87 / 0.7)
   cs.absarc(0, 0, 0.7, -ca, Math.PI + ca, false); cs.closePath()
   // fora do lado reto da tampa a casca de trás é fechada: a cavidade (e a placa) não aparecem por fora
+  // (a face dela fica um fio para dentro das costas: sem brigar com a face do ombro de trás na borda)
   const fs2 = new THREE.Shape(), fa = Math.asin((CHORD - 0.007) / 0.62)
   fs2.absarc(0, 0, 0.62, Math.PI + fa, Math.PI * 2 - fa, false); fs2.closePath()
-  const coverSill = new THREE.ExtrudeGeometry(fs2, { depth: 0.109, bevelEnabled: false, curveSegments: 24 }); coverSill.translate(0, 0, -0.184)
+  const coverSill = new THREE.ExtrudeGeometry(fs2, { depth: 0.093, bevelEnabled: false, curveSegments: 24 }); coverSill.translate(0, 0, -0.168)
   const cover = new THREE.ExtrudeGeometry(cs, { depth: 0.014, bevelEnabled: true, bevelSize: 0.008, bevelThickness: 0.008, bevelSegments: 3, curveSegments: 48 }); cover.translate(0, 0, -0.022)
   // placa: disco com um entalhe pequeno na borda do lado da argola
   const ps = new THREE.Shape(), nx = cm(0.8), na = Math.asin(nx / PCB.r)
@@ -166,18 +218,22 @@ function build() {
     const d = new THREE.SphereGeometry(cm(2), 20, 10); d.scale(1, 1, 0.12); d.translate(Math.cos(b.angle * D2R) * SW_R, Math.sin(b.angle * D2R) * SW_R, PCB_F + zm(0.7)); return d
   }))
   // atrás da placa: suporte da bateria-moeda (moldura marrom aberta de um lado, por onde a bateria sai) e a lâmina dourada
-  const holder = ringSectorGeometry(0.395, 0.435, -140 * D2R, 140 * D2R, PCB.z0 + 0.062, 0.004); holder.translate(0, COIN_C, -0.066)
+  // o lado aberto do suporte fica a 45°, para o lado da presilha da tampa (o lado reto, a 225°, é fechado pela casca)
+  const holder = ringSectorGeometry(0.395, 0.435, -140 * D2R, 140 * D2R, PCB.z0 + 0.062, 0.004); holder.rotateZ(HOLDER_ROT); holder.translate(0, COIN_C, -0.066)
   // contatos do suporte: a lâmina da lateral e, EMBAIXO da pilha (entre ela e a placa), a alavanquinha de mola que se
   // pressiona para a pilha encaixar no lugar; a ponta dela sai pela borda da pilha, dobrada para trás (não há tira por cima)
-  const clip = boxesGeometry([[0.465, COIN_C, -0.023, 0.012, 0.2, 0.094], [0, COIN_C - 0.32, 0.021, 0.12, 0.26, 0.004], [0, COIN_C - 0.465, 0.0, 0.12, 0.03, 0.044]])
+  const clip = boxesGeometry([[0.465, 0, -0.023, 0.012, 0.2, 0.094], [0, -0.32, 0.021, 0.12, 0.26, 0.004], [0, -0.465, 0.0, 0.12, 0.03, 0.044]])
+  clip.rotateZ(HOLDER_ROT); clip.translate(0, COIN_C, 0)
   return {
-    front, back, frontDome, frontDomeIn, spokes, posts, hubRing, hubBack, keypadSheet, keypadBack, keypadFloor, plungers, backDome, fillet, cover, coverSill,
+    front, back, eye, frontDome, frontDomeIn, spokes, posts, hubRing, hubBack, keypadSheet, keypadBack, keypadFloor, plungers, backDome, fillet, cover, coverSill,
     pcb, smdTan, smdBlack, smdMetal, smdGold, swBase, swDome, holder, clip,
-    sector: ringSectorGeometry(0.3, 0.62, -38 * D2R, 38 * D2R, 0.018, 0.022),
-    // disco central fixo: baixo, sem contorno de tecla
-    center: smoothLatheZ([[0.27, 0.168], [0.266, 0.182], [0.245, 0.19], [0.001, 0.192]], 96, 24),
+    // teclas: ~29 mm no total, dentro da abertura de 14,75 mm de raio (com o chanfro, sobra uma fresta)
+    sector: ringSectorGeometry(0.32, 0.535, -38 * D2R, 38 * D2R, 0.018, 0.022),
+    // disco central fixo: baixo (quase rente às teclas), sem contorno de tecla
+    center: smoothLatheZ([[0.293, 0.155], [0.291, 0.1615], [0.282, 0.1655], [0.2, 0.1683], [0.1, 0.1702], [0.001, 0.171]], 96, 24),
     coin: smoothLatheZ([[0.001, -0.064], [0.39, -0.064], [0.414, -0.06], [0.42, -0.05], [0.42, 0.008], [0.412, 0.017], [0.001, 0.019]], 64, 32),
     slit: stadiumGeometry(0.27, 0.075, 0.01, 0.003), // fenda do LED: ~7 × 2 mm
+    ledLens: stadiumGeometry(0.26, 0.07, 0.002, 0), // a luz ocupa a fenda quase toda
     aerial: wire([[160, 0.66, 0.006], [170, 0.705, 0.016], [195, 0.705, 0.018], [220, 0.7, 0.018], [245, 0.69, 0.016]].map(([d, r, dz]) => [Math.cos(d * D2R) * r, Math.sin(d * D2R) * r, PCB_F + dz] as [number, number, number]), 0.012),
     rib: wire([[-0.42, 0.25, 0], [-0.45, -0.1, 0], [-0.36, -0.34, 0], [0, -0.39, 0], [0.36, -0.34, 0], [0.45, -0.1, 0], [0.42, 0.25, 0]], 0.014),
   }
@@ -185,13 +241,13 @@ function build() {
 const G = () => (cache ??= build())
 
 /**
- * Controle remoto: corpo redondo e gordinho (bordas bem arredondadas), com uma aba fina para o furo da argola, preto/grafite brilhante
- * com filete azul, 4 botões em cunha (em X) em volta de um disco central fixo, que não é botão. Atrás, a tampa (um disco de um lado reto)
+ * Controle remoto: corpo redondo em seixo, com o olhal grosso da argola, preto/grafite acetinado, com filete azul,
+ * 4 botões em cunha (em X), quase rentes ao aro, em volta de um disco central fixo, que não é botão. Atrás, a tampa (um disco de um lado reto)
  * fecha a cavidade com a placa verde, o suporte e a bateria CR2032. Frente em +Z.
  */
 export function ControleRemoto({ interactive = false, pressed }: DeviceProps & { pressed?: () => string | null }) {
   const g = G()
-  // corpo preto/grafite brilhante, como na arte oficial
+  // corpo preto/grafite acetinado
   const bodyMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#1d1f24', roughness: 0.5, clearcoat: 0.3, clearcoatRoughness: 0.5 }), [])
   const coinMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#dfe2e8', roughness: 0.32, metalness: 0.6 }), [])
   const coverMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#22242a', roughness: 0.7 }), [])
@@ -235,27 +291,33 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
         if (b.action === 'panico') down = s.holding && t >= 0 ? 1 : 0
         else if (t >= 0) down = bump(t, 0.05, 0.2, 0.45, 0.6)
       } else if (pressed?.() === b.id) down = 1
-      g.position.z = -down * 0.022
+      g.position.z = -down * 0.012 // a tecla desce até encostar no fundo do teclado
     })
     if (!interactive) return
-    // troca da bateria: o controle vira de costas, a tampa inclina ~25° pela borda de cima e sai para trás; a bateria
-    // velha desliza para fora do suporte e cai; a nova vem pelo mesmo lado aberto do suporte e entra; a tampa volta e o
-    // controle vira de frente
+    // troca da bateria: o controle vira de costas; a tampa inclina ~25° pela presilha, desengata puxando para o lado
+    // dela e vai para o lado, longe do caminho da bateria. A velha sai pelo lado aberto do suporte (o da presilha, a
+    // 45°): solta um pouco, sobe para fora da cavidade, desliza e cai até o pedestal, onde some. A nova vem de longe
+    // pelo mesmo lado e faz o caminho inverso; a tampa volta e o controle vira de frente
     const tt = actionTime('tampa-controle')
     const sm = (x: number) => x * x * (3 - 2 * x)
     const at = (a: number, b: number) => (tt < 0 ? 0 : sm(seg(tt, a, b)))
     root.current.rotation.y = (at(0, 0.8) - at(6.9, 7.7)) * Math.PI
-    const off = at(2.0, 2.7) * (1 - at(5.5, 6.1))
+    const unhook = at(2.0, 2.35) * (1 - at(5.85, 6.1)), park = at(2.35, 2.75) * (1 - at(5.45, 5.85))
     cover.current.rotation.x = -at(1.5, 2.0) * (1 - at(6.1, 6.5)) * 0.44
-    cover.current.position.set(0, -off * 0.25, -off * 0.7)
-    if (tt < 4.05) {
-      const slide = at(2.9, 3.25), out = at(3.2, 3.6), drop = at(3.6, 4.0)
-      coin.current.position.set(-slide * 0.2 - out * 0.55, -out * 0.25 - drop * 2.4, -out * 0.3)
+    cover.current.position.set(-park * 1.3, unhook * 0.15, -unhook * 0.15 - park * 0.45)
+    let sOut: number, zOut: number, yDrop = 0, size = 1
+    if (tt < 4.12) {
+      sOut = at(2.8, 2.95) * 0.015 + at(3.3, 3.65) * 0.6
+      zOut = -at(2.95, 3.3) * 0.3
+      const d = tt < 0 ? 0 : THREE.MathUtils.clamp((tt - 3.65) / 0.35, 0, 1) // queda acelerando
+      yDrop = d * d * (COIN_C + 0.615 * U45 - (PED_TOP + COIN_R))
+      size = 1 - at(4.0, 4.12)
     } else {
-      const k1 = at(4.1, 4.6), k2 = at(4.6, 5.0), k3 = at(5.0, 5.3)
-      const x = -2.4 + k1 * 1.65 + k2 * 0.55 + k3 * 0.2, y = 0.4 - k1 * 0.65 + k2 * 0.25, z = -0.3 + k2 * 0.3
-      coin.current.position.set(x, y, z)
+      sOut = 0.015 * (1 - at(5.25, 5.4)) + 0.6 * (1 - at(4.65, 4.95)) + 2.6 * (1 - at(4.15, 4.65))
+      zOut = -0.3 * (1 - at(4.95, 5.25))
     }
+    coin.current.position.set(sOut * U45, sOut * U45 - yDrop, zOut)
+    coin.current.scale.setScalar(Math.max(size, 1e-3))
     const ta = actionTime('alcance')
     const k = ta < 0 ? 0 : seg(ta, 0.2, 2.6)
     range.current.scale.setScalar(0.2 + k * 5.2)
@@ -277,8 +339,6 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
           <mesh geometry={g.hubBack} material={bodyMat} />
           {/* fundo do teclado, na própria casca: fecha a vista da placa pelas fendas entre as teclas, de qualquer ângulo */}
           <mesh geometry={g.keypadFloor} material={bodyMat} />
-          {/* linha de partição em volta do teclado */}
-          <mesh material={M.groove} position={[0, KY, 0.1705]}><ringGeometry args={[0.652, 0.666, 96]} /></mesh>
         </ClickablePart>
         {/* anel do filete azul: ~1,5 mm, no MEIO da espessura (a emenda entre as duas cascas), em volta de tudo */}
         <ClickablePart follow="corpo" explode={[0, 0, 0.2]}>
@@ -289,18 +349,19 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
           <mesh geometry={g.back} material={bodyMat} castShadow />
           <mesh geometry={g.backDome} material={bodyMat} castShadow />
           <mesh geometry={g.coverSill} material={bodyMat} rotation={[0, 0, COVER_ROT]} />
+          {/* entalhe de abrir a tampa: o vão na borda da cavidade, do lado da presilha */}
+          <group rotation={[0, 0, COVER_ROT]}>
+            <mesh material={M.hole} position={[0, 0.6475, -0.1665]}><boxGeometry args={[0.22, 0.075, 0.009]} /></mesh>
+          </group>
         </ClickablePart>
+        {/* olhal da argola: grosso, de borda redonda, com o furo oval deitado (a borda redonda do furo faz o chanfro) */}
         <ClickablePart id="argola">
-          {/* furo da argola (oval deitado), no olhal fino que sai do corpo, com a borda chanfrada */}
-          {[0.062, -0.072].map((z) => (
-            <mesh key={z} material={M.blackGloss} position={[0, HOLE_Y, z]} scale={[1.12, 0.74, 0.4]}><torusGeometry args={[0.117, 0.022, 12, 64]} /></mesh>
-          ))}
+          <mesh geometry={g.eye} material={bodyMat} castShadow />
         </ClickablePart>
         <ClickablePart id="led">
-          <mesh geometry={g.slit} material={M.blackGloss} position={[0, 0.685, 0.159]} rotation={[-0.12, 0, 0]} />
-          <Led on="shell" sample={sampleLed} position={[0, 0.687, 0.1735]} rotation={[-0.12, 0, 0]}>
-            <boxGeometry args={[0.2, 0.04, 0.004]} />
-          </Led>
+          {/* a fenda fica no aro, que sobe da abertura do teclado até o alto do ombro: segue a inclinação dele */}
+          <mesh geometry={g.slit} material={M.blackGloss} position={[0, 0.685, 0.1545]} rotation={[0.184, 0, 0]} />
+          <Led on="shell" sample={sampleLed} geometry={g.ledLens} position={[0, 0.685, 0.1688]} rotation={[0.184, 0, 0]} />
         </ClickablePart>
 
         {/* teclado de borracha atrás da face: a lâmina e os pinos que apertam os domos da placa; sai junto com as teclas */}
@@ -317,29 +378,28 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
               onPointerDown={b.action === 'panico' ? (e) => { if (panicOn) { e.stopPropagation(); useShowroom.getState().set({ holding: true, holdMsg: '' }) } } : undefined}
               onPointerUp={b.action === 'panico' ? () => panicOn && useShowroom.getState().set({ holding: false }) : undefined}
               onPointerLeave={b.action === 'panico' ? () => panicOn && useShowroom.getState().set({ holding: false }) : undefined}>
-              <mesh geometry={g.sector} material={M.blackBtn} position={[0, KY, 0.172]} rotation={[0, 0, b.angle * D2R]} />
-              <mesh material={icons[i]} position={[Math.cos(b.angle * D2R) * 0.46, KY + Math.sin(b.angle * D2R) * 0.46, 0.2135]}><planeGeometry args={[0.2, 0.2]} /></mesh>
+              <mesh geometry={g.sector} material={M.blackBtn} position={[0, KY, 0.136]} rotation={[0, 0, b.angle * D2R]} />
+              <mesh material={icons[i]} position={[Math.cos(b.angle * D2R) * 0.43, KY + Math.sin(b.angle * D2R) * 0.43, 0.1775]}><planeGeometry args={[0.18, 0.18]} /></mesh>
             </group>
-            {interactive && b.action === 'panico' && <HoldRing radius={0.18} position={[0, KY + 0.46, 0.24]} />}
+            {interactive && b.action === 'panico' && <HoldRing radius={0.18} position={[0, KY + 0.43, 0.205]} />}
           </ClickablePart>
         ))}
         {/* centro: disco escuro FIXO (não afunda, não tem contorno de tecla), com o logo em baixo-relevo bem discreto.
             TODO(usuário): confirmar o logo no disco (a arte de marketing mostra; o ícone do sistema mostra liso). */}
         <ClickablePart follow="corpo">
           <mesh geometry={g.center} material={bodyMat} position={[0, KY, 0]} />
-          <LogoGroove r={0.12} position={[0, KY, 0.1925]} material={M.logoGrooveDark} />
+          <LogoGroove r={0.12} position={[0, KY, 0.1705]} material={M.logoGrooveDark} />
         </ClickablePart>
 
         {/* tampa traseira: disco de um lado reto, com duas abas nesse lado, a presilha no lado oposto e o símbolo em relevo */}
         <ClickablePart id="tampa">
           <group rotation={[0, 0, COVER_ROT]}>
-          <group position={[0, -CHORD, -0.165]}>
+          <group position={[0, -CHORD, -0.145]}>
             <group ref={cover}>
               <group position={[0, CHORD, 0]} scale={[0.87, 0.87, 1]}>
                 <mesh geometry={g.cover} material={coverMat} />
-                {/* presilha da tampa, na borda oposta ao lado reto: lingueta retangular com a fenda onde se apoia para abrir */}
-                <mesh material={coverMat} position={[0, 0.6, -0.031]}><boxGeometry args={[0.24, 0.11, 0.012]} /></mesh>
-                <mesh material={M.hole} position={[0, 0.61, -0.0375]}><boxGeometry args={[0.16, 0.028, 0.004]} /></mesh>
+                {/* presilha da tampa, na borda oposta ao lado reto: lingueta quase rente (o vão de abrir fica na casca) */}
+                <mesh material={coverMat} position={[0, 0.6, -0.027]}><boxGeometry args={[0.24, 0.11, 0.012]} /></mesh>
                 <mesh material={M.black} position={[0, 0.3, -0.031]} rotation={[Math.PI / 2, Math.PI / 6, 0]}><cylinderGeometry args={[0.07, 0.07, 0.006, 3]} /></mesh>
                 <mesh material={M.black} position={[0, 0.17, -0.031]}><boxGeometry args={[0.2, 0.035, 0.006]} /></mesh>
                 {[[-0.22, -0.45], [0.22, -0.45]].map(([x, y], i) => (
@@ -347,7 +407,7 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
                 ))}
                 {/* por dentro: nervura em "U" e a etiqueta (lisa, sem texto) */}
                 <mesh geometry={g.rib} material={coverMat} position={[0, 0, 0.004]} />
-                <mesh material={M.white} position={[0, 0.02, 0.0005]}><planeGeometry args={[0.5, 0.34]} /></mesh>
+                <mesh material={M.white} position={[0, 0.06, 0.0005]}><planeGeometry args={[0.74, 0.64]} /></mesh>
               </group>
             </group>
           </group>

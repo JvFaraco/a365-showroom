@@ -603,7 +603,7 @@ export const DEVICES: Device[] = [
         what: 'Para levar no chaveiro.',
         facts: [],
         camera: { position: [0.6, -0.8, 2.0], target: [0, -0.8, 0] },
-        explode: [0, 0, -0.6],
+        explode: [0, 0, 0.5],
       },
       {
         id: 'tampa',
@@ -611,6 +611,7 @@ export const DEVICES: Device[] = [
         what: 'Tampa redonda com um lado reto, quase rente à face de trás. Abre por alavanca, pelo entalhe da borda.',
         facts: [],
         camera: { position: [0.9, 0.5, -2.5], target: [0, 0.1, -0.18] },
+        action: 'tampa-controle',
         explode: [0, 0, -1.0],
       },
       {

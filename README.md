@@ -31,7 +31,7 @@ A câmera só gira quando alguém arrasta: não há giro automático.
 
 No modo apresentação, `→` (ou o clicker, que envia PageDown) segue para o próximo aparelho quando as partes acabam. Sem ele, as setas dão a volta nas partes do mesmo aparelho.
 
-As micro-animações que abrem ou tiram algo (tampa do fotossensor, tampa do controle, bateria da sirene, sirene fora do suporte) ficam abertas até o botão de desfazer do card ("Fechar", "Recolocar"), que volta pelo mesmo caminho. A sirene não gira para encaixar: desce de cima para baixo no suporte e trava com um clique.
+As micro-animações que abrem ou tiram algo (tampa do fotossensor, bateria da sirene, sirene fora do suporte) ficam abertas até o botão de desfazer do card ("Fechar", "Recolocar"), que volta pelo mesmo caminho. A troca da bateria do controle é um ciclo fixo de 8 s: a tampa sai, a bateria velha sai pelo lado aberto do suporte, a nova entra e a tampa volta. A sirene não gira para encaixar: desce de cima para baixo no suporte e trava com um clique.
 
 ## Fluidez
 
