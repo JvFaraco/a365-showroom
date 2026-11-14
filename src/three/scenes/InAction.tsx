@@ -34,6 +34,8 @@ const flashP = () => bump(T(), 7.6, 7.66, 7.74, 8.2)
 // a sirene toca assim que o magnético detecta a porta abrindo (o módulo dispara na hora)
 const SIREN = [3.9, 16.5] as const
 const FLEE = 10 // o invasor desiste e foge
+// a porta abre quase 90°: com menos, a folha fica no caminho e o invasor a atravessa ao entrar e ao fugir
+const DOOR_SWING = 1.45
 const sirenOn = () => T() >= SIREN[0] && T() < SIREN[1]
 const MOD: [number, number, number] = [-2.7, 1.25, -2.2]
 const MAG_S = 0.3
@@ -74,7 +76,8 @@ function intruderYaw(t: number) {
 
 /** Ondas de rádio saindo de quem transmite (anéis que se abrem), enquanto `on` for verdadeiro. */
 function Waves({ at, color, on }: { at: [number, number, number]; color: string; on: () => boolean }) {
-  return <SoundWaves level={() => (on() ? 1.4 : 0)} color={color} count={3} maxRadius={0.55} speed={0.9} position={at} />
+  // discretas: dois anéis finos e curtos, só para marcar quem transmite (anéis grandes poluíam a sala)
+  return <SoundWaves level={() => (on() ? 0.6 : 0)} color={color} count={2} maxRadius={0.22} speed={0.9} position={at} />
 }
 
 /**
@@ -220,7 +223,7 @@ export function InAction() {
     let st = 0
     for (let i = 0; i < IA_STEPS.length; i++) if (t >= IA_STEPS[i].t) st = i
     if (st !== s.iaStep) s.set({ iaStep: st })
-    door.current.rotation.y = -doorOpen() * 0.6
+    door.current.rotation.y = -doorOpen() * DOOR_SWING
     // aparece atrás da porta quando ela começa a abrir; some depois de sair pela porta
     intruder.current.visible = t > 3.3 && t < OUT[1]
     intruderAt(t, intruder.current.position)
@@ -291,10 +294,10 @@ export function InAction() {
         <CameraFlash power={flashP} position={[0, 0.45, 0.5]} />
       </group>
       <group position={MAG_POS} scale={MAG_S} onClick={(e) => { e.stopPropagation(); useShowroom.getState().setDevice('magnetico') }}>
-        <SensorMagnetico open={doorOpen} />
+        <SensorMagnetico open={doorOpen} swing={DOOR_SWING} />
       </group>
       <group position={[-1.2, 2.7, -2.88]} scale={0.36} onClick={(e) => { e.stopPropagation(); useShowroom.getState().setDevice('sirene') }}>
-        <Sirene sounding={sirenOn} />
+        <Sirene sounding={sirenOn} waves={[3, 1.0]} />
       </group>
       <group position={[-2.6, 1.3, 2.3]} rotation={[-0.2, 0.3, 0]} scale={0.34} onClick={(e) => { e.stopPropagation(); useShowroom.getState().setDevice('controle') }}>
         <ControleRemoto pressed={() => { const t = T(); return t > 0.5 && t < 1.3 ? 'btn-armar' : null }} />

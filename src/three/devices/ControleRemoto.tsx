@@ -268,6 +268,8 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
           <mesh geometry={g.posts} material={bodyMat} />
           <mesh geometry={g.hubRing} material={bodyMat} />
           <mesh geometry={g.hubBack} material={bodyMat} />
+          {/* fundo do teclado, na própria casca: fecha a vista da placa pelas fendas entre as teclas, de qualquer ângulo */}
+          <mesh geometry={g.keypadSheet} material={bodyMat} position={[0, 0, -0.006]} />
           {/* linha de partição em volta do teclado */}
           <mesh material={M.groove} position={[0, KY, 0.1705]}><ringGeometry args={[0.652, 0.666, 96]} /></mesh>
         </ClickablePart>

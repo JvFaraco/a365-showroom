@@ -81,7 +81,7 @@ const alarmOn = () => doorOpen() > 0.08 || knockFired()
  * baixo-relevo no meio e a base de fixação na outra ponta) + ímã (barra fina e longa, paralela ao corpo).
  * Frente em +Z.
  */
-export function SensorMagnetico({ interactive = false, open }: DeviceProps & { open?: () => number }) {
+export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: DeviceProps & { open?: () => number; swing?: number }) {
   const mg = (magGeo ??= buildMag())
   const door = useRef<THREE.Group>(null!)
   // anel em volta da janela do LED, por dentro da tampa (guia de luz)
@@ -142,7 +142,7 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
 
   useFrame(() => {
     const o = open ? open() : interactive ? doorOpen() : 0
-    let rot = -o * 0.6
+    let rot = -o * swing // swing: quanto a folha abre (a cena "Em ação" abre a porta inteira para o invasor passar)
     if (interactive) {
       const tk = knockT()
       if (tk >= 0 && tk < 0.7) rot += Math.sin(tk * 70) * 0.012 * (1 - tk / 0.7)

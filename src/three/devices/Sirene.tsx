@@ -119,7 +119,7 @@ function supportFeet() {
  * três pés. A traseira tem o berço da bateria, o elemento sonoro e o tamper; por dentro fica a placa. A sirene NÃO
  * gira para encaixar: desce de cima para baixo no suporte e trava com um clique; para tirar, sobe e sai.
  */
-export function Sirene({ interactive = false, sounding }: DeviceProps & { sounding?: () => boolean }) {
+export function Sirene({ interactive = false, sounding, waves = [5, 1.9] }: DeviceProps & { sounding?: () => boolean; waves?: [number, number] }) {
   const body = useRef<THREE.Group>(null!)
   const shell = useRef<THREE.Group>(null!)
   const batt = useRef<THREE.Group>(null!)
@@ -304,7 +304,7 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
         <mesh material={sparkMat} position={[TAMPER[0], TAMPER[1] + 0.15, BACK - 0.12]} userData={{ fx: true }} raycast={() => null}><sphereGeometry args={[0.05, 12, 8]} /></mesh>
         </group>
 
-        <SoundWaves level={level} position={[0, 0, 0.36]} count={5} maxRadius={1.9} />
+        <SoundWaves level={level} position={[0, 0, 0.36]} count={waves[0]} maxRadius={waves[1]} />
         <mesh material={ringMat} position={[0, 0, SEAM]} userData={{ fx: true }} raycast={() => null}><torusGeometry args={[1.02, 0.022, 8, 96]} /></mesh>
       </group>
 
