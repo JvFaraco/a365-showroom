@@ -14,6 +14,9 @@ export const now = () => performance.now() / 1000
 export const holdRef = { v: 0 }
 /** Tempo (s) da cena "Em ação". */
 export const ia = { t: 0 }
+/** Luz da sala na cena "Em ação", escrita pela própria cena a cada quadro: `flash` clareia (0..1), `red` tinge de
+ * vermelho (0..1, a sirene) e `night` escurece (0..1). O palco aplica isso na luz do cômodo, que existe sempre. */
+export const roomFx = { flash: 0, red: 0, night: 0 }
 
 type State = {
   scene: Scene
@@ -167,3 +170,4 @@ export function actionTau(id: ActionId): number {
 
 // acesso pelo console / testes automatizados
 if (typeof window !== 'undefined') (window as unknown as { __showroom: typeof useShowroom }).__showroom = useShowroom
+if (typeof window !== 'undefined') (window as unknown as { __ia: typeof ia }).__ia = ia

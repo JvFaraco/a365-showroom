@@ -4,13 +4,16 @@ import { useFrame } from '@react-three/fiber'
 import { ContactShadows, Environment, Lightformer, MeshReflectorMaterial } from '@react-three/drei'
 import { easing } from 'maath'
 import { DEVICE_BY_ID } from '../data/devices'
-import { actionTime, useShowroom } from '../store/showroomStore'
+import { actionTime, roomFx, useShowroom } from '../store/showroomStore'
 import { REF_ON } from '../dev/RefMode'
 import { pedestalRadius } from './common/registry'
 
 const DARK = new Set(['controle', 'app'])
 // constante fora do componente: o material refletor recria seus render targets quando `blur` muda de identidade
 const REFLECT_BLUR: [number, number] = [300, 90]
+
+const ROOM_DAY = new THREE.Color('#cfd8ff'), ROOM_NIGHT = new THREE.Color('#8fa4dc'), ROOM_RED = new THREE.Color('#ff2a2a'), ROOM_FLASH = new THREE.Color('#ffffff')
+const NO_FX = { flash: 0, red: 0, night: 0 }
 
 function glowTexture() {
   const c = document.createElement('canvas')
@@ -73,13 +76,17 @@ export function Stage() {
     easing.damp(d, 'rim', dark ? 1.9 : 1, 0.4, dt)
     easing.damp(d, 'glow', dark ? 0.14 : 0.04, 0.4, dt)
     key.current.intensity = 1.25 * d.v
-    amb.current.intensity = 0.16 * d.v
     rimW.current.intensity = 1.1 * d.rim * d.v
     rimB.current.intensity = 1.2 * d.rim * d.v
     glowMat.opacity = d.glow * d.v
     // luz do cômodo da cena "Em ação": existe sempre (intensidade 0 fora dela), para o número de luzes nunca mudar
     easing.damp(d, 'room', scene === 'inaction' ? 40 : 0, 0.3, dt)
-    room.current.intensity = d.room
+    // na cena: noite (mais baixa e azulada), o flash da câmera clareia a sala e a sirene a pisca em vermelho. Só muda
+    // cor e intensidade de uma luz que já existe: nada recompila
+    const fx = scene === 'inaction' ? roomFx : NO_FX
+    room.current.intensity = d.room * (1 - 0.45 * fx.night) * (1 + 2.2 * fx.flash) * (1 + 0.6 * fx.red)
+    room.current.color.copy(ROOM_DAY).lerp(ROOM_NIGHT, fx.night).lerp(ROOM_RED, fx.red * 0.85).lerp(ROOM_FLASH, fx.flash)
+    amb.current.intensity = 0.16 * d.v * (1 - 0.4 * fx.night + 1.2 * fx.flash)
     // o pedestal acompanha a pegada do aparelho (modelado com raio 1,75)
     easing.damp(d, 'ped', pedestalRadius(device) / 1.75, 0.18, dt)
     ped.current.scale.set(d.ped, 1, d.ped)

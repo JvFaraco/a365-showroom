@@ -109,6 +109,10 @@ O corpo do celular é uma extrusão de cantos redondos com aro metálico, botão
 
 Cada placa leva os componentes que aparecem nas fotos reais, em grupos ordenados perto dos CIs: capacitores (bege), resistores e CIs pequenos (pretos), cristal (metal) e pontos de teste (dourados). Os bloquinhos de cada cor são fundidos numa malha só por placa (`boxesGeometry`), sem instâncias. A textura tem trilhas em feixes paralelos com vias. Nada vem do desenho técnico de fábrica e não há texto, etiqueta, QR ou marca.
 
+## LEDs
+
+`Led` (`common/Led.tsx`): a luz sobe e desce numa rampa curta (acende em ~25 ms, apaga em ~70 ms), a cor passa suave, o miolo clareia na direção do branco quando está forte e há um halo virado para a câmera, com a cor do LED. O halo só é desenhado com o LED bem aceso e usa o mesmo programa de shader do brilho do palco (básico, com textura, aditivo).
+
 ## Cena "Em ação"
 
-Sala em corte (paredes claras, piso de madeira, rodapé, janela, porta com batente, aparador, sofá e tapete), invasor que anda, leque de detecção do fotossensor no chão e ondas de rádio saindo de quem transmite em cada etapa. O celular acompanha: alarme armado, aviso do disparo e a tela "Imagem" do aplicativo.
+Sala em corte à noite (paredes claras, piso de madeira, rodapé, janela, porta com batente, aparador, sofá e tapete), leque de detecção do fotossensor no chão e ondas de rádio saindo de quem transmite em cada etapa. O invasor espera do lado de fora, abre a porta, entra em curva desacelerando (virado para onde anda), protege o rosto no flash, olha em volta e, quando a sirene toca, se assusta, vira e foge correndo pela porta; tudo calculado direto do tempo, então pular na linha do tempo não deixa ele de lado errado. A luz da sala (a do cômodo, que existe sempre) fica mais baixa e azulada, clareia no flash e pisca em vermelho com a sirene: só muda cor e intensidade, nada recompila. O celular acompanha: alarme armado, aviso do disparo e a tela "Imagem" do aplicativo.

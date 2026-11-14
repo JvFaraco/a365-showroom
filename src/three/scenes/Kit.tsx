@@ -33,7 +33,12 @@ export const KIT_LAYOUT_PORTRAIT: Placement[] = [
   { id: 'app', position: [2.05, 0, -1.3], rotation: [-0.1, -0.22, 0] },
 ]
 
-const easeOutBack = (x: number) => { const c = 1.70158; const t = Math.min(1, Math.max(0, x)) - 1; return 1 + (c + 1) * t * t * t + c * t * t }
+const clamp = (x: number) => Math.min(1, Math.max(0, x))
+// tamanho: passa um pouco do ponto e volta (o "pulo" da chegada). Posição e altura: curvas suaves, sem passar do
+// ponto, para o aparelho nunca afundar no chão (antes a altura usava a mesma curva do tamanho e ficava negativa)
+const easeOutBack = (x: number, c = 1.2) => { const t = clamp(x) - 1; return 1 + (c + 1) * t * t * t + c * t * t }
+const easeOutCubic = (x: number) => 1 - (1 - clamp(x)) ** 3
+const easeOutQuint = (x: number) => 1 - (1 - clamp(x)) ** 5
 
 /** Um aparelho pousado no chão (y = 0), em escala relativa. Clicar leva a ele no showroom. */
 export function Placed({ p, children }: { p: Placement; children?: React.ReactNode }) {
@@ -69,15 +74,18 @@ export function KitLineup({ mode }: { mode: 'enter' | 'gather' }) {
     const t = reducedMotion() ? 99 : now() - t0.current
     group.current.children.forEach((c, i) => {
       c.visible = compiledDevices.has(layout[i].id) // na carga, só aparece depois de compilado
-      const k = easeOutBack((t - 0.4 - i * (mode === 'enter' ? 0.38 : 0.12)) / 0.9)
       if (mode === 'enter') {
+        const u = (t - 0.4 - i * 0.32) / 1.1
+        const k = easeOutCubic(u)
         c.position.y = (1 - k) * 2.2
-        c.scale.setScalar(Math.max(0.001, k))
-        c.rotation.y = (1 - k) * 1.6
+        c.scale.setScalar(Math.max(0.001, easeOutBack(u)))
+        c.rotation.y = (1 - easeOutQuint(u)) * 1.6
       } else {
-        const p = layout[i].position
-        c.position.set(p[0] * (1 - k) * 1.4, (1 - k) * 1.2, (1 - k) * 4)
-        c.scale.setScalar(Math.max(0.001, 0.4 + 0.6 * k))
+        // encerramento: cada aparelho vem de longe numa curva e pousa devagar no lugar, sem atravessar o chão
+        const u = (t - 0.3 - i * 0.14) / 1.6
+        const k = easeOutQuint(u), p = layout[i].position
+        c.position.set(p[0] * (1 - k) * 1.4, (1 - easeOutCubic(u)) * 1.2, (1 - k) * 4)
+        c.scale.setScalar(Math.max(0.001, 0.4 + 0.6 * easeOutBack(u, 0.8)))
         c.rotation.y = (1 - k) * -1.2
       }
     })
