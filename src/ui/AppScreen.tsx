@@ -273,3 +273,27 @@ export function SabotageScreen({ scale = 0.6 }: { scale?: number }) {
     </div>
   )
 }
+
+/**
+ * Foto nova do fotossensor (ação "Tirar uma foto"): a tela "Imagem" do app, escura, já aberta, com a notificação
+ * passando por cima e saindo. Desenhada em 320 px e reduzida pelo `scale`.
+ */
+export function ImageScreen({ scale = 0.6 }: { scale?: number }) {
+  return (
+    <div style={{ width: 320 * scale, height: 400 * scale }} lang="pt-BR">
+      <div className="relative flex h-[400px] w-[320px] origin-top-left select-none flex-col overflow-hidden bg-[#0b0c10] font-body text-white" style={{ transform: `scale(${scale})` }}>
+        <StatusBar />
+        <div className="absolute inset-x-2 top-8 z-10 flex items-center gap-2 rounded-2xl bg-[#26272b] px-3 py-2 text-white shadow-lg"
+          style={{ animation: 'notif-out 0.7s 1.4s ease-in both' }}>
+          <OrsegupsLogo size={18} />
+          <div className="leading-tight"><div className="text-[12px] font-semibold">Alarme 365</div><div className="text-[10.5px] text-white/75">Nova imagem do fotossensor</div></div>
+        </div>
+        <div className="flex items-center gap-4 px-5 pt-4 text-[15px]"><span className="text-xl leading-none">‹</span><span className="flex-1">Imagem</span><span>⋮</span></div>
+        <img src={aiPhotoDataUrl(true)} alt="Foto do fotossensor com a pessoa marcada" width={480} height={360} className="mt-6 h-[200px] w-full object-cover" draggable={false} />
+        <div className="mx-auto mt-4 h-[3px] w-9 rounded bg-white/50" />
+        <div className="mt-3 text-center text-[11px] leading-5 text-white/85">Hoje, agora<br />Detector de presença · 1 detecção<br /><span className="text-white/55">Sala de estar</span></div>
+        <div className="mt-2 text-center text-[11px] text-white/90">Pessoa (100% de previsão)</div>
+      </div>
+    </div>
+  )
+}
