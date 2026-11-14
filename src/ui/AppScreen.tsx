@@ -219,3 +219,52 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
     </div>
   )
 }
+
+/**
+ * Aviso de sabotagem do fotossensor (ação "Mexer no sensor"): a tela inicial do app em tamanho menor, com a
+ * notificação vermelha no alto (como a do disparo na cena "Em ação") e o evento de sabotagem entrando em "Últimos eventos".
+ * Desenhada em 320 px, como a tela do celular 3D, e reduzida pelo `scale`.
+ */
+export function SabotageScreen({ scale = 0.6 }: { scale?: number }) {
+  return (
+    <div style={{ width: 320 * scale, height: 400 * scale }} lang="pt-BR">
+      <div className="relative flex h-[400px] w-[320px] origin-top-left select-none flex-col overflow-hidden bg-white font-body text-[#1b2233]" style={{ transform: `scale(${scale})` }}>
+        <StatusBar />
+        {/* notificação do app: chega e sobe; o evento fica na lista */}
+        <div className="absolute inset-x-2 top-8 z-10 flex items-center gap-2 rounded-2xl bg-[#e03131] px-3 py-2 text-white shadow-lg"
+          style={{ animation: 'notif-out 0.7s 1.6s ease-in both' }}>
+          <Bell size={18} />
+          <div className="leading-tight"><div className="text-[12px] font-bold">Sabotagem</div><div className="text-[10.5px] opacity-90">Fotossensor · Sala de estar</div></div>
+        </div>
+        <div className="flex items-center justify-between px-4 pt-4">
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-slate-200 text-slate-500"><User size={17} /></span>
+          <div className="flex items-center gap-2.5 text-slate-600">
+            <span className="relative"><Bell size={20} /><i className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[#e03131] ring-2 ring-white" /></span>
+            <div className="rounded-full bg-[#e03131] px-4 py-1.5 font-title text-sm font-bold text-white shadow">SOS</div>
+          </div>
+        </div>
+        <div className="px-4 pt-2 text-[21px] font-light text-slate-600">Olá!</div>
+        <div className="flex flex-1 flex-col gap-1.5 px-3 pt-3">
+          <div className={LABEL}>Últimos eventos</div>
+          <div className={`${CARD} !py-2`}>
+            <div className="text-[11px] font-semibold text-slate-600">Hoje</div>
+            {/* só o evento de sabotagem, entrando na lista */}
+            <div className="-mx-1.5 mt-0.5 flex items-center gap-2 rounded-lg bg-[#e03131]/10 px-1.5 py-1.5 text-[12px]"
+              style={{ animation: 'screen-in 0.5s 2.0s cubic-bezier(.16,.84,.3,1) both' }}>
+              <span className="text-[#e03131]"><Shield size={16} /></span>
+              <span className="flex-1 leading-tight"><span className="block font-semibold text-[#e03131]">Sabotagem</span><span className="text-[10.5px] text-slate-500">Fotossensor · Sala de estar</span></span>
+              <span className="text-[10.5px] text-slate-500">agora</span>
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-5 border-t border-slate-200 bg-white px-1 pb-3 pt-1.5">
+          {TABS.map(([label, Icon], i) => (
+            <div key={label} className={`flex flex-col items-center gap-0.5 text-[8.5px] ${i === 0 ? 'font-semibold text-[#1E398D]' : 'text-slate-500'}`}>
+              <Icon size={19} />{label}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}

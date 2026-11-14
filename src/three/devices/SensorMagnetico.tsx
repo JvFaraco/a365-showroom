@@ -153,7 +153,7 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
   // LED: azul fraco em repouso; quando a porta abre (ou a batida dispara), pisca em azul forte
   const sampleLed = (t: number, o: { color: string; on: number }) => {
     const on = interactive ? alarmOn() : (open?.() ?? 0) > 0.08
-    o.color = '#3d7bff'; o.on = on ? (t % 0.4 < 0.2 ? 1 : 0.05) : 0.12
+    o.color = '#3d7bff'; o.on = on ? (t % 0.4 < 0.2 ? 1 : 0) : 0 // apagado em repouso; pisca forte ao detectar
   }
 
   return (

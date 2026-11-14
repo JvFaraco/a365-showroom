@@ -161,7 +161,7 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
   useEffect(() => { if (clicPhase === 0) beep('click') }, [clicPhase])
 
   const isOn = () => (sounding ? sounding() : interactive && useShowroom.getState().sirenOn)
-  const sampleLed = (t: number, o: { color: string; on: number }) => { const on = isOn(); o.color = on ? '#ff2a2a' : '#2f6dff'; o.on = on ? (t % 0.3 < 0.15 ? 1 : 0.05) : 0.55 }
+  const sampleLed = (t: number, o: { color: string; on: number }) => { const on = isOn(); o.color = on ? '#ff2a2a' : '#2f6dff'; o.on = on ? (t % 0.3 < 0.15 ? 1 : 0) : 1 } // aceso em cheio, como o do módulo (meio aceso vira só um fundo azul)
   const level = () => (isOn() ? (interactive ? useShowroom.getState().sirenLevel : 2) : 0)
 
   useFrame(({ clock }) => {

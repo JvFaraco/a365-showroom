@@ -221,6 +221,8 @@ Frente sempre em +Z. As medidas citadas são externas, em mm. Detalhe de cada pa
 - O LED aparece na janela da carcaça, mas fica na placa. `<Led on="shell">` é a janela (apaga com o aparelho
   explodido) e `<Led on="board">` é o LED na placa (só acende explodido). Peças presas na placa (câmera, mola, cartão
   do modem, bateria pelo cabo) têm o mesmo `explode` da placa: nunca saem soltas na vista explodida.
+- LED fraco com halo vira "fundo colorido" (o magnético parecia ter um fundo azul): o halo do `Led` só aparece com o
+  LED bem aceso, o miolo clareia para o branco e LED de aparelho a pilha fica apagado em repouso.
 - Cascas não são blocos maciços: por dentro elas têm paredes, guias, pinos e aberturas (magnético, controle).
 - No celular, durante uma ação, o card fica compacto e a câmera mede a área livre pelo topo real do card. Sem isso,
   a câmera recuava para dentro da névoa e a cena da ação sumia.
@@ -249,12 +251,13 @@ Frente sempre em +Z. As medidas citadas são externas, em mm. Detalhe de cada pa
 - App saindo da tela do celular (só no Safari do iPhone, ~45 px para baixo): corrigido em `Smartphone.tsx`
   (`useScreenAlign` compara a tela HTML com os cantos projetados do vidro e desloca a camada); falta o usuário confirmar
   no iPhone.
-- **Pendente do usuário:** foto do outro lado da placa
-  do magnético (posição do LED), gravações dos sons do módulo e da sirene (para imitar por síntese) e o que ele quis
-  dizer com "o LED da sirene" (mensagem cortada).
+- **Pendente do usuário:** foto do outro lado da placa do magnético (posição do LED) e gravações dos sons do módulo e
+  da sirene (para imitar por síntese).
 - Decisões do usuário nesta rodada: o fotossensor NÃO tem tamper (abrir a tampa não dispara); a bateria da sirene não
   é trocada pelo usuário; o suporte do fotossensor é fixo e o sensor gira em pé sobre ele; a sirene toca assim que o
-  magnético detecta a porta abrindo; o LED do magnético pisca em azul; não há modo Manual.
+  magnético detecta a porta abrindo; o LED do magnético pisca em azul (apagado em repouso); não há modo Manual; o
+  fotossensor avisa sabotagem quando alguém mexe nele (ação "Mexer no sensor", no Sensor PIR: no app, só o evento de
+  sabotagem); o magnético é a bateria de lítio, como no manual.
 - O azul da placa ainda sai um pouco mais claro que o da arte.
 - As pendências de conteúdo a confirmar com a Orsegups estão no fim do `README.md` (destino do QR, cor do filete do
   controle, logo no disco central, lado do borne do magnético, posição exata de peças internas).

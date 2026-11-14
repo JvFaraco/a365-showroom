@@ -14,6 +14,7 @@ import { actionTau, actionTime, useShowroom } from '../../store/showroomStore'
 import { DetectionFan, LowPolyDog, LowPolyPerson } from '../fx/DetectionFan'
 import { CameraFlash } from '../fx/CameraFlash'
 import { REF_ON } from '../../dev/RefMode'
+import { SabotageScreen } from '../../ui/AppScreen'
 
 // ---------- medidas externas (frente em +Z). Corpo cilíndrico de 68 mm de diâmetro e 137 de altura: a planta é um
 // círculo. Com a base cinza (7 mm), 144 de altura. 1 unidade = 79 mm (o raio é 0,43). ----------
@@ -329,6 +330,62 @@ function pirAlert() {
   return Math.abs(personX(t)) < PERSON_Z ? 1 : 0
 }
 
+// ---------- mão da ação "Mexer no sensor" (efeito, fora do aparelho) ----------
+// Pegada de garrafa pela direita, na altura da lente PIR: a palma encosta no lado direito do corpo, os dedos dão a
+// volta pela frente (é o que aparece de frente) e o polegar fica atrás. O antebraço sai para trás e para a direita, na
+// manga. Tudo em cápsulas, juntado numa malha só (pele) mais a manga. Eixo do corpo na origem; mão de tamanho real
+// (palma ~85 mm).
+const HAND_Y = -0.36
+const HAND_OUT = new THREE.Vector3(0.75, 0.05, -0.4).normalize() // por onde a mão chega e vai embora
+function handGeometries() {
+  const skin: THREE.BufferGeometry[] = []
+  const at = (r: number, phi: number, y: number) => new THREE.Vector3(r * Math.cos(phi), y, r * Math.sin(phi))
+  const up = new THREE.Vector3(0, 1, 0)
+  const capsule = (a: THREE.Vector3, b: THREE.Vector3, r: number) => {
+    const d = b.clone().sub(a)
+    const g = new THREE.CapsuleGeometry(r, Math.max(0.002, d.length()), 4, 10)
+    g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(up, d.normalize()))
+    g.translate((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2)
+    g.deleteAttribute('uv')
+    skin.push(g)
+  }
+  const PHI_W = -0.55, PHI_K = 0.6 // palma: do pulso (lado de trás) até os nós dos dedos (lado da frente)
+  const fingers = [
+    { y: 0.25, r: 0.1, len: 0.92 }, // indicador
+    { y: 0.07, r: 0.105, len: 1.02 }, // médio
+    { y: -0.1, r: 0.1, len: 0.95 }, // anelar
+    { y: -0.26, r: 0.088, len: 0.76 }, // mínimo
+  ]
+  for (const f of fingers) {
+    // ossos da palma: cápsulas grossas lado a lado formam a palma curva; os nós dos dedos saltam um pouco
+    capsule(at(HW + 0.13, PHI_W + 0.05, f.y * 0.8), at(HW + 0.13, PHI_K, f.y), 0.12)
+    // falanges: três segmentos seguindo a curva do corpo, mais finos para a ponta
+    const rr = HW + f.r + 0.012
+    let phi = PHI_K
+    ;[0.45, 0.3, 0.25].forEach((k, i) => {
+      const dphi = (f.len * k) / rr
+      capsule(at(rr, phi, f.y), at(rr, phi + dphi, f.y), f.r * (1 - i * 0.07))
+      phi += dphi
+    })
+  }
+  // polegar: sai da base da palma e sobe pela traseira
+  capsule(at(HW + 0.19, PHI_W - 0.02, 0.06), at(HW + 0.14, PHI_W - 0.3, 0.19), 0.14)
+  capsule(at(HW + 0.14, PHI_W - 0.3, 0.19), at(HW + 0.115, PHI_W - 0.48, 0.33), 0.115)
+  capsule(at(HW + 0.115, PHI_W - 0.48, 0.33), at(HW + 0.105, PHI_W - 0.56, 0.46), 0.1)
+  // pulso e antebraço: tangente ao corpo no pulso, abrindo para fora
+  const w = at(HW + 0.2, PHI_W - 0.08, 0)
+  const dir = new THREE.Vector3(Math.sin(PHI_W), 0, -Math.cos(PHI_W)).multiplyScalar(0.5)
+    .add(new THREE.Vector3(Math.cos(PHI_W), 0, Math.sin(PHI_W)).multiplyScalar(0.85)).setY(-0.1).normalize()
+  capsule(w, w.clone().addScaledVector(dir, 1.0), 0.24)
+  // manga: tubo fechado de tecido, do meio do antebraço para fora
+  const sleeve = new THREE.CylinderGeometry(0.29, 0.32, 2.4, 18)
+  sleeve.translate(0, 1.2, 0)
+  sleeve.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(up, dir))
+  sleeve.translate(...w.clone().addScaledVector(dir, 0.62).toArray())
+  sleeve.deleteAttribute('uv')
+  return { skin: mergeGeometries(skin)!, sleeve }
+}
+
 /**
  * Fotossensor: cilindro de topo plano com a borda arredondada. Na frente, o capuz da câmera (um ressalto em pera,
  * saliente em cima, que vira o bolso escavado da lente e da janela oval do LED); a lente PIR grande e fosca logo
@@ -346,6 +403,9 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   const dog = useRef<THREE.Group>(null!)
   const ruler = useRef<THREE.Group>(null!)
   const alertV = useRef(0)
+  const hand = useRef<THREE.Group>(null!)
+  const handG = useMemo(handGeometries, [])
+  const skinMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#d4a083', roughness: 0.6 }), [])
   const g = G()
   // base e suporte de parede: o mesmo plástico cinza fosco
   const baseMat = useMemo(() => { const m = M.grey.clone(); m.color.set('#80848c'); return m }, [])
@@ -359,6 +419,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   const pirPhase = useActionPhase('pir', [0, 3.1, 5.9, 9.5])
   const supPhase = useActionPhase('suporte')
   const camPhase = useActionPhase('camera', [1.0, 6.4])
+  const sabPhase = useActionPhase('sabotagem', [1.7, 2.6, 8.6])
 
   const flashPower = () => {
     if (flash) return flash()
@@ -372,8 +433,16 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
     // em torno do próprio eixo vertical. A luva, que está no mesmo grupo do corpo, gira de volta para ficar parada
     const ts = actionTime('suporte')
     const amp = ts < 0 ? 0 : bump(ts, 0, 0.8, 7, 8)
-    const pan = Math.sin(ts * 1.3) * 0.45 * amp
+    // sabotagem: a mão chega, pega o sensor pelo lado e o sacode para os lados (gira sobre o suporte), e vai embora
+    const tb = actionTime('sabotagem')
+    const shake = tb < 0 ? 0 : bump(tb, 1.15, 1.45, 3.3, 3.7) * (Math.sin((tb - 1.15) * 10.5) * 0.12 + Math.sin((tb - 1.15) * 3.4) * 0.07)
+    const pan = Math.sin(ts * 1.3) * 0.45 * amp + shake
     tilt.current.rotation.y = pan
+    const ease = (x: number) => 1 - Math.pow(1 - x, 3)
+    const away = tb < 0 ? 1 : Math.max(1 - ease(seg(tb, 0.1, 1.15)), Math.pow(seg(tb, 3.8, 4.8), 2))
+    hand.current.visible = useShowroom.getState().warm || (tb >= 0 && away < 0.999)
+    hand.current.rotation.y = pan
+    hand.current.position.set(HAND_OUT.x * away * 2.2, HAND_Y + HAND_OUT.y * away * 2.2, HAND_OUT.z * away * 2.2)
     if (swing.current[0]) swing.current[0].rotation.y = -pan
     ruler.current.visible = ts >= 0
     // troca das pilhas: o sensor vira de costas; aperta-se a aba de cima e a tampa abre pelo alto, girando nas
@@ -651,6 +720,25 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
                   <div className="mt-1 flex justify-center gap-1"><span className="h-1 w-1 rounded-full bg-white" /><span className="h-1 w-1 rounded-full bg-white/30" /><span className="h-1 w-1 rounded-full bg-white/30" /></div>
                 </div>
                 </div>
+              </div>
+            </Html>
+          )}
+          {/* mão que mexe no sensor (gira junto com ele) */}
+          <group ref={hand} visible={false}>
+            <mesh geometry={handG.skin} material={skinMat} userData={{ fx: true }} raycast={() => null} castShadow />
+            <mesh geometry={handG.sleeve} material={M.greyDark} userData={{ fx: true }} raycast={() => null} castShadow />
+          </group>
+          {(sabPhase === 0 || sabPhase === 1) && (
+            <Html position={[0.3, 1.05, 0]} center style={{ pointerEvents: 'none' }}>
+              <div className="fx-tag whitespace-nowrap rounded-full bg-alert px-4 py-1.5 text-sm font-bold text-white">Sabotagem detectada</div>
+            </Html>
+          )}
+          {/* o aviso chega no aplicativo: notificação e o evento em "Últimos eventos" */}
+          {sabPhase === 1 && (
+            <Html position={[-1.75, 0.0, HD + 0.2]} center style={{ pointerEvents: 'none' }}>
+              <div className="fx-tag overflow-hidden rounded-[24px] border-[5px] border-[#1b1d22] bg-white shadow-2xl"
+                style={{ animation: 'phone-in 0.9s cubic-bezier(.16,.84,.3,1) both' }}>
+                <SabotageScreen scale={0.6} />
               </div>
             </Html>
           )}

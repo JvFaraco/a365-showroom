@@ -7,7 +7,7 @@ export type ActionId =
   // Módulo de Comando
   | 'antena' | 'sos190' | 'led' | 'audio' | 'bateria-modulo' | 'abrir-modulo' | 'cabos' | 'desplugar-bateria'
   // Fotossensor
-  | 'pir' | 'camera' | 'suporte' | 'tampa-foto'
+  | 'pir' | 'camera' | 'suporte' | 'tampa-foto' | 'sabotagem'
   // Sensor magnético
   | 'ima' | 'choque'
   // Sirene
@@ -340,9 +340,10 @@ export const DEVICES: Device[] = [
       {
         id: 'sensor-pir',
         name: 'Sensor PIR',
-        what: 'Cilindro metálico na placa principal, atrás da lente PIR.',
-        facts: [],
+        what: 'Cilindro metálico na placa principal, atrás da lente PIR. Se alguém mexe no fotossensor depois de instalado, ele avisa sabotagem no aplicativo. Abrir a tampa das pilhas não dispara nada.',
+        facts: ['Sistema anti-sabotagem'],
         camera: { position: [0.8, -0.3, 2.0], target: [0, -0.55, 0.15] },
+        action: 'sabotagem',
         internal: true,
         explode: [0, 0.22, 0.3],
       },
