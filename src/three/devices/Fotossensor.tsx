@@ -341,9 +341,9 @@ function pirAlert() {
 // ---------- ação "Ajustar a sensibilidade" ----------
 // Uma pessoa vai e volta numa linha fixa na frente do sensor. O leque mostra até onde o PIR percebe movimento em cada
 // nível (sem medida: só a proporção). Na alta e na média ele a alcança; na baixa ela passa sem disparar.
-const SENS_REACH = [0.55, 0.78, 1] // fração do leque cheio, por nível
-const FAN_LEN = 4.2, FAN_Z = HD - 0.1, SENS_Z = FAN_Z + 2.65
-const sensX = (t: number) => Math.sin(t * 0.9) * 2.0
+const SENS_REACH = [0.8, 0.9, 1] // fração do leque cheio (10 m), por nível: 8, 9 e 10 m, dentro da faixa do manual
+const FAN_LEN = 4.2, FAN_Z = HD - 0.1, SENS_Z = FAN_Z + 3.55
+const sensX = (t: number) => Math.sin(t * 0.9) * 1.9 // quem anda fica entre ~8,5 e ~9,6 m
 function sensDetect() {
   const t = actionTime('sensibilidade')
   if (t < 1.2) return false
