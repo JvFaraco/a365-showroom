@@ -192,7 +192,7 @@ const G = () => (cache ??= build())
 export function ControleRemoto({ interactive = false, pressed }: DeviceProps & { pressed?: () => string | null }) {
   const g = G()
   // corpo preto/grafite brilhante, como na arte oficial
-  const bodyMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#1d1f24', roughness: 0.34, clearcoat: 0.7, clearcoatRoughness: 0.25 }), [])
+  const bodyMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#1d1f24', roughness: 0.5, clearcoat: 0.3, clearcoatRoughness: 0.5 }), [])
   const coinMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#dfe2e8', roughness: 0.32, metalness: 0.6 }), [])
   const coverMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#22242a', roughness: 0.7 }), [])
   const icons = useMemo(() => BUTTONS.map((b) => new THREE.MeshBasicMaterial({ map: iconTexture(b.icon), transparent: true, toneMapped: false })), [])
@@ -213,7 +213,7 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
     return (t > 0.25 && t < 2.2) || (s.action?.id === 'panico' && s.holdMsg === 'ok')
   }
 
-  const sampleLed = (t: number, o: { color: string; on: number }) => { o.color = '#3d7bff'; o.on = tx() ? (t % 0.24 < 0.12 ? 1 : 0.1) : 0.05 }
+  const sampleLed = (t: number, o: { color: string; on: number }) => { o.color = '#3d7bff'; o.on = tx() ? (t % 0.24 < 0.12 ? 1 : 0.1) : 0 } // apagado, a janela fica preta (como na arte)
 
   // o comando chega ao módulo: o estado do alarme muda
   useEffect(() => {
@@ -271,7 +271,7 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
           <mesh geometry={g.frontDome} material={bodyMat} castShadow />
           {/* por dentro: face interna do ombro, raios do miolo, pinos das cascas e o anel do miolo que encosta na placa */}
           <mesh geometry={g.frontDomeIn} material={bodyMat} />
-          <mesh geometry={g.spokes} material={bodyMat} />
+          <mesh geometry={g.spokes} material={M.groove} />
           <mesh geometry={g.posts} material={bodyMat} />
           <mesh geometry={g.hubRing} material={bodyMat} />
           <mesh geometry={g.hubBack} material={bodyMat} />

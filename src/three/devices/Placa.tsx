@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { ClickablePart } from '../parts/ClickablePart'
 import { fxBasic } from '../common/materials'
-import { placaAzulTexture, placaFaixaTexture, placaFoneTexture, placaLogoTexture, placaRodapeTexture, placaVersoTexture } from '../common/textures'
+import { placaAzulTexture, placaFaixaTexture, placaFoneTexture, placaLogoTexture, placaRodapeTexture } from '../common/textures'
 import { roundedRectGeometry } from '../common/shapes'
 import { DeviceCtx, bump, seg, type DeviceProps } from '../common/util'
 import { actionTime } from '../../store/showroomStore'
@@ -16,14 +16,14 @@ const face = (map: THREE.Texture) => {
   return m
 }
 
-/** Placa de aviso: retângulo azul de cantos redondos; frente com logo, telefone e faixa amarela; verso com QR Code. */
+/** Placa de aviso: retângulo azul de cantos redondos; frente com logo, telefone e faixa amarela; verso liso. */
 export function Placa({ interactive = false }: DeviceProps) {
   const root = useRef<THREE.Group>(null!)
   const shine = useRef<THREE.Mesh>(null!)
   const plate = useMemo(() => roundedRectGeometry(1.5, 2, 0.105, 0.04, 0.008), [])
   const mats = useMemo(() => ({
     logo: face(placaLogoTexture()), fone: face(placaFoneTexture()), faixa: face(placaFaixaTexture()),
-    rodape: face(placaRodapeTexture()), verso: face(placaVersoTexture()), chapa: face(placaAzulTexture()),
+    rodape: face(placaRodapeTexture()), verso: face(placaAzulTexture()), chapa: face(placaAzulTexture()),
   }), [])
   const shineMat = useMemo(() => { const m = fxBasic('#ffffff', 0); m.blending = THREE.AdditiveBlending; return m }, [])
 

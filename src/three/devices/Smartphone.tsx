@@ -56,9 +56,9 @@ export function Smartphone({ interactive = false }: DeviceProps) {
   const content = useRef<HTMLDivElement | null>(null)
   useScreenAlign(body, content)
   const frame = useMemo(() => roundedRectGeometry(0.95, 1.95, 0.13, 0.07, 0.012), [])
-  // aro metálico em volta do corpo (grafite), como nos celulares atuais
+  // aro metálico claro (aço) em volta do corpo, como na arte do app
   const band = useMemo(() => roundedRectGeometry(0.962, 1.962, 0.136, 0.05, 0.008), [])
-  const bandMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#4a4d55', roughness: 0.28, metalness: 0.95 }), [])
+  const bandMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#9a9ea6', roughness: 0.32, metalness: 0.95 }), [])
   const island = useMemo(() => roundedRectGeometry(0.36, 0.36, 0.09, 0.02, 0.006), [])
   const glass = useMemo(() => roundedRectGeometry(0.89, 1.89, 0.11, 0.004, 0), [])
   const armOn = useActionPhase('alarme-geral') >= 0
@@ -72,8 +72,9 @@ export function Smartphone({ interactive = false }: DeviceProps) {
         <mesh geometry={band} material={bandMat} />
         <mesh geometry={glass} material={M.lens} position={[0, 0, 0.046]} />
         {/* botão de liga à direita e os dois de volume à esquerda */}
-        <mesh material={bandMat} position={[0.482, 0.4, 0]}><boxGeometry args={[0.012, 0.22, 0.03]} /></mesh>
-        {[0.52, 0.32].map((y) => <mesh key={y} material={bandMat} position={[-0.482, y, 0]}><boxGeometry args={[0.012, 0.14, 0.03]} /></mesh>)}
+        {/* botões saindo ~0,7 mm do aro (antes ficavam escondidos dentro dele): liga à direita; volume e chave de mudo à esquerda */}
+        <mesh material={bandMat} position={[0.493, 0.49, 0]}><boxGeometry args={[0.012, 0.16, 0.03]} /></mesh>
+        {[[0.55, 0.12], [0.39, 0.12], [0.68, 0.045]].map(([y, h]) => <mesh key={y} material={bandMat} position={[-0.493, y, 0]}><boxGeometry args={[0.012, h, 0.03]} /></mesh>)}
         {/* atrás: ilha da câmera (quadrado de cantos redondos) com duas lentes em diagonal */}
         <mesh geometry={island} material={M.blackGloss} position={[-0.2, 0.7, -0.053]} rotation={[0, Math.PI, 0]} />
         {[[-0.275, 0.775], [-0.125, 0.625]].map(([x, y]) => (

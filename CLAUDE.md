@@ -175,7 +175,7 @@ Frente sempre em +Z. As medidas citadas são externas, em mm. Detalhe de cada pa
   lado reto, girado 45° (`COVER_ROT`), com a presilha no lado oposto; fora dela a casca é fechada.
 - **Placa de aviso** (`Placa.tsx`). Chapa de 1,5 × 2,0 em faixas de textura nas proporções da arte oficial: logo no
   alto (56% da largura), "ORSEGUPS" e telefone, faixa amarela "AVISO À POLÍCIA" e rodapé com "ALARME 365" e QR
-  branco. Verso com "ALARME 365" e QR (suposição: a arte só mostra a frente).
+  branco. Verso liso, na cor da chapa (confirmado pelo usuário).
 - **Aplicativo** (`Smartphone.tsx` + `AppScreen.tsx`). Celular com aro, botões e ilha de câmera; a tela segue as telas
   do app de hoje no tema escuro (o usuário pediu escuro): perfil, logo e sino (abre Notificações) no topo, menu Início,
   Comandos, Equipamentos, Contatos e Histórico, eventos e avisos com os nomes reais do app. Sem nome de pessoa nem
@@ -268,7 +268,8 @@ Frente sempre em +Z. As medidas citadas são externas, em mm. Detalhe de cada pa
   é trocada pelo usuário; o fotossensor é fixo no suporte e os dois giram juntos, em pé, na articulação com a peça de fixação da parede (nunca inclina); a sirene toca assim que o
   magnético detecta a porta abrindo; o LED do magnético fica aceso em azul e pisca ao detectar; não há modo Manual; o
   fotossensor avisa sabotagem quando alguém mexe nele (ação "Mexer no sensor", no Sensor PIR: no app, só o evento de
-  sabotagem); o magnético é a bateria de lítio, como no manual.
+  sabotagem); o magnético é a bateria de lítio, como no manual. Rodada de 14/11: sem "Pet Immune" no fotossensor (não está em nenhum manual); LED do fotossensor só azul; janela do
+  LED do controle preta quando apagada e corpo acetinado; pedir imagem atualizada leva uns 30 s; fatos da sirene pelo manual.
 - O azul da placa ainda sai um pouco mais claro que o da arte.
 - As pendências de conteúdo a confirmar com a Orsegups estão no fim do `README.md` (destino do QR, cor do filete do
   controle, logo no disco central, lado do borne do magnético, posição exata de peças internas).

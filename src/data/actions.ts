@@ -27,7 +27,7 @@ export const ACTIONS: Record<ActionId, {
   'tamper-modulo': { label: 'Abrir a tampa', hold: 1.4, undo: 'Fechar', keepDim: true, camera: { position: [-1.9, 1.5, 1.8], target: [-0.45, 0.1, 0.05] } },
   'desplugar-bateria': { label: 'Desplugar a bateria', hold: 2.4, undo: 'Reconectar', camera: { position: [2.3, 2.3, 1.9], target: [0.45, 0.15, 0.05] } },
   'bateria-modulo': { label: 'Tirar da tomada', duration: 9, camera: { position: [2.6, 1.3, 3.0], target: [0.4, 0, 0] } },
-  pir: { label: 'Ver o campo de detecção', duration: 14, camera: { position: [5.6, 4.4, 7.4], target: [0.6, -0.5, 1.8] } },
+  pir: { label: 'Ver o campo de detecção', duration: 8, camera: { position: [5.6, 4.4, 7.4], target: [0.6, -0.5, 1.8] } },
   camera: { label: 'Tirar uma foto', duration: 7, camera: { position: [0.8, 0.7, 4.6], target: [-0.55, 0.15, 0.3] } },
   suporte: { label: 'Girar o sensor', duration: 8, camera: { position: [1.4, 1.1, 5.0], target: [0, -0.1, 0] } },
   'tampa-foto': { label: 'Trocar as pilhas', duration: 9, camera: { position: [1.5, 0.5, 5.6], target: [0, -0.1, 0.4] } },
