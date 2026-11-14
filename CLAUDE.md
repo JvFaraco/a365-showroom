@@ -248,8 +248,8 @@ Frente sempre em +Z. As medidas citadas são externas, em mm. Detalhe de cada pa
   fotossensor ~65,5 mil, magnético ~18,3 mil, sirene ~31,4 mil, controle ~80,5 mil.
 - **Pendente do usuário:** medir a fluidez com `?perf=1` no PC e no celular e mandar os resultados (depois disso, a
   correção do hover do branch `otimizacao` e um perfil leve para celular).
-- **Pendente do usuário:** a prévia `/preview/` não publica: o ambiente `github-pages` só aceita a `main` (liberar o
-  branch `acabamento-4` em Settings → Environments → github-pages).
+- A prévia `/preview/` publica sozinha a cada push no `acabamento-4` (o branch foi liberado no ambiente
+  `github-pages` em 14/11). Outro branch de trabalho precisa ser liberado lá do mesmo jeito.
 - App saindo da tela do celular (só no Safari do iPhone, ~45 px para baixo): corrigido em `Smartphone.tsx`
   (`useScreenAlign` compara a tela HTML com os cantos projetados do vidro e desloca a camada); falta o usuário confirmar
   no iPhone.
