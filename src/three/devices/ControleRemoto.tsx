@@ -112,6 +112,10 @@ function build() {
   // teclado de borracha: lâmina atrás da face, com um pino embaixo de cada tecla (aperta o domo dourado da placa)
   const keypadSheet = new THREE.RingGeometry(0.2, 0.69, 64) // vai até embaixo da borda da abertura: nada da placa aparece nas fendas; keypadSheet.translate(0, KY, SH.face - 0.024)
   const keypadBack = new THREE.RingGeometry(0.2, 0.69, 64); keypadBack.rotateY(Math.PI); keypadBack.translate(0, KY, SH.face - 0.034)
+  // fundo do teclado: anel com espessura (as duas faces), logo abaixo das teclas, preso na casca da frente
+  const ring = new THREE.Shape().absarc(0, 0, 0.69, 0, Math.PI * 2, false)
+  ring.holes.push(new THREE.Path().absarc(0, 0, 0.2, 0, Math.PI * 2, true))
+  const keypadFloor = new THREE.ExtrudeGeometry(ring, { depth: 0.008, bevelEnabled: false, curveSegments: 48 }); keypadFloor.translate(0, KY, SH.face - 0.045)
   const plungers = mergeGeometries([0, 90, 180, 270].map((d) => {
     const c = new THREE.CylinderGeometry(0.045, 0.05, 0.06, 16); c.rotateX(Math.PI / 2)
     c.translate(Math.cos(d * D2R) * SW_R, KY + Math.sin(d * D2R) * SW_R, SH.face - 0.05)
@@ -164,7 +168,7 @@ function build() {
   const holder = ringSectorGeometry(0.395, 0.435, -140 * D2R, 140 * D2R, PCB.z0 + 0.062, 0.004); holder.translate(0, COIN_C, -0.066)
   const clip = boxesGeometry([[0.16, COIN_C, -0.069, 0.62, 0.22, 0.006], [0.465, COIN_C, -0.023, 0.012, 0.2, 0.094]])
   return {
-    front, back, frontDome, frontDomeIn, spokes, posts, hubRing, hubBack, keypadSheet, keypadBack, plungers, backDome, fillet, cover, coverSill,
+    front, back, frontDome, frontDomeIn, spokes, posts, hubRing, hubBack, keypadSheet, keypadBack, keypadFloor, plungers, backDome, fillet, cover, coverSill,
     pcb, smdTan, smdBlack, smdMetal, smdGold, swBase, swDome, holder, clip,
     sector: ringSectorGeometry(0.3, 0.62, -38 * D2R, 38 * D2R, 0.018, 0.022),
     // disco central fixo: baixo, sem contorno de tecla
@@ -269,7 +273,7 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
           <mesh geometry={g.hubRing} material={bodyMat} />
           <mesh geometry={g.hubBack} material={bodyMat} />
           {/* fundo do teclado, na própria casca: fecha a vista da placa pelas fendas entre as teclas, de qualquer ângulo */}
-          <mesh geometry={g.keypadSheet} material={bodyMat} position={[0, 0, -0.006]} />
+          <mesh geometry={g.keypadFloor} material={bodyMat} />
           {/* linha de partição em volta do teclado */}
           <mesh material={M.groove} position={[0, KY, 0.1705]}><ringGeometry args={[0.652, 0.666, 96]} /></mesh>
         </ClickablePart>
