@@ -10,12 +10,12 @@ export function ViewToggles() {
   const device = useShowroom((s) => s.device)
   const st = useShowroom.getState
   const internal = hasInternal(DEVICE_BY_ID[device])
-  // o Raio-X só aparece quando o aparelho tem alguma parte interna para mostrar
+  // Explodir e Raio-X só aparecem quando o aparelho tem alguma parte interna para mostrar (a placa e o app não têm)
   const all: { v: View; label: string; key: string; Icon: typeof Explode }[] = [
     { v: 'exploded', label: 'Explodir', key: 'E', Icon: Explode },
     { v: 'xray', label: 'Raio-X', key: 'X', Icon: Xray },
   ]
-  const items = all.filter((it) => it.v !== 'xray' || internal)
+  const items = internal ? all : []
   return (
     <div role="toolbar" aria-label="Modos de vista" className="glass pointer-events-auto flex gap-1 rounded-full p-1">
       {items.map(({ v, label, key, Icon }) => (

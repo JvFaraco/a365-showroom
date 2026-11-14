@@ -123,7 +123,7 @@ export const useShowroom = create<State>((set, get) => ({
   toggleView: (v) => {
     const s = get()
     const d = DEVICE_BY_ID[s.device]
-    if (v === 'xray' && !hasInternal(d)) return
+    if ((v === 'xray' || v === 'exploded') && !hasInternal(d)) return
     const view = s.view === v ? 'normal' : v
     // sair do explodido/raio-X com uma parte interna aberta volta à vista inteira
     const cur = getPart(s.device, s.part)

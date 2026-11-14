@@ -97,14 +97,17 @@ O corpo é um seixo, não uma moeda: duas placas finas no contorno inteiro, em g
 
 A frente segue a arte oficial da placa (proporção 3:4): logo com 56% da largura no alto, "ORSEGUPS" e o telefone, faixa amarela de 66% a 83% da altura e rodapé com "ALARME 365" e o QR. O logo sai de `logoShape.ts`: o anel de dentro e o braço de fora, separados pelo corte curvo (largo à esquerda, rente ao miolo por cima, fino até a ponta da direita); a mesma forma desenha o logo da interface. As letras largas da arte são texto esticado na horizontal (`wideText`).
 
+A placa é uma chapa única, sem parte interna: nela não há Explodir nem Raio-X (os botões somem e as teclas E e X não fazem nada).
+
 As cores da marca saem exatas: o material da chapa leva `userData.brand`, e o `ClickablePart` acrescenta ao shader a inversa da curva de tone mapping (`brandPatch`), para o amarelo não lavar no fim do quadro. A chapa lisa usa uma textura azul de 1 px, de modo que a placa inteira usa um só programa de shader.
 
 | part.id | Como é modelada |
 |---|---|
-| `logo` | Anel amarelo com o corte, em canvas de 2048 px, sobre a chapa azul de cantos redondos. |
-| `telefone` | Plano com "ORSEGUPS" (amarelo, letras largas) e "4020.4411" (branco). |
-| `faixa` | Faixa amarela de ponta a ponta: câmera de segurança (haste, braço, corpo inclinado e lente) e o aviso em azul. |
-| `verso` | Plano traseiro liso, na cor da chapa (o usuário confirmou que o verso é liso). No rodapé da frente o QR é branco sobre o azul, como na arte. |
+| `logo` | "Logo e marca": anel amarelo com o corte, em canvas de 2048 px, e "ORSEGUPS" (amarelo, letras largas) logo abaixo, no mesmo plano. |
+| `telefone` | Plano estreito só com "4020.4411" (branco), logo abaixo da marca, sem sobrepor o plano do logo (o clique não fica ambíguo). |
+| `faixa` | Faixa amarela de ponta a ponta: câmera de segurança pelo desenho da arte (haste reta, colar, capuz em viseira, corpo em cunha e lente oblíqua em "olho", com filetes amarelos entre as peças) e o aviso em azul ("COM REGISTRO DE IMAGEM" em Encode Sans 400). |
+| `rodape` | "ALARME 365" (branco) e o QR ilustrativo, branco sobre o azul como na arte e de módulos miúdos (29 × 29). |
+| `verso` | Plano traseiro liso, na cor da chapa (o usuário confirmou que o verso é liso). |
 
 ## Aplicativo (0,95 × 1,95)
 
