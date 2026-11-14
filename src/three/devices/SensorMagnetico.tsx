@@ -212,8 +212,8 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
             {/* janela do LED: pequena (~8 × 4 mm), atravessada na face, entre o logo e a tampinha da ponta */}
             <ClickablePart id="led">
               <group rotation={DEITA}>
-                <mesh geometry={slit} material={M.blackGloss} position={[BODY.x, LED_Y, FRONT - 0.007]} />
-                {/* o LED em si: ponto pequeno e forte no meio da janela (como o do módulo); a janela fica escura */}
+                <mesh geometry={slit} material={M.white} position={[BODY.x, LED_Y, FRONT - 0.007]} />
+                {/* o LED: igual ao do módulo, o mesmo ponto de luz sobre o plástico branco (sem janela escura em volta) */}
                 <Led on="shell" sample={sampleLed} boost={9} baseColor="#14161b" position={[BODY.x, LED_Y, FRONT + 0.0035]}><circleGeometry args={[2.24 / 49.5, 24]} /></Led>
               </group>
             </ClickablePart>

@@ -131,7 +131,6 @@ export function Sirene({ interactive = false, sounding, waves = [5, 1.9] }: Devi
   const plate = useMemo(supportPlate, [])
   const feet = useMemo(supportFeet, [])
   const slit = useMemo(() => stadiumGeometry(0.13, 0.048, 0.004, 0.002), []) // janela do LED na face: ~9 × 3,5 mm
-  const lens = useMemo(() => { const m = M.crystal.clone(); m.opacity = 0.2; return m }, []) // lente fina: deixa a cor do LED passar
   // tampa do tamper: disco em degraus (anéis concêntricos) com o miolo abaulado, virado para trás
   const tamperCap = useMemo(() => smoothLatheZ([[0.31, 0.0], [0.305, -0.03], [0.28, -0.04], [0.225, -0.042], [0.21, -0.07], [0.13, -0.075], [0.1, -0.1], [0.04, -0.115], [0.001, -0.118]], 64, 48), [])
   const piezo = useMemo(() => smoothLatheZ([[0.04, 0.06], [0.2, 0.06], [0.225, 0.05], [0.23, 0.03], [0.23, -0.04], [0.22, -0.05], [0.001, -0.05]], 48, 24), [])
@@ -210,10 +209,9 @@ export function Sirene({ interactive = false, sounding, waves = [5, 1.9] }: Devi
             piscando ao tocar) e, por cima, a lente de cristal fina */}
         <ClickablePart id="led">
           <group position={[0, LED_Y, FACE_Z]}>
-            <mesh geometry={slit} material={M.hole} position={[0, 0, -0.0035]} scale={[1.16, 1.4, 1]} />
-            {/* o LED em si: ponto pequeno e forte no meio da janela (como o do módulo); a janela fica escura */}
+            <mesh geometry={slit} material={M.white} position={[0, 0, -0.0035]} scale={[1.16, 1.4, 1]} />
+            {/* o LED: igual ao do módulo, o mesmo ponto de luz sobre o plástico branco (sem janela escura nem lente) */}
             <Led on="shell" sample={sampleLed} boost={9} baseColor="#14161b" position={[0, 0, 0.0008]}><circleGeometry args={[2.24 / 64, 24]} /></Led>
-            <mesh geometry={slit} material={lens} position={[0, 0, 0.0012]} scale={[1, 1, 0.5]} />
           </group>
         </ClickablePart>
 
