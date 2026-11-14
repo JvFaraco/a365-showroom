@@ -18,6 +18,7 @@ export const Contacts = ({ size, ...p }: P) => (<svg {...base(size, p)}><rect x=
 export const Clock = ({ size, ...p }: P) => (<svg {...base(size, p)}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>)
 export const Nodes = ({ size, ...p }: P) => (<svg {...base(size, p)}><circle cx="7" cy="6" r="2.4" /><circle cx="17" cy="9" r="2.4" /><circle cx="6" cy="17" r="2.4" /><circle cx="15" cy="19" r="2.4" /><path d="M9.2 7l5.6 1.4M8 16l5 2.2M7 8.4v6.2M16.4 11.3l-1 5.4" /></svg>)
 export const AlertCircle = ({ size, ...p }: P) => (<svg {...base(size, p)}><circle cx="12" cy="12" r="9" /><path d="M12 7v6" /><circle cx="12" cy="16.5" r=".8" fill="currentColor" /></svg>)
+export const CircleX = ({ size, ...p }: P) => (<svg {...base(size, p)}><circle cx="12" cy="12" r="9" /><path d="M9 9l6 6M15 9l-6 6" /></svg>)
 export const Camera = ({ size, ...p }: P) => (<svg {...base(size, p)}><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7l1.5-3h5L16 7" /><circle cx="12" cy="13.5" r="3.5" /></svg>)
 export const Explode = ({ size, ...p }: P) => (<svg {...base(size, p)}><rect x="6" y="3" width="12" height="4" rx="1" /><rect x="6" y="10" width="12" height="4" rx="1" /><rect x="6" y="17" width="12" height="4" rx="1" /></svg>)
 export const Xray = ({ size, ...p }: P) => (<svg {...base(size, p)}><rect x="4" y="4" width="16" height="16" rx="3" strokeDasharray="3 3" /><circle cx="12" cy="12" r="3" /></svg>)

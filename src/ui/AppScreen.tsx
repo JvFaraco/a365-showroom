@@ -1,8 +1,8 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { getPart } from '../data/devices'
 import { useShowroom, type ArmState } from '../store/showroomStore'
 import { aiPhotoDataUrl } from '../three/common/textures'
-import { AlertCircle, Bell, Chevron, Contacts, Home, HomePerson, LockClosed, LockOpen, Nodes, OrsegupsLogo, Shield, Speaker, User } from './icons'
+import { AlertCircle, Bell, Chevron, CircleX, Contacts, Home, HomePerson, LockClosed, LockOpen, Nodes, OrsegupsLogo, Shield, Speaker, User } from './icons'
 import { beep } from './audio'
 
 const ARM: { id: ArmState; label: string; Icon: typeof LockOpen }[] = [
@@ -22,13 +22,52 @@ const CARD = 'rounded-xl bg-[#26272b] p-3'
 const ARM_BLUE = '#4d8dff'
 type Ev = { Icon: typeof LockOpen; color: string; text: string; who: string; when: string }
 
-/** Topo do app: perfil à esquerda, logo Orsegups no meio e o sino (com o ponto de aviso) à direita. */
-function AppTop() {
+/** Topo do app: perfil à esquerda, logo Orsegups no meio e o sino (com o ponto de aviso) à direita; o sino abre as notificações. */
+function AppTop({ onBell }: { onBell?: () => void }) {
   return (
     <div className="flex items-center justify-between px-4 pt-3">
       <span className="grid h-8 w-8 place-items-center rounded-full border border-white/40 text-[12px] text-white/80"><User size={15} /></span>
       <OrsegupsLogo size={26} />
-      <span className="relative text-white/85"><Bell size={20} /><i className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[#e03131]" /></span>
+      <button aria-label="Notificações" tabIndex={onBell ? 0 : -1} className={`relative text-white/85 ${onBell ? 'cursor-pointer' : 'cursor-default'}`}
+        onClick={(e) => { if (!onBell) return; e.stopPropagation(); beep('ui'); onBell() }}>
+        <Bell size={20} /><i className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[#e03131]" />
+      </button>
+    </div>
+  )
+}
+
+/** Tela "Notificações" (o sino do topo), como no app: ponto de não lida, foto ou ícone, o patrimônio, o aviso, quem e quando. */
+function Notifications({ onBack }: { onBack: () => void }) {
+  const items: { thumb?: boolean; Icon?: typeof LockOpen; title: string; who: string; when: string }[] = [
+    { thumb: true, title: 'Imagem do disparo', who: 'Sala de estar', when: 'hoje - 07:31' },
+    { Icon: LockOpen, title: 'Desarme pelo aplicativo', who: 'por Você', when: 'hoje - 07:50' },
+    { Icon: LockClosed, title: 'Arme (Ficar) pelo aplicativo', who: 'por Você', when: 'ontem - 23:56' },
+    { Icon: Speaker, title: 'Disparo do sensor', who: 'Porta de entrada', when: 'ontem - 07:30' },
+    { Icon: CircleX, title: 'Restauro de energia', who: '-', when: 'ontem - 11:44' },
+  ]
+  return (
+    <div className={`absolute inset-0 z-[7] flex flex-col ${BG} text-white`}>
+      <StatusBar />
+      <div className="relative flex items-center justify-center px-4 pb-2 pt-4 text-[15px]">
+        <button aria-label="Voltar" className="absolute left-4 cursor-pointer text-white/85" onClick={(e) => { e.stopPropagation(); beep('ui'); onBack() }}><Chevron dir="left" size={20} /></button>
+        Notificações
+      </div>
+      <div className={`${CARD} mx-3 !p-0`}>
+        {items.map(({ thumb, Icon, title, who, when }) => (
+          <div key={title} className="relative flex gap-3 border-b border-white/10 px-3 py-2.5 last:border-0">
+            <i className="absolute left-2 top-2 z-[1] h-2 w-2 rounded-full bg-[#e03131]" />
+            <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg text-white/70">
+              {thumb ? <img src={aiPhotoDataUrl(true)} alt="" width={80} height={60} className="h-full w-full object-cover" draggable={false} /> : Icon && <Icon size={20} />}
+            </span>
+            <span className="flex-1 leading-tight">
+              <span className="block text-[9.5px] text-white/50">Minha casa</span>
+              <span className="block text-[12px] text-white/90">{title}</span>
+              <span className="block text-[10px] text-white/65">{who}</span>
+              <span className="mt-0.5 block text-[9.5px] text-white/50">{when}</span>
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -101,6 +140,7 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
   const arm: ArmState = iaStep >= 0 ? 'armed' : armState
   const action = useShowroom((s) => (interactive ? s.action?.id : undefined))
   const canArm = action === 'alarme-geral'
+  const [notif, setNotif] = useState(false)
 
   // "Solicitar imagem atualizada": loader de ~4 s no demo
   useEffect(() => {
@@ -134,7 +174,7 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
       {iaStep === 3 && (
         <div className="absolute inset-x-2 top-8 z-[6] flex items-center gap-2 rounded-2xl bg-[#e03131] px-3 py-2 text-white shadow-lg">
           <Bell size={18} />
-          <div className="leading-tight"><div className="text-[12px] font-bold">Disparo</div><div className="text-[10.5px] opacity-90">Movimento detectado · Sala de estar</div></div>
+          <div className="leading-tight"><div className="text-[12px] font-bold">Disparo do sensor</div><div className="text-[10.5px] opacity-90">Porta de entrada</div></div>
         </div>
       )}
       {/* tela "Imagem" (escura), como no app: a foto do fotossensor com a pessoa marcada */}
@@ -156,17 +196,18 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
       )}
       {/* barra de status com o entalhe */}
       <StatusBar />
-      <AppTop />
+      {notif && <Notifications onBack={() => setNotif(false)} />}
+      <AppTop onBell={interactive ? () => setNotif(true) : undefined} />
 
       {/* saudação e, à direita, o botão SOS (só o contorno, como no app) */}
-      <div className="flex items-center justify-between px-4 pt-3">
+      <div className="flex items-center justify-between px-4 pt-2">
         <div className="text-[20px] font-light text-white/90">Olá!</div>
         <Region id="sos" interactive={interactive} className="!rounded-lg">
           <div className="rounded-lg border border-white/35 px-3 py-1 text-[12px] text-white/90">SOS</div>
         </Region>
       </div>
 
-      <div className="flex flex-1 flex-col gap-1.5 px-3 pt-2">
+      <div className="flex min-h-0 flex-1 flex-col gap-1 px-3 pt-1.5">
         {/* patrimônio: qual casa está sendo controlada (sem endereço) */}
         <div className={`${CARD} flex items-center !py-2`}>
           <div className="flex-1 leading-tight"><div className="text-[9.5px] text-white/60">Patrimônio</div><div className="text-[12px] text-white/90">Minha casa</div></div>
@@ -204,7 +245,7 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
 
         <Region id="ultimas-imagens" interactive={interactive}>
           <div className={LABEL}>Últimas imagens</div>
-          <div className="relative h-[136px] overflow-hidden rounded-xl bg-[#26272b]">
+          <div className="relative h-[110px] overflow-hidden rounded-xl bg-[#26272b]">
             <img src={aiPhotoDataUrl(photo === 'done')} alt="Foto do fotossensor" width={480} height={360} className="h-full w-full object-cover" draggable={false} />
             {/* etiqueta da foto, no canto, escura como no app: de qual aparelho e quando */}
             <div className="absolute left-1.5 top-1.5 rounded-md bg-[#1d1e21]/90 px-1.5 py-0.5 leading-tight">
@@ -295,7 +336,7 @@ export function ImageScreen({ scale = 0.6 }: { scale?: number }) {
         <div className="absolute inset-x-2 top-8 z-10 flex items-center gap-2 rounded-2xl bg-[#26272b] px-3 py-2 text-white shadow-lg"
           style={{ animation: 'notif-out 0.7s 1.4s ease-in both' }}>
           <OrsegupsLogo size={18} />
-          <div className="leading-tight"><div className="text-[12px] font-semibold">Alarme 365</div><div className="text-[10.5px] text-white/75">Nova imagem do fotossensor</div></div>
+          <div className="leading-tight"><div className="text-[12px] font-semibold">Imagem do disparo</div><div className="text-[10.5px] text-white/75">Sala de estar</div></div>
         </div>
         <div className="flex items-center gap-4 px-5 pt-4 text-[15px]"><span className="text-xl leading-none">‹</span><span className="flex-1">Imagem</span><span>⋮</span></div>
         <img src={aiPhotoDataUrl(true)} alt="Foto do fotossensor com a pessoa marcada" width={480} height={360} className="mt-6 h-[200px] w-full object-cover" draggable={false} />
