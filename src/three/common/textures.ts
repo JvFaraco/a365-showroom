@@ -76,7 +76,7 @@ function person(ctx: CanvasRenderingContext2D, x: number, y: number, h: number) 
 }
 
 /** Foto de um cômodo com uma pessoa e, opcionalmente, a caixa verde da IA. */
-export function drawAiPhoto(ctx: CanvasRenderingContext2D, w: number, h: number, box = true) {
+export function drawAiPhoto(ctx: CanvasRenderingContext2D, w: number, h: number, box = true, empty = false) {
   const g = ctx.createLinearGradient(0, 0, 0, h * 0.62)
   g.addColorStop(0, '#dfe3ea'); g.addColorStop(1, '#c4cad5')
   ctx.fillStyle = g; ctx.fillRect(0, 0, w, h * 0.62)
@@ -92,6 +92,7 @@ export function drawAiPhoto(ctx: CanvasRenderingContext2D, w: number, h: number,
   ctx.fillStyle = '#6f7785'; rr(ctx, w * 0.02, h * 0.56, w * 0.3, h * 0.2, 10); ctx.fill()
   ctx.fillStyle = '#7d8696'; rr(ctx, w * 0.02, h * 0.5, w * 0.3, h * 0.12, 10); ctx.fill()
   const ph = h * 0.62, px = w * 0.52, py = h * 0.9
+  if (empty) return // a sala sem ninguém
   person(ctx, px, py, ph)
   if (box) {
     ctx.fillStyle = 'hsla(128,53%,50%,0.42)'; ctx.strokeStyle = 'hsl(128,53%,50%)'; ctx.lineWidth = Math.max(2, w * 0.008)
@@ -101,9 +102,9 @@ export function drawAiPhoto(ctx: CanvasRenderingContext2D, w: number, h: number,
 }
 
 let photoUrl: Record<string, string> = {}
-export function aiPhotoDataUrl(box = true) {
-  const k = String(box)
-  if (!photoUrl[k]) { const [c, ctx] = canvas(480, 360); drawAiPhoto(ctx, 480, 360, box); photoUrl[k] = c.toDataURL('image/jpeg', 0.85) }
+export function aiPhotoDataUrl(box = true, empty = false) {
+  const k = `${box}-${empty}`
+  if (!photoUrl[k]) { const [c, ctx] = canvas(480, 360); drawAiPhoto(ctx, 480, 360, box, empty); photoUrl[k] = c.toDataURL('image/jpeg', 0.85) }
   return photoUrl[k]
 }
 

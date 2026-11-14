@@ -17,6 +17,16 @@ const SCENE_CAM: Record<Exclude<Scene, 'showroom'>, SceneCam> = {
   inaction: { position: [0.6, 3.4, 9.6], target: [0, 1.25, -0.6] },
 }
 
+// cena "Em ação": em cada passo a câmera chega um pouco mais perto de onde a coisa acontece (sem perder a sala de
+// vista). Só na tela larga e só enquanto ninguém arrastou a câmera; em retrato fica o plano geral
+const IA_CAM: { position: Vec3; target: Vec3 }[] = [
+  { position: [0.6, 3.4, 9.6], target: [-1.2, 1.3, -0.7] }, // controle arma, LED do módulo
+  { position: [1.4, 3.0, 8.2], target: [0.7, 1.45, -1.4] }, // porta, magnético, sirene e o aviso no celular
+  { position: [0.9, 3.2, 9.0], target: [-1.1, 1.45, -1.5] }, // fotossensor, flash e o invasor
+  { position: [0.6, 3.2, 8.8], target: [0.6, 1.3, -1.4] }, // fuga pela porta
+  { position: [0.4, 2.5, 7.8], target: [2.7, 1.55, 2.0] }, // celular com a imagem
+]
+
 // em retrato (celular) as cenas largas recuam o bastante para tudo caber
 const PORTRAIT_Z = 3.0
 const sceneCam = (scene: Exclude<Scene, 'showroom'>, portrait: boolean) => {
@@ -63,6 +73,8 @@ export function CameraRig() {
   const resetTick = useShowroom((s) => s.resetTick)
   const listOpen = useShowroom((s) => s.listOpen)
   const ready = useShowroom((s) => s.ready)
+  const iaStep = useShowroom((s) => (s.scene === 'inaction' && s.iaPlaying ? s.iaStep : -1))
+  const dragged = useRef(false)
 
   const fly = (animate = true) => {
     const c = ref.current
@@ -174,6 +186,24 @@ export function CameraRig() {
   }, [scene]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { fly() }, [device, part, view, actionId, resetTick, listOpen, ready, size.width, size.height]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // "Em ação": acompanha o passo (devagar). Se a pessoa arrastar a câmera, para de acompanhar até sair da cena
+  useEffect(() => { dragged.current = false }, [scene])
+  useEffect(() => {
+    const c = ref.current
+    if (!c) return
+    const mark = () => { dragged.current = true }
+    c.addEventListener('controlstart', mark)
+    return () => c.removeEventListener('controlstart', mark)
+  }, [])
+  useEffect(() => {
+    const c = ref.current
+    if (!c || iaStep < 0 || dragged.current || size.width / size.height < 0.8 || reducedMotion()) return
+    const k = IA_CAM[iaStep]
+    c.smoothTime = 1.0
+    void c.setFocalOffset(0, 0, 0, true)
+    void c.setLookAt(k.position[0], k.position[1], k.position[2], k.target[0], k.target[1], k.target[2], true)
+  }, [iaStep]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // duplo clique: reset da vista
   useEffect(() => {

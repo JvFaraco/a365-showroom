@@ -14,6 +14,11 @@ const REFLECT_BLUR: [number, number] = [300, 90]
 
 const ROOM_DAY = new THREE.Color('#cfd8ff'), ROOM_NIGHT = new THREE.Color('#8fa4dc'), ROOM_RED = new THREE.Color('#ff2a2a'), ROOM_FLASH = new THREE.Color('#ffffff')
 const NO_FX = { flash: 0, red: 0, night: 0 }
+const KEY_DAY = new THREE.Color('#ffffff'), KEY_NIGHT = new THREE.Color('#b4c2ea')
+// a luz do cômodo sai de onde a luz vem: do teto, puxada para a janela à noite, para a sirene quando ela pisca em
+// vermelho e para o fotossensor no flash (só muda a posição de uma luz que já existe)
+const ROOM_POS = new THREE.Vector3(0, 3.1, 1), ROOM_MOON = new THREE.Vector3(-2.2, 2.6, 1.1)
+const ROOM_SIREN = new THREE.Vector3(-1.2, 2.4, -2.3), ROOM_PHOTO = new THREE.Vector3(-3.0, 2.1, -2.0)
 
 function glowTexture() {
   const c = document.createElement('canvas')
@@ -75,7 +80,9 @@ export function Stage() {
     // peça escura em fundo escuro: reforça os rim lights e clareia o piso sob o aparelho
     easing.damp(d, 'rim', dark ? 1.9 : 1, 0.4, dt)
     easing.damp(d, 'glow', dark ? 0.14 : 0.04, 0.4, dt)
-    key.current.intensity = 1.25 * d.v
+    const fx = scene === 'inaction' ? roomFx : NO_FX
+    key.current.intensity = 1.25 * d.v * (1 - 0.35 * fx.night)
+    key.current.color.copy(KEY_DAY).lerp(KEY_NIGHT, fx.night * 0.6)
     rimW.current.intensity = 1.1 * d.rim * d.v
     rimB.current.intensity = 1.2 * d.rim * d.v
     glowMat.opacity = d.glow * d.v
@@ -83,7 +90,7 @@ export function Stage() {
     easing.damp(d, 'room', scene === 'inaction' ? 40 : 0, 0.3, dt)
     // na cena: noite (mais baixa e azulada), o flash da câmera clareia a sala e a sirene a pisca em vermelho. Só muda
     // cor e intensidade de uma luz que já existe: nada recompila
-    const fx = scene === 'inaction' ? roomFx : NO_FX
+    room.current.position.copy(ROOM_POS).lerp(ROOM_MOON, fx.night * 0.5).lerp(ROOM_SIREN, fx.red * 0.55).lerp(ROOM_PHOTO, fx.flash * 0.8)
     room.current.intensity = d.room * (1 - 0.45 * fx.night) * (1 + 2.2 * fx.flash) * (1 + 0.6 * fx.red)
     room.current.color.copy(ROOM_DAY).lerp(ROOM_NIGHT, fx.night).lerp(ROOM_RED, fx.red * 0.85).lerp(ROOM_FLASH, fx.flash)
     amb.current.intensity = 0.16 * d.v * (1 - 0.4 * fx.night + 1.2 * fx.flash)
