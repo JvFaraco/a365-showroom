@@ -13,7 +13,9 @@ const pct = (a: number[], p: number) => { if (!a.length) return 0; const s = [..
 function summary(ph: Phase) {
   const n = ph.frames.length
   const fps = n ? (n * 1000) / ph.ms : 0
-  return { fps, p95: pct(ph.frames, 0.95), slow: ph.frames.filter((f) => f > 20).length, jank: ph.frames.filter((f) => f > 50).length, n }
+  const big = ph.frames.filter((f) => f > 250)
+  return { fps, p95: pct(ph.frames, 0.95), slow: ph.frames.filter((f) => f > 20).length, jank: ph.frames.filter((f) => f > 50).length, n,
+    freeze: big.length, worst: Math.max(0, ...ph.frames) }
 }
 
 function deviceInfo() {
@@ -30,7 +32,7 @@ function deviceInfo() {
 function reportText(r: Report) {
   const rows = r.phases.map((ph) => {
     const s = summary(ph)
-    return `${ph.name.padEnd(18)} ${s.fps.toFixed(0).padStart(4)} fps · p95 ${s.p95.toFixed(1).padStart(5)} ms · >20 ms: ${String(s.slow).padStart(3)} de ${s.n} · >50 ms: ${s.jank}`
+    return `${ph.name.padEnd(18)} ${s.fps.toFixed(0).padStart(4)} fps · p95 ${s.p95.toFixed(1).padStart(5)} ms · >20 ms: ${String(s.slow).padStart(3)} de ${s.n} · >50 ms: ${s.jank} · travadas >250 ms: ${s.freeze} (pior ${s.worst.toFixed(0)} ms)`
   })
   return `Teste de fluidez (Alarme 365)\n${r.info}\nQualidade durante o teste: ${r.quality}\n\n${rows.join('\n')}`
 }
@@ -59,7 +61,9 @@ export function PerfHud() {
     let tick = 0
     const loop = (t: number) => {
       const dt = t - last; last = t
-      if (dt < 1000) { recent.push(dt); if (recent.length > 240) recent.shift(); phase.current?.frames.push(dt) }
+      // quadro longo também conta (antes, mais de 1 s era descartado e a travada sumia do resultado); só a aba
+      // escondida fica de fora
+      if (!document.hidden) { recent.push(dt); if (recent.length > 240) recent.shift(); phase.current?.frames.push(dt) }
       if (++tick % 20 === 0 && live.current) {
         const tail = recent.slice(-120), sum = tail.reduce((a, b) => a + b, 0)
         const s = useShowroom.getState()
