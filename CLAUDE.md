@@ -91,8 +91,12 @@ partes de cada aparelho; este arquivo é o complemento para quem vai trabalhar n
   showroom de ~300 a ~740 (o módulo tem ~127 malhas visíveis e dá ~650 a ~740). O reflexo do piso
   (`MeshReflectorMaterial`, em `Stage.tsx`) redesenha a cena inteira: sem ele (nível 3) as chamadas caem pela metade.
   O contorno só redesenha a cena quando há algo sob o mouse.
-- **Qualidade adaptativa:** o `PerformanceMonitor` do drei, no padrão, só reduz quando a média cai abaixo de 40 fps
-  numa tela de 60 Hz. Para a meta de 60, o limite candidato é ~55 (`&fpsmin=55`), a confirmar com a medição.
+- **Qualidade adaptativa:** o `PerformanceMonitor` só começa 4 s depois da carga (antes ele rebaixava até numa RTX 4060
+  por causa dos quadros lentos da compilação) e sobe de volta um degrau quando há folga (limite de cima 57 numa tela
+  de 60 Hz). Medido pelo usuário: RTX 4060 fica em q0 a 60 fps; notebook com Intel UHD fica em q3 a 35–43 fps. O
+  usuário NÃO aceita baixar a qualidade (nada de resolução abaixo de 1): a otimização tem que manter o visual.
+- **Medidor (`?perf=1`):** no alto, à direita; cada fase mostra também as travadas acima de 250 ms e a pior (antes,
+  intervalos acima de 1 s eram descartados e a travada sumia).
 - **React fora do caminho do quadro:** o hover não pode passar por estado ou contexto que envolva a cena toda. O
   contorno era um `<Selection>`/`<Select>` em volta de tudo e re-renderizava centenas de partes a cada passada do
   mouse (picos de 20 a 40 ms). A correção (contorno controlado direto no efeito, `common/outline.ts`) está no branch
@@ -224,7 +228,12 @@ Frente sempre em +Z. As medidas citadas são externas, em mm. Detalhe de cada pa
   explodido) e `<Led on="board">` é o LED na placa (só acende explodido). Peças presas na placa (câmera, mola, cartão
   do modem, bateria pelo cabo) têm o mesmo `explode` da placa: nunca saem soltas na vista explodida.
 - LED fraco com halo vira "fundo colorido" (o magnético parecia ter um fundo azul): o halo do `Led` só aparece com o
-  LED bem aceso, o miolo clareia para o branco e LED de aparelho a pilha fica apagado em repouso.
+  LED bem aceso e o miolo clareia para o branco. Os LEDs do magnético e da sirene são iguais ao do módulo (mesmo
+  tamanho em mm, mesma intensidade) e ficam sobre o plástico branco, sem janela preta: o usuário quer os três iguais
+  e acesos.
+- Tamper não é botão: é uma chave com pino de mola. Tampa fechada aperta o pino (fechado); aberta, o pino sobe
+  (aberto). No CAD não há peça de tamper (é componente eletrônico); o que aperta é a tampa, o pino da base do
+  magnético ou o prato do suporte da sirene.
 - Cascas não são blocos maciços: por dentro elas têm paredes, guias, pinos e aberturas (magnético, controle).
 - No celular, durante uma ação, o card fica compacto e a câmera mede a área livre pelo topo real do card. Sem isso,
   a câmera recuava para dentro da névoa e a cena da ação sumia.
@@ -257,7 +266,7 @@ Frente sempre em +Z. As medidas citadas são externas, em mm. Detalhe de cada pa
   da sirene (para imitar por síntese).
 - Decisões do usuário nesta rodada: o fotossensor NÃO tem tamper (abrir a tampa não dispara); a bateria da sirene não
   é trocada pelo usuário; o fotossensor é fixo no suporte e os dois giram juntos, em pé, na articulação com a peça de fixação da parede (nunca inclina); a sirene toca assim que o
-  magnético detecta a porta abrindo; o LED do magnético pisca em azul (apagado em repouso); não há modo Manual; o
+  magnético detecta a porta abrindo; o LED do magnético fica aceso em azul e pisca ao detectar; não há modo Manual; o
   fotossensor avisa sabotagem quando alguém mexe nele (ação "Mexer no sensor", no Sensor PIR: no app, só o evento de
   sabotagem); o magnético é a bateria de lítio, como no manual.
 - O azul da placa ainda sai um pouco mais claro que o da arte.
