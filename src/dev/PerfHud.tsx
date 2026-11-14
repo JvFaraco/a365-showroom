@@ -61,9 +61,10 @@ export function PerfHud() {
     let tick = 0
     const loop = (t: number) => {
       const dt = t - last; last = t
-      // quadro longo também conta (antes, mais de 1 s era descartado e a travada sumia do resultado); só a aba
-      // escondida fica de fora
-      if (!document.hidden) { recent.push(dt); if (recent.length > 240) recent.shift(); phase.current?.frames.push(dt) }
+      // quadro longo também conta (antes, mais de 1 s era descartado e a travada sumia do resultado). Ficam de fora a
+      // aba escondida e as pausas do navegador com a janela fora de vista (coberta ou minimizada: ele para de desenhar
+      // e o primeiro quadro na volta traz a pausa inteira, como os 98 s de um teste)
+      if (!document.hidden && dt < 5000) { recent.push(dt); if (recent.length > 240) recent.shift(); phase.current?.frames.push(dt) }
       if (++tick % 20 === 0 && live.current) {
         const tail = recent.slice(-120), sum = tail.reduce((a, b) => a + b, 0)
         const s = useShowroom.getState()
@@ -72,7 +73,9 @@ export function PerfHud() {
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(raf)
+    const onVis = () => { last = performance.now() } // na volta da aba, recomeça a contar daqui
+    document.addEventListener('visibilitychange', onVis)
+    return () => { cancelAnimationFrame(raf); document.removeEventListener('visibilitychange', onVis) }
   }, [])
 
   const run = async () => {

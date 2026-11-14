@@ -160,7 +160,7 @@ export function Sirene({ interactive = false, sounding, waves = [5, 1.9] }: Devi
   useEffect(() => { if (clicPhase === 0) beep('click') }, [clicPhase])
 
   const isOn = () => (sounding ? sounding() : interactive && useShowroom.getState().sirenOn)
-  const sampleLed = (t: number, o: { color: string; on: number }) => { const on = isOn(); o.color = on ? '#ff2a2a' : '#2f6dff'; o.on = on ? (t % 0.3 < 0.15 ? 1 : 0) : 1 } // aceso em cheio, como o do módulo (meio aceso vira só um fundo azul)
+  const sampleLed = (t: number, o: { color: string; on: number }) => { const on = isOn(); o.color = on ? '#ff2a2a' : '#0f5bff'; o.on = on ? (t % 0.3 < 0.15 ? 1 : 0) : 1 } // aceso em cheio, como o do módulo (meio aceso vira só um fundo azul)
   const level = () => (isOn() ? (interactive ? useShowroom.getState().sirenLevel : 2) : 0)
 
   useFrame(({ clock }) => {
@@ -208,8 +208,8 @@ export function Sirene({ interactive = false, sounding, waves = [5, 1.9] }: Devi
         <ClickablePart id="led">
           <group position={[0, LED_Y, FACE_Z]}>
             <mesh geometry={slit} material={M.white} position={[0, 0, -0.0035]} scale={[1.16, 1.4, 1]} />
-            {/* o LED: igual ao do módulo, o mesmo ponto de luz sobre o plástico branco (sem janela escura nem lente) */}
-            <Led on="shell" sample={sampleLed} boost={9} baseColor="#14161b" position={[0, 0, 0.0008]}><circleGeometry args={[2.24 / 64, 24]} /></Led>
+            {/* o LED: a lentezinha inteira acende em azul vivo (cor pura, sem clarear para o branco); vermelho ao tocar */}
+            <Led on="shell" sample={sampleLed} boost={2.4} core={0} baseColor="#14161b" geometry={slit} position={[0, 0, 0.0008]} scale={[0.92, 0.92, 0.6]} />
           </group>
         </ClickablePart>
 

@@ -266,11 +266,10 @@ export const DEVICES: Device[] = [
       {
         id: 'pir',
         name: 'Lente PIR',
-        what: 'Sensor infravermelho de movimento.',
-        facts: ['Campo de 90°', 'Alcance de 8 a 10 m', 'Pet Immune: ignora animais pequenos', 'Sensibilidade ajustável'],
+        what: 'A lente da frente: divide a área em faixas e leva o calor de quem se move até o sensor PIR, lá dentro. É ela que define o campo e o alcance.',
+        facts: ['Campo de 90°', 'Alcance de 8 a 10 m', 'Pet Immune: ignora animais pequenos'],
         camera: { position: [0.7, -0.3, 2.2], target: [0, -0.48, 0.3] },
         action: 'pir',
-        more: ['sensibilidade'],
         explode: [0, 0.22, 1.05],
       },
       {
@@ -343,8 +342,8 @@ export const DEVICES: Device[] = [
       {
         id: 'sensor-pir',
         name: 'Sensor PIR',
-        what: 'Cilindro metálico na placa principal, atrás da lente PIR. Se alguém mexe no fotossensor depois de instalado, ele avisa sabotagem no aplicativo. Abrir a tampa das pilhas não dispara nada.',
-        facts: ['Sistema anti-sabotagem'],
+        what: 'O sensor em si: cilindro metálico na placa principal, atrás da lente, que percebe o calor do corpo em movimento. A sensibilidade é ajustada nele. Se alguém mexe no fotossensor depois de instalado, ele avisa sabotagem no aplicativo; abrir a tampa das pilhas não dispara nada.',
+        facts: ['Sensibilidade ajustável', 'Sistema anti-sabotagem'],
         camera: { position: [0.8, -0.3, 2.0], target: [0, -0.55, 0.15] },
         action: 'sabotagem',
         more: ['sensibilidade'],
