@@ -153,7 +153,9 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
   // LED: azul fraco em repouso; quando a porta abre (ou a batida dispara), pisca em azul forte
   const sampleLed = (t: number, o: { color: string; on: number }) => {
     const on = interactive ? alarmOn() : (open?.() ?? 0) > 0.08
-    o.color = '#3d7bff'; o.on = on ? (t % 0.4 < 0.2 ? 1 : 0) : 0 // apagado em repouso; pisca forte ao detectar
+    // apagado em repouso; pisca forte ao detectar. Com a parte LED aberta no card, fica aceso para ver a luz
+    const shown = interactive && useShowroom.getState().part === 'led' && useShowroom.getState().device === 'magnetico'
+    o.color = '#3d7bff'; o.on = on ? (t % 0.4 < 0.2 ? 1 : 0) : shown ? 1 : 0
   }
 
   return (
@@ -205,7 +207,7 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
               <group rotation={DEITA}>
                 <mesh geometry={slit} material={M.blackGloss} position={[BODY.x, LED_Y, FRONT - 0.007]} />
                 {/* o LED em si: ponto pequeno e forte no meio da janela (como o do módulo); a janela fica escura */}
-                <Led on="shell" sample={sampleLed} boost={12} spread={2.4} baseColor="#14161b" position={[BODY.x, LED_Y, FRONT + 0.0035]}><circleGeometry args={[0.03, 24]} /></Led>
+                <Led on="shell" sample={sampleLed} boost={9} baseColor="#14161b" position={[BODY.x, LED_Y, FRONT + 0.0035]}><circleGeometry args={[2.24 / 49.5, 24]} /></Led>
               </group>
             </ClickablePart>
             {/* placa eletrônica: comprida e estreita (~74 × 19 mm). Numa ponta, o borne preto de 2 parafusos, no canto; da

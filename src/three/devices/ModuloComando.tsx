@@ -524,7 +524,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
               <group position={[0, -0.008, CAPSULE_Z]}>
                 <group ref={pressB} {...hold}>
                   {/* LED: ponto pequeno e forte no centro da tecla (escuro quando apagado) */}
-                  <Led on="shell" sample={sampleLed} boost={9} baseColor="#14161b" position={[0, 0.0152, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.028, 24]} /></Led>
+                  <Led on="shell" sample={sampleLed} boost={9} baseColor="#14161b" position={[0, 0.0152, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[2.24 / 80, 24]} /></Led>
                 </group>
               </group>
             </group>
