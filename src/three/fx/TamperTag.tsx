@@ -15,7 +15,7 @@ export function TamperTag({ id, openAt = 0.5, position }: { id: ActionId; openAt
     <group position={position}>
       <Html center style={{ pointerEvents: 'none' }}>
         <div className={`fx-tag rounded-full px-4 py-1.5 text-sm font-bold text-white ${phase === 0 ? 'bg-alert' : 'bg-black/75'}`}>
-          {phase === 0 ? 'Tamper aberto: o pino subiu e o sistema avisa' : 'Tamper fechado: a tampa aperta o pino'}
+          {phase === 0 ? 'Tamper aberto: a alavanca saiu e o sistema avisa' : 'Tamper fechado: a alavanca está escondida'}
         </div>
       </Html>
     </group>

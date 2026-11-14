@@ -27,8 +27,6 @@ const TILT = 0 // o topo não é rampa: fica paralelo à base
 const CAPSULE_Z = 0.63 // a cápsula do LED/190 fica na frente, rente à borda do topo plano
 const PCB_Y = -0.08 // topo da placa
 // borda da placa onde o cabo da bateria sobe (referência do grupo do plugue, que desliza ao desplugar)
-// topo do pino do anti-sabotagem com a tampa fechada: logo abaixo do teto de dentro da cúpula (antes do achatamento)
-const TAMPER_TOP = 0.3
 const BAT_PIVOT: [number, number, number] = [0.7625, PCB_Y + 0.03, 0.1725]
 const VIAS_TO: [number, number, number][] = [[-1.5, 1.9, -0.6], [0, 2.3, -0.9], [1.5, 1.9, -0.6]]
 const VIAS_FROM: [number, number, number] = [0, 0.2, 0]
@@ -350,8 +348,6 @@ function build() {
     netCable: roundWire([[0, 0, -0.08], [0, -0.03, -0.45], [-0.02, -0.06, -0.9], [-0.1, -0.08, -1.7]], 0.03),
     powCable: roundWire([[0, 0, -0.22], [0, -0.03, -0.45], [0.03, -0.06, -0.8], [0.16, -0.08, -1.5]], 0.024),
     // os 8 contatos dourados na ponta do RJ45, em cima, e os frisos de pegada do plugue da fonte
-    // mola do anti-sabotagem em volta do pino, da chave até ~1/3 da altura
-    tamperSpring: wire(Array.from({ length: 97 }, (_, i) => { const a = i / 96 * Math.PI * 2 * 7; return [-0.45 + Math.cos(a) * 0.026, PCB_Y + 0.045 + (i / 96) * 0.13, 0.03 + Math.sin(a) * 0.026] as [number, number, number] }), 0.004),
     rjRibs: mergeGeometries([-0.13, -0.155, -0.18, -0.205].map((z, i) => { const t = new THREE.TorusGeometry(0.058 - i * 0.004, 0.006, 6, 24); t.translate(0, -0.01, z); return t })),
     rjPins: boxesGeometry(Array.from({ length: 8 }, (_, i) => [-0.0525 + i * 0.015, 0.052, 0.07, 0.008, 0.016, 0.055] as Block)),
     powRibs: mergeGeometries([-0.04, -0.07, -0.1, -0.13].map((z) => { const t = new THREE.TorusGeometry(0.049, 0.005, 6, 24); t.translate(0, 0, z); return t })),
@@ -483,8 +479,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
     const td = actionTau('desplugar-bateria')
     const tt = actionTau('tamper-modulo')
     const up = Math.max(to < 0 ? 0 : seg(to, 2.1, 3.1), td < 0 ? 0 : seg(td, 0.1, 1.0), tt < 0 ? 0 : seg(tt, 0.1, 1.0))
-    // anti-sabotagem: a cúpula fechada empurra o pino para baixo; quando ela sobe, a mola devolve o pino (~3 mm)
-    tPin.current.position.y = Math.min(1, up * 8) * 0.06
+    // anti-sabotagem: a cúpula fechada mantém a alavanquinha escondida na chave; quando ela sobe, a alavanca sai (~2,5 mm)
+    tPin.current.position.y = Math.min(1, up * 8) * 0.05
     const pull = td < 0 ? 0 : seg(td, 1.3, 1.9)
     // o plugue sai do conector deslizando na direção dos fios (o conector branco fica soldado na placa)
     batPlug.current.position.set(pull * 0.012, 0, pull * 0.075)
@@ -631,13 +627,11 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         {/* anti-sabotagem: micro-chave preta com o pino para cima, à esquerda, logo atrás da placa do Wi-Fi; a tampa a mantém
             apertada */}
         <ClickablePart id="tamper">
-          {/* chave preta na placa, a mola em volta e o pino, que sobe até o teto da cúpula (no CAD não há nada descendo
-              do teto: a própria chave alcança a tampa) */}
+          {/* chave preta pequena na placa, com a alavanquinha preta (~2,5 mm): com a tampa fechada ela fica escondida
+              dentro da carcaça da chave; aberta, ela sai */}
           <mesh material={M.chip} position={[-0.45, PCB_Y + 0.02, 0.03]}><boxGeometry args={[0.09, 0.04, 0.07]} /></mesh>
-          <mesh geometry={g.tamperSpring} material={M.metal} />
           <group ref={tPin}>
-            <mesh material={M.white} position={[-0.45, (PCB_Y + 0.04 + TAMPER_TOP) / 2, 0.03]}><cylinderGeometry args={[0.014, 0.014, TAMPER_TOP - PCB_Y - 0.04, 12]} /></mesh>
-            <mesh material={M.white} position={[-0.45, TAMPER_TOP, 0.03]}><sphereGeometry args={[0.016, 12, 8]} /></mesh>
+            <mesh material={M.chip} position={[-0.45, PCB_Y + 0.012, 0.03]}><boxGeometry args={[0.022, 0.05, 0.012]} /></mesh>
           </group>
         </ClickablePart>
         {/* botão de reset: embaixo da placa, sobre o furo do fundo (base preta e botão azul, como na foto da placa) */}

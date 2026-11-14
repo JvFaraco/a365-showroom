@@ -189,8 +189,8 @@ export function Sirene({ interactive = false, sounding, waves = [5, 1.9] }: Devi
     batt.current.position.set(0, out * 0.1, -out * 0.55)
     // tamper: pressionado pelo suporte; solta quando a sirene se desprende dele
     const free = clamp01(Math.max(away * 5, explodeAmt.v * 4))
-    // o botão da micro-chave: apertado pelo suporte; solto, sobe ~1 mm
-    lever.current.position.z = -free * 0.016
+    // a alavanquinha da chave: escondida com a sirene no suporte; solta, sai ~2,5 mm
+    lever.current.position.z = -free * (2.5 / 64)
   })
 
   return (
@@ -257,7 +257,8 @@ export function Sirene({ interactive = false, sounding, waves = [5, 1.9] }: Devi
           <mesh material={M.pcb} position={[TAMPER[0], TAMPER[1] + 0.04, BACK - 0.008]}><boxGeometry args={[15 / 64, 20 / 64, 0.014]} /></mesh>
           <mesh material={M.chip} position={[TAMPER[0], TAMPER[1], BACK - 0.03]}><boxGeometry args={[6 / 64, 6 / 64, 0.035]} /></mesh>
           <group ref={lever}>
-            <mesh material={M.greyDark} position={[TAMPER[0], TAMPER[1], BACK - 0.052]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.02, 0.02, 0.016, 12]} /></mesh>
+            {/* alavanquinha preta (~2,5 mm): com a sirene no suporte, fica escondida na carcaça da chave; fora, ela sai */}
+            <mesh material={M.chip} position={[TAMPER[0], TAMPER[1], BACK - 0.03]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.013, 0.013, 2.5 / 64, 10]} /></mesh>
           </group>
           {/* conector branco da bateria, no topo da plaquinha, com os fios vermelho e preto */}
           <group ref={plugRef}>

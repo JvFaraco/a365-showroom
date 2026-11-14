@@ -155,7 +155,7 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
     const ts = interactive ? actionTau('tamper-mag') : -1
     const sep = ts < 0 ? 0 : seg(ts, 0.1, 1.0)
     baseRef.current.position.z = -sep * 0.32
-    tPin.current.position.z = -Math.min(1, sep * 6) * 0.02
+    tPin.current.position.z = -Math.min(1, sep * 6) * mm(2.5)
   })
 
   // LED: azul fraco em repouso; quando a porta abre (ou a batida dispara), pisca em azul forte
@@ -238,9 +238,10 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
             <ClickablePart id="tamper">
               <group rotation={DEITA}>
                 <mesh material={M.chip} position={[BODY.x, mm(39), PCB.z - 0.011 - 0.012]}><boxGeometry args={[mm(6), mm(6), 0.024]} /></mesh>
-                {/* pino de mola da chave: o pino da base o mantém apertado; separada a base, ele sobe (~1 mm) */}
+                {/* alavanquinha preta da chave (~2,5 mm): o pino da base a mantém escondida dentro da carcaça; separada a
+                    base, ela sai */}
                 <group ref={tPin}>
-                  <mesh material={M.greyDark} position={[BODY.x, mm(39), PCB.z - 0.011 - 0.024 - 0.01]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(1.3), mm(1.3), 0.02, 12]} /></mesh>
+                  <mesh material={M.chip} position={[BODY.x, mm(39), PCB.z - 0.011 - 0.024 + mm(1.25)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(0.8), mm(0.8), mm(2.5), 10]} /></mesh>
                 </group>
               </group>
             </ClickablePart>
