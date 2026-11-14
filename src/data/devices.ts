@@ -83,7 +83,7 @@ export const DEVICES: Device[] = [
         id: 'led',
         name: 'LED de status',
         what: 'Ponto de luz no centro do botão, em cima do módulo. Mostra o estado do sistema por cores.',
-        facts: ['Azul = desarmado', 'Vermelho = armado', 'Laranja = armado parcial', 'E outros estados (veja em ação)'],
+        facts: ['Azul = desarmado', 'Vermelho = armado', 'Laranja = armado ficar ou parcial', 'E outros estados (veja em ação)'],
         camera: { position: [-0.55, 1.15, 1.95], target: [0, 0.07, 0.62] },
         action: 'led',
         explode: [0, 1.4, 0],
@@ -100,7 +100,7 @@ export const DEVICES: Device[] = [
       {
         id: 'base',
         name: 'Base cinza',
-        what: 'Fundo do módulo. Reúne a grade do alto-falante, o bolsão dos cabos, aberto na borda de trás, por onde entram o cabo de rede e a fonte, a etiqueta de identificação e os pés de apoio.',
+        what: 'Fundo do módulo. Reúne a grade do alto-falante, o bolsão dos cabos, aberto na borda de trás, por onde entram o cabo de rede e a fonte, o rebaixo da etiqueta e os pés de apoio.',
         facts: [],
         camera: { position: [2.0, -1.4, 1.9], target: [0, -0.3, 0] },
       },
