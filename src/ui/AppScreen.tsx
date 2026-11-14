@@ -11,7 +11,8 @@ const ARM: { id: ArmState; label: string; Icon: typeof LockOpen }[] = [
   { id: 'partial', label: 'Armado parcial', Icon: HomePerson },
 ]
 const ARM_TEXT: Record<ArmState, string> = { disarmed: 'Todos os sensores estão desarmados.', armed: 'Todos os sensores estão ativos.', partial: 'Só o perímetro está ativo.' }
-const TABS = [['Início', Home], ['Alarmes', LockClosed], ['Equipamentos', Nodes], ['Contatos', Contacts], ['Eventos', AlertCircle]] as const
+// abas como no app de hoje (a arte antiga dizia Alarmes/Eventos)
+const TABS = [['Início', Home], ['Comandos', LockClosed], ['Equipamentos', Nodes], ['Contatos', Contacts], ['Histórico', AlertCircle]] as const
 
 // como no app: tema escuro, nome de cada seção por fora e cartões cinza-escuros; amarelo da marca na aba atual e nos
 // botões de ação, azul no estado do alarme
@@ -19,6 +20,7 @@ const BG = 'bg-[#151618]'
 const LABEL = 'px-1 pb-1 text-[11px] text-white/75'
 const CARD = 'rounded-xl bg-[#26272b] p-3'
 const ARM_BLUE = '#4d8dff'
+type Ev = { Icon: typeof LockOpen; color: string; text: string; who: string; when: string }
 
 /** Topo do app: perfil à esquerda, logo Orsegups no meio e o sino (com o ponto de aviso) à direita. */
 function AppTop() {
@@ -107,13 +109,22 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
     return () => clearTimeout(t)
   }, [photo])
 
-  const events = [
-    arm === 'disarmed'
-      ? { Icon: LockOpen, color: ARM_BLUE, text: 'Desarme' }
-      : { Icon: LockClosed, color: '#ff5a5a', text: arm === 'armed' ? 'Arme' : 'Arme parcial' },
-    { Icon: Speaker, color: '#ff5a5a', text: 'Disparo' },
-    { Icon: Shield, color: '#ffa53a', text: 'Alerta' },
-  ]
+  // eventos com os nomes e ícones do Histórico do app: nome do evento, quem fez (pessoa ou aparelho) e a hora.
+  // Sem nome de pessoa: quem usou o app aparece como "Você"
+  const armEv: Ev = arm === 'disarmed'
+    ? { Icon: LockOpen, color: ARM_BLUE, text: 'Desarme', who: 'Você', when: 'hoje às 07:50' }
+    : { Icon: LockClosed, color: '#ff5a5a', text: arm === 'armed' ? 'Arme' : 'Arme Parcial', who: 'Você', when: 'hoje às 07:50' }
+  const events: Ev[] = iaStep >= 2
+    ? [ // na cena "Em ação", a sequência de um disparo: disparo pelo magnético, depois a imagem do fotossensor
+        ...(iaStep >= 4 ? [{ Icon: Shield, color: 'rgba(255,255,255,.7)', text: 'Imagem', who: 'Sala de estar', when: 'agora' }] : []),
+        { Icon: Speaker, color: '#ff5a5a', text: 'Disparo', who: 'Porta de entrada', when: 'agora' },
+        { Icon: LockClosed, color: '#ff5a5a', text: 'Arme', who: 'Controle remoto', when: 'agora' },
+      ].slice(0, 3)
+    : [
+        armEv,
+        { Icon: Shield, color: 'rgba(255,255,255,.7)', text: 'Imagem', who: 'Você', when: 'ontem às 20:28' },
+        { Icon: Speaker, color: '#ff5a5a', text: 'Disparo', who: 'Porta de entrada', when: 'ontem às 07:30' },
+      ]
 
   return (
     <div className={`relative flex h-[688px] w-[320px] select-none flex-col overflow-hidden rounded-[34px] ${BG} font-body text-white`} lang="pt-BR">
@@ -197,8 +208,8 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
             <img src={aiPhotoDataUrl(photo === 'done')} alt="Foto do fotossensor" width={480} height={360} className="h-full w-full object-cover" draggable={false} />
             {/* etiqueta da foto, no canto, escura como no app: de qual aparelho e quando */}
             <div className="absolute left-1.5 top-1.5 rounded-md bg-[#1d1e21]/90 px-1.5 py-0.5 leading-tight">
-              <div className="text-[10px] text-white">Fotossensor</div>
-              <div className="text-[8px] text-white/60">{photo === 'done' ? 'agora' : 'hoje'}</div>
+              <div className="text-[10px] text-white">Sala de estar</div>
+              <div className="text-[8px] text-white/60">{photo === 'done' ? 'agora' : 'hoje às 07:31'}</div>
             </div>
             {photo === 'loading' && (
               <div className="absolute inset-0 grid place-items-center bg-black/60 text-white">
@@ -221,11 +232,10 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
         <Region id="ultimos-eventos" interactive={interactive}>
           <div className={LABEL}>Últimos eventos</div>
           <div className={`${CARD} !py-1.5`}>
-            {events.map(({ Icon, color, text }, i) => (
-              <div key={i} className="flex items-center gap-2 border-b border-white/10 py-1 text-[11.5px] last:border-0">
-                <span style={{ color }}><Icon size={15} /></span>
-                <span className="flex-1 text-white/90">{text}</span>
-                <span className="text-[9.5px] text-white/45">hoje</span>
+            {events.map(({ Icon, color, text, who, when }, i) => (
+              <div key={i} className="flex items-center gap-2.5 border-b border-white/10 py-1 last:border-0">
+                <span className="w-5 shrink-0" style={{ color }}><Icon size={16} /></span>
+                <span className="flex-1 leading-tight"><span className="block text-[11.5px] text-white/90">{text}</span><span className="text-[9px] text-white/50">{who} · {when}</span></span>
               </div>
             ))}
           </div>
@@ -264,8 +274,7 @@ export function SabotageScreen({ scale = 0.6 }: { scale?: number }) {
           <div className={`${CARD} flex items-center gap-2 !py-2 text-[12px]`}
             style={{ animation: 'screen-in 0.5s 2.0s cubic-bezier(.16,.84,.3,1) both' }}>
             <span className="text-[#ff5a5a]"><Shield size={16} /></span>
-            <span className="flex-1 leading-tight"><span className="block text-[#ff5a5a]">Sabotagem</span><span className="text-[10.5px] text-white/55">Fotossensor · Sala de estar</span></span>
-            <span className="text-[10.5px] text-white/45">agora</span>
+            <span className="flex-1 leading-tight"><span className="block text-[#ff5a5a]">Sabotagem</span><span className="text-[10.5px] text-white/55">Sala de estar · agora</span></span>
           </div>
         </div>
         <AppNav active={4} />

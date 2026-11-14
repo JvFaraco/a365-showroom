@@ -705,15 +705,15 @@ export const DEVICES: Device[] = [
       {
         id: 'ultimos-eventos',
         name: 'Últimos eventos',
-        what: 'Histórico com ícones.',
-        facts: ['Cadeado vermelho: arme', 'Cadeado azul: desarme', 'Alto-falante vermelho: disparo', 'Escudo com "!": alerta'],
+        what: 'Os eventos mais recentes, como no Histórico: o nome do evento, quem fez (a pessoa ou o aparelho) e quando.',
+        facts: ['Cadeado azul: desarme', 'Cadeado vermelho: arme e arme parcial', 'Alto-falante vermelho: disparo', 'Escudo com "!": imagem e avisos, como falha de energia'],
         camera: { position: [0.20, -0.45, 2.50], target: [0, -0.48, 0.05] },
       },
       {
         id: 'menu',
         name: 'Menu inferior',
         what: 'Navegação do aplicativo.',
-        facts: ['5 abas: Início, Alarmes, Equipamentos, Contatos e Eventos'],
+        facts: ['5 abas: Início, Comandos, Equipamentos, Contatos e Histórico'],
         camera: { position: [0.20, -0.85, 2.40], target: [0, -0.84, 0.05] },
       },
     ],
