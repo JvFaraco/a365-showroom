@@ -27,7 +27,7 @@ export const ACTIONS: Record<ActionId, {
   'bateria-modulo': { label: 'Tirar da tomada', duration: 9, camera: { position: [2.6, 1.3, 3.0], target: [0.4, 0, 0] } },
   pir: { label: 'Ver o campo de detecção', duration: 14, camera: { position: [5.6, 4.4, 7.4], target: [0.6, -0.5, 1.8] } },
   camera: { label: 'Tirar uma foto', duration: 7, camera: { position: [1.7, 0.8, 4.2], target: [0.45, 0.3, 0.3] } },
-  suporte: { label: 'Mover o suporte', duration: 8, camera: { position: [-1.8, 0.6, -4.8], target: [0, -0.2, -0.3] } },
+  suporte: { label: 'Girar o sensor', duration: 8, camera: { position: [1.4, 1.1, 5.0], target: [0, -0.1, 0] } },
   'tampa-foto': { label: 'Trocar as pilhas', duration: 9, camera: { position: [1.5, 0.5, 5.6], target: [0, -0.1, 0.4] } },
   ima: { label: 'Abrir a porta', duration: 7, camera: { position: [-1.1, 0.7, 7.2], target: [-0.6, -0.2, 0] }, radius: 2.4 },
   choque: { label: 'Testar uma batida', camera: { position: [-1.1, 0.7, 7.2], target: [-0.6, -0.2, 0] }, radius: 2.4 },

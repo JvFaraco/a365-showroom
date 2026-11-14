@@ -264,7 +264,7 @@ export const DEVICES: Device[] = [
       {
         id: 'suporte',
         name: 'Suporte de parede',
-        what: 'Faz parte da base: sobe pela traseira e tem o encaixe em "Λ" onde entra a peça de fixação da parede. É articulado: vai para os lados, com o sensor parado.',
+        what: 'Faz parte da base: sobe pela traseira e tem o encaixe em "Λ" onde entra a peça de fixação da parede. Fica parado; o sensor gira sobre ele para a esquerda e para a direita, sempre em pé, para apontar para a área.',
         facts: ['Altura de instalação: 2,10 m a 2,40 m do chão'],
         tip: 'Instale no canto, entre 2,10 m e 2,40 m do chão, apontando para o centro da área.',
         camera: { position: [1.5, -0.2, -2.2], target: [0, -0.6, -0.6] },
