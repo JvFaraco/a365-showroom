@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { getPart } from '../data/devices'
 import { useShowroom, type ArmState } from '../store/showroomStore'
 import { aiPhotoDataUrl } from '../three/common/textures'
+import { PH } from '../data/inAction'
 import { AlertCircle, Bell, Chevron, CircleX, Contacts, Home, HomePerson, LockClosed, LockOpen, Nodes, OrsegupsLogo, Shield, Speaker, User } from './icons'
 import { beep } from './audio'
 
@@ -175,9 +176,11 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
   const armState = useShowroom((s) => s.armState)
   const pending = useShowroom((s) => (s.scene === 'inaction' ? null : s.armPending))
   const photo = useShowroom((s) => s.appPhoto)
-  // na cena "Em ação" o celular acompanha o disparo: alarme armado, o aviso do disparo e, por fim, a tela "Imagem"
-  const iaStep = useShowroom((s) => (s.scene === 'inaction' ? s.iaStep : -1))
-  const arm: ArmState = iaStep >= 0 ? 'armed' : armState
+  // na cena "Em ação" o celular acompanha o disparo, nos marcos da cena: desarmado, armado pelo controle, o aviso
+  // "Disparo do sensor" (logo que a porta abre) e, por fim, a tela "Imagem" com a foto do disparo
+  const iaPhase = useShowroom((s) => (s.scene === 'inaction' ? s.iaPhase : -1))
+  const inAction = iaPhase >= 0
+  const arm: ArmState = inAction ? (iaPhase >= PH.armed ? 'armed' : 'disarmed') : armState
   const action = useShowroom((s) => (interactive ? s.action?.id : undefined))
   const canArm = action === 'alarme-geral'
   const [notif, setNotif] = useState(false)
@@ -194,11 +197,12 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
   const armEv: Ev = arm === 'disarmed'
     ? { Icon: LockOpen, color: ARM_BLUE, text: 'Desarme', who: 'Você', when: 'hoje às 07:50' }
     : { Icon: LockClosed, color: '#ff5a5a', text: arm === 'armed' ? 'Arme' : 'Arme Parcial', who: 'Você', when: 'hoje às 07:50' }
-  const events: Ev[] = iaStep >= 2
-    ? [ // na cena "Em ação", a sequência de um disparo: disparo pelo magnético, depois a imagem do fotossensor
-        ...(iaStep >= 4 ? [{ Icon: Shield, color: 'rgba(255,255,255,.7)', text: 'Imagem', who: 'Sala de estar', when: 'agora' }] : []),
-        { Icon: Speaker, color: '#ff5a5a', text: 'Disparo', who: 'Porta de entrada', when: 'agora' },
+  const events: Ev[] = iaPhase >= PH.armed
+    ? [ // na cena "Em ação", a sequência de um disparo: o arme pelo controle, o disparo pelo magnético e a imagem
+        ...(iaPhase >= PH.image ? [{ Icon: Shield, color: 'rgba(255,255,255,.7)', text: 'Imagem', who: 'Sala de estar', when: 'agora' }] : []),
+        ...(iaPhase >= PH.alarm ? [{ Icon: Speaker, color: '#ff5a5a', text: 'Disparo', who: 'Porta de entrada', when: 'agora' }] : []),
         { Icon: LockClosed, color: '#ff5a5a', text: 'Arme', who: 'Controle remoto', when: 'agora' },
+        { Icon: LockOpen, color: ARM_BLUE, text: 'Desarme', who: 'Você', when: 'hoje às 07:50' },
       ].slice(0, 3)
     : [
         armEv,
@@ -211,14 +215,14 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
       {/* reflexo do vidro por cima da interface */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-10" style={{ background: 'linear-gradient(118deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.07) 44%, rgba(255,255,255,0) 52%)' }} />
       {/* aviso do disparo, como a notificação do app: aparece quando a sirene toca */}
-      {iaStep === 3 && (
+      {iaPhase >= PH.alarm && iaPhase < PH.image && (
         <div className="absolute inset-x-2 top-8 z-[6] flex items-center gap-2 rounded-2xl bg-[#e03131] px-3 py-2 text-white shadow-lg">
           <Bell size={18} />
           <div className="leading-tight"><div className="text-[12px] font-bold">Disparo do sensor</div><div className="text-[10.5px] opacity-90">Porta de entrada</div></div>
         </div>
       )}
       {/* tela "Imagem" (escura), como no app: a foto do fotossensor com a pessoa marcada */}
-      {iaStep >= 4 && (
+      {iaPhase >= PH.image && (
         <div className="absolute inset-0 z-[5] flex flex-col bg-[#0b0c10] text-white">
           <StatusBar />
           <div className="flex items-center gap-4 px-5 pt-5 text-[15px]"><span className="text-xl leading-none">‹</span><span className="flex-1">Imagem</span><span>⋮</span></div>
@@ -282,11 +286,12 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
         <Region id="ultimas-imagens" interactive={interactive}>
           <div className={LABEL}>Últimas imagens</div>
           <div className="relative h-[150px] overflow-hidden rounded-xl bg-[#26272b]">
-            <img src={aiPhotoDataUrl(photo === 'done')} alt="Foto do fotossensor" width={480} height={360} className="h-full w-full object-cover" draggable={false} />
+            {/* na cena "Em ação", antes do disparo a última imagem é a sala vazia (de manhã); depois chega a do disparo */}
+            <img src={inAction ? (iaPhase >= PH.image ? aiPhotoDataUrl(true) : aiPhotoDataUrl(false, true)) : aiPhotoDataUrl(photo === 'done')} alt="Foto do fotossensor" width={480} height={360} className="h-full w-full object-cover" draggable={false} />
             {/* etiqueta da foto, no canto, escura como no app: de qual aparelho e quando */}
             <div className="absolute left-1.5 top-1.5 rounded-md bg-[#1d1e21]/90 px-1.5 py-0.5 leading-tight">
               <div className="text-[10px] text-white">Sala de estar</div>
-              <div className="text-[8px] text-white/60">{photo === 'done' ? 'agora' : 'hoje às 07:31'}</div>
+              <div className="text-[8px] text-white/60">{photo === 'done' || iaPhase >= PH.image ? 'agora' : 'hoje às 07:31'}</div>
             </div>
             {photo === 'loading' && (
               <div className="absolute inset-0 grid place-items-center bg-black/60 text-white">

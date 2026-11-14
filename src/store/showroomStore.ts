@@ -39,6 +39,8 @@ type State = {
   appPhoto: 'idle' | 'loading' | 'done'
   iaPlaying: boolean
   iaStep: number // passo atual da cena "Em ação" (o tempo corre em `ia.t`, fora do React)
+  iaPhase: number // marcos finos da cena (IA_PHASES): o celular e as etiquetas mudam só neles
+  iaSiren: boolean // a sirene da cena está tocando (liga o som)
   presenter: boolean
   sound: boolean
   /** 0 completo · 1 DPR mínimo · 2 sem AO · 3 sem reflexo nem SMAA/vinheta */
@@ -88,6 +90,8 @@ export const useShowroom = create<State>((set, get) => ({
   sirenLevel: 2,
   iaPlaying: false,
   iaStep: 0,
+  iaPhase: 0,
+  iaSiren: false,
   shockLevel: 3,
   pirLevel: 2,
   presenter: false,
@@ -101,7 +105,7 @@ export const useShowroom = create<State>((set, get) => ({
   resetTick: 0,
 
   set: (p) => { if ('action' in p || 'part' in p) holdRef.v = 0; set(p) },
-  setScene: (scene) => { ia.t = 0; holdRef.v = 0; set({ scene, part: null, hovered: null, tour: false, view: 'normal', iaPlaying: false, iaStep: 0, ...clean }) },
+  setScene: (scene) => { ia.t = 0; holdRef.v = 0; set({ scene, part: null, hovered: null, tour: false, view: 'normal', iaPlaying: false, iaStep: 0, iaPhase: 0, iaSiren: false, ...clean }) },
   setDevice: (device, part = null) => {
     set({ scene: 'showroom', device, part: null, hovered: null, view: 'normal', ...clean })
     if (part) get().selectPart(part)
