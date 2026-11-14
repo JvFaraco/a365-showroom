@@ -420,7 +420,7 @@ export const DEVICES: Device[] = [
       {
         id: 'choque',
         name: 'Sensor de choque',
-        what: 'Detector de vibração com níveis de sensibilidade.',
+        what: 'Detector de vibração com níveis de sensibilidade (alta, média, baixa e baixíssima). Pode ser desligado.',
         facts: ['Identifica a tentativa de arrombamento antes de a porta abrir'],
         camera: { position: [-0.5, 0.5, 2.2], target: [-0.28, -0.23, 0] },
         internal: true,

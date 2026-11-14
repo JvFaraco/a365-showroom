@@ -308,7 +308,7 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
           {knock && (
             <Html key={knock.t0} position={[1.0, -0.75, 0.2]} center style={{ pointerEvents: 'none' }}>
               <div className={`fx-tag rounded-full px-4 py-1.5 text-sm font-bold text-white ${knock.fired ? 'bg-alert' : 'bg-black/70'}`}>
-                {knock.fired ? 'Disparou antes de a porta abrir' : 'Vibração abaixo do nível: não dispara'}
+                {knock.fired ? 'Disparou antes de a porta abrir' : useShowroom.getState().shockLevel === 0 ? 'Sensor de choque desligado: não dispara' : 'Vibração abaixo do nível: não dispara'}
               </div>
             </Html>
           )}

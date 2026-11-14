@@ -110,8 +110,8 @@ function build() {
   // miolo: o disco central fixo também tem a face de baixo
   const hubBack = new THREE.CircleGeometry(0.27, 48); hubBack.rotateY(Math.PI); hubBack.translate(0, KY, SH.face - 0.025)
   // teclado de borracha: lâmina atrás da face, com um pino embaixo de cada tecla (aperta o domo dourado da placa)
-  const keypadSheet = new THREE.RingGeometry(0.2, 0.645, 64); keypadSheet.translate(0, KY, SH.face - 0.024)
-  const keypadBack = new THREE.RingGeometry(0.2, 0.645, 64); keypadBack.rotateY(Math.PI); keypadBack.translate(0, KY, SH.face - 0.034)
+  const keypadSheet = new THREE.RingGeometry(0.2, 0.69, 64) // vai até embaixo da borda da abertura: nada da placa aparece nas fendas; keypadSheet.translate(0, KY, SH.face - 0.024)
+  const keypadBack = new THREE.RingGeometry(0.2, 0.69, 64); keypadBack.rotateY(Math.PI); keypadBack.translate(0, KY, SH.face - 0.034)
   const plungers = mergeGeometries([0, 90, 180, 270].map((d) => {
     const c = new THREE.CylinderGeometry(0.045, 0.05, 0.06, 16); c.rotateX(Math.PI / 2)
     c.translate(Math.cos(d * D2R) * SW_R, KY + Math.sin(d * D2R) * SW_R, SH.face - 0.05)

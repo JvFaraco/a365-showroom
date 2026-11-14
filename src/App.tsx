@@ -79,7 +79,20 @@ const LOADERS: Record<ChunkName, () => Promise<ComponentType>> = {
 const loadChunk = (name: ChunkName) => (pending[name] ??= LOADERS[name]().then((C) => {
   chunkCache[name] = C
   useShowroom.setState((s) => ({ chunks: s.chunks + 1 }))
-}))
+}).catch(() => { delete pending[name]; reloadStale() }))
+/**
+ * Aba aberta numa versão antiga: depois de uma publicação nova, os pacotes antigos somem do servidor e a cena que ainda
+ * não tinha chegado não carrega (ficava tudo preto). Recarrega a página uma vez para pegar a versão nova.
+ */
+function reloadStale() {
+  try {
+    const last = Number(sessionStorage.getItem('stale-reload') || 0)
+    if (Date.now() - last < 60_000) return // já recarregou há pouco: não entra em laço
+    sessionStorage.setItem('stale-reload', String(Date.now()))
+  } catch { /* sem sessionStorage: recarrega assim mesmo */ }
+  window.location.reload()
+}
+if (typeof window !== 'undefined') window.addEventListener('vite:preloadError', (e) => { e.preventDefault(); reloadStale() })
 if (typeof window !== 'undefined') {
   // o pós-processamento começa a baixar junto com o resto; as duas cenas, em tempo ocioso depois da carga
   void loadChunk('PostFX')
