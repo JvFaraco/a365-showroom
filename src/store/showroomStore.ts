@@ -123,7 +123,7 @@ export const useShowroom = create<State>((set, get) => ({
   toggleView: (v) => {
     const s = get()
     const d = DEVICE_BY_ID[s.device]
-    if (v === 'xray' && !hasInternal(d)) return
+    if ((v === 'xray' || v === 'exploded') && !hasInternal(d)) return
     const view = s.view === v ? 'normal' : v
     // sair do explodido/raio-X com uma parte interna aberta volta à vista inteira
     const cur = getPart(s.device, s.part)
@@ -161,7 +161,8 @@ export const useShowroom = create<State>((set, get) => ({
   startAction: (id) => { holdRef.v = 0; set({ ...clean, sirenOn: id === 'som', action: { id, t0: now() } }) },
   // ao terminar uma ação, o aparelho continua inteiro à vista (não volta a esmaecer a carcaça de repente, o que fazia as
   // peças de dentro "atravessarem" a tampa recém-fechada); volta ao normal no próximo clique, vista ou aparelho
-  stopAction: () => { holdRef.v = 0; set({ ...clean, shownAfter: !!get().action }) },
+  // a foto pedida pelo app continua em "Últimas imagens" depois de fechar a ação
+  stopAction: () => { holdRef.v = 0; set({ ...clean, appPhoto: get().appPhoto === 'done' ? 'done' : 'idle', shownAfter: !!get().action }) },
   undoAction: () => { const a = get().action; if (a && !a.undoAt) set({ action: { ...a, undoAt: now() } }) },
   reset: () =>
     set((s) => ({

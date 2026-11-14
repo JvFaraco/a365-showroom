@@ -17,11 +17,40 @@ const TABS = [['Início', Home], ['Comandos', LockClosed], ['Equipamentos', Node
 
 // como no app: tema escuro, nome de cada seção por fora e cartões cinza-escuros; amarelo da marca na aba atual e nos
 // botões de ação, azul no estado do alarme
-const BG = 'bg-[#151618]'
+const BG = 'bg-[#191c1b]'
 const LABEL = 'px-1 pb-1 text-[11px] text-white/75'
-const CARD = 'rounded-xl bg-[#26272b] p-3'
+const CARD = 'rounded-xl bg-[#2b2d2c] p-3'
 const ARM_BLUE = '#4d8dff'
-type Ev = { Icon: typeof LockOpen; color: string; text: string; who: string; when: string }
+const RED = '#ff5a5a'
+const GREY = 'rgba(255,255,255,.7)'
+
+/**
+ * Um evento, como no Histórico do app: nome do evento (`text`), o título do aviso nas Notificações (`notif`), quem fez
+ * (pessoa ou aparelho), o dia e a hora. `thumb` põe a foto no lugar do ícone nas Notificações.
+ */
+type Ev = { Icon: typeof LockOpen; color: string; text: string; notif: string; who: string; day: 'agora' | 'hoje' | 'ontem'; time: string; thumb?: 'disparo' | 'vazia' }
+
+// linha do tempo única do app, da mais nova para a mais antiga (Notificações, Últimos eventos e Histórico de imagens
+// usam as mesmas horas): o disparo de hoje cedo, a imagem dele 1 min depois e o desarme. Sem nome de pessoa: "Você"
+const EV_DESARME: Ev = { Icon: LockOpen, color: ARM_BLUE, text: 'Desarme', notif: 'Desarme pelo aplicativo', who: 'Você', day: 'hoje', time: '07:50' }
+const EV_IMAGEM_DISPARO: Ev = { Icon: Shield, color: GREY, text: 'Imagem', notif: 'Imagem do disparo', who: 'Sala de estar', day: 'hoje', time: '07:31', thumb: 'disparo' }
+const EV_DISPARO: Ev = { Icon: Speaker, color: RED, text: 'Disparo', notif: 'Disparo do sensor', who: 'Porta de entrada', day: 'hoje', time: '07:30' }
+const EV_ONTEM: Ev[] = [
+  { Icon: LockClosed, color: RED, text: 'Arme Parcial', notif: 'Arme (Ficar) pelo aplicativo', who: 'Você', day: 'ontem', time: '23:56' },
+  { Icon: Shield, color: GREY, text: 'Imagem', notif: 'Imagem', who: 'Você', day: 'ontem', time: '20:28', thumb: 'vazia' },
+  { Icon: CircleX, color: GREY, text: 'Restauro de energia', notif: 'Restauro de energia', who: '-', day: 'ontem', time: '11:44' },
+]
+const TIMELINE: Ev[] = [EV_DESARME, EV_IMAGEM_DISPARO, EV_DISPARO, ...EV_ONTEM]
+// na cena "Em ação" o disparo acontece na hora: antes dele, a manhã foi tranquila (desarme, e a última imagem é a de
+// ontem à noite, da sala vazia)
+const TIMELINE_IA: Ev[] = [EV_DESARME, ...EV_ONTEM]
+const ARM_EV: Record<ArmState, [string, string]> = { disarmed: ['Desarme', 'Desarme'], armed: ['Arme', 'Arme'], partial: ['Arme Parcial', 'Arme (Ficar)'] }
+const dayGroup = (d: Ev['day']) => (d === 'ontem' ? 'Ontem' : 'Hoje')
+/** Comando novo, no topo da lista: pelo app ("Você") ou pelo controle remoto. */
+function armEvent(a: ArmState, who: string): Ev {
+  const [text, n] = ARM_EV[a]
+  return { Icon: a === 'disarmed' ? LockOpen : LockClosed, color: a === 'disarmed' ? ARM_BLUE : RED, text, notif: who === 'Você' ? `${n} pelo aplicativo` : n, who, day: 'agora', time: '' }
+}
 
 /** Topo do app: perfil à esquerda, logo Orsegups no meio e o sino (com o ponto de aviso) à direita; o sino abre as notificações. */
 function AppTop({ onBell }: { onBell?: () => void }) {
@@ -42,7 +71,8 @@ function AppTop({ onBell }: { onBell?: () => void }) {
  * fotos em grade, com a data embaixo. A imagem pedida entra no primeiro lugar: primeiro carregando, depois a foto.
  */
 function ImageHistory({ photo, onBack }: { photo: 'idle' | 'loading' | 'done'; onBack: () => void }) {
-  const old = ['hoje às 07:31', 'ontem às 20:26', 'ontem às 07:31', '12 nov às 15:14', '11 nov às 9:58', '11 nov às 15:17']
+  // as mesmas horas da linha do tempo (a imagem do disparo e a pedida ontem à noite); as mais antigas são ilustrativas
+  const old = ['hoje às 07:31', 'ontem às 20:28', '12 nov às 15:14', '11 nov às 15:17', '11 nov às 9:58', '10 nov às 18:02']
   const tiles = photo === 'idle' ? old : ['', ...old.slice(0, 5)]
   return (
     <div className={`absolute inset-0 z-[7] flex flex-col ${BG} text-white`}>
@@ -59,7 +89,7 @@ function ImageHistory({ photo, onBack }: { photo: 'idle' | 'loading' | 'done'; o
       </button>
       <div className="mt-3 grid grid-cols-2 gap-2 px-2">
         {tiles.map((when, i) => (
-          <div key={i} className="overflow-hidden rounded-xl bg-[#26272b]">
+          <div key={i} className="overflow-hidden rounded-xl bg-[#2b2d2c]">
             <div className="relative h-[88px]">
               {when === '' && photo === 'loading' ? (
                 <div className="grid h-full place-items-center bg-black/40">
@@ -77,15 +107,11 @@ function ImageHistory({ photo, onBack }: { photo: 'idle' | 'loading' | 'done'; o
   )
 }
 
-/** Tela "Notificações" (o sino do topo), como no app: ponto de não lida, foto ou ícone, o patrimônio, o aviso, quem e quando. */
-function Notifications({ onBack }: { onBack: () => void }) {
-  const items: { thumb?: boolean; Icon?: typeof LockOpen; title: string; who: string; when: string }[] = [
-    { thumb: true, title: 'Imagem do disparo', who: 'Sala de estar', when: 'hoje - 07:31' },
-    { Icon: LockOpen, title: 'Desarme pelo aplicativo', who: 'por Você', when: 'hoje - 07:50' },
-    { Icon: LockClosed, title: 'Arme (Ficar) pelo aplicativo', who: 'por Você', when: 'ontem - 23:56' },
-    { Icon: Speaker, title: 'Disparo do sensor', who: 'Porta de entrada', when: 'ontem - 07:30' },
-    { Icon: CircleX, title: 'Restauro de energia', who: '-', when: 'ontem - 11:44' },
-  ]
+/**
+ * Tela "Notificações" (o sino do topo), como no app: ponto de não lida, foto ou ícone, o patrimônio, o aviso, quem e
+ * quando. Os itens são a linha do tempo, da mais nova para a mais antiga, com os comandos dados agora no topo.
+ */
+function Notifications({ items, onBack }: { items: Ev[]; onBack: () => void }) {
   return (
     <div className={`absolute inset-0 z-[7] flex flex-col ${BG} text-white`}>
       <StatusBar />
@@ -94,17 +120,17 @@ function Notifications({ onBack }: { onBack: () => void }) {
         Notificações
       </div>
       <div className={`${CARD} mx-3 !p-0`}>
-        {items.map(({ thumb, Icon, title, who, when }) => (
-          <div key={title} className="relative flex gap-3 border-b border-white/10 px-3 py-2.5 last:border-0">
+        {items.map(({ thumb, Icon, notif, who, day, time }, i) => (
+          <div key={i} className="relative flex gap-3 border-b border-white/10 px-3 py-2.5 last:border-0">
             <i className="absolute left-2 top-2 z-[1] h-2 w-2 rounded-full bg-[#e03131]" />
             <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg text-white/70">
-              {thumb ? <img src={aiPhotoDataUrl(true)} alt="" width={80} height={60} className="h-full w-full object-cover" draggable={false} /> : Icon && <Icon size={20} />}
+              {thumb ? <img src={aiPhotoDataUrl(thumb === 'disparo', thumb === 'vazia')} alt="" width={80} height={60} className="h-full w-full object-cover" draggable={false} /> : <Icon size={20} />}
             </span>
             <span className="flex-1 leading-tight">
               <span className="block text-[9.5px] text-white/50">Minha casa</span>
-              <span className="block text-[12px] text-white/90">{title}</span>
-              <span className="block text-[10px] text-white/65">{who}</span>
-              <span className="mt-0.5 block text-[9.5px] text-white/50">{when}</span>
+              <span className="block text-[12px] text-white/90">{notif}</span>
+              <span className="block text-[10px] text-white/65">{who === 'Você' ? 'por Você' : who}</span>
+              <span className="mt-0.5 block text-[9.5px] text-white/50">{day === 'agora' ? 'agora' : `${day} - ${time}`}</span>
             </span>
           </div>
         ))}
@@ -119,7 +145,7 @@ function AppNav({ active = 0 }: { active?: number }) {
     <div className={`grid grid-cols-5 border-t border-white/10 ${BG} px-1 pb-3 pt-1.5`}>
       {TABS.map(([label, Icon], i) => (
         <div key={label} className={`flex flex-col items-center gap-0.5 text-[8.5px] ${i === active ? 'text-[#F9E000]' : 'text-white/70'}`}>
-          <Icon size={19} />{label}
+          <Icon size={22} />{label}
         </div>
       ))}
     </div>
@@ -136,7 +162,10 @@ function StatusBar() {
         <span>5G</span>
         <svg width="22" height="10" viewBox="0 0 22 10" aria-hidden><rect x=".5" y=".5" width="18" height="9" rx="2.6" fill="none" stroke="currentColor" opacity=".45" /><rect x="2" y="2" width="11" height="6" rx="1.4" fill="currentColor" /><rect x="19.6" y="3.2" width="1.6" height="3.6" rx=".8" fill="currentColor" opacity=".45" /></svg>
       </span>
-      <span className="absolute left-1/2 top-0 h-[22px] w-[132px] -translate-x-1/2 rounded-b-[14px] bg-black" />
+      {/* entalhe com a câmera frontal */}
+      <span className="absolute left-1/2 top-0 flex h-[22px] w-[132px] -translate-x-1/2 items-center justify-center rounded-b-[14px] bg-black">
+        <i className="ml-12 h-2 w-2 rounded-full bg-[#141a2e]" />
+      </span>
     </div>
   )
 }
@@ -195,23 +224,35 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
     return () => clearTimeout(t)
   }, [photo])
 
-  // eventos com os nomes e ícones do Histórico do app: nome do evento, quem fez (pessoa ou aparelho) e a hora.
-  // Sem nome de pessoa: quem usou o app aparece como "Você"
-  const armEv: Ev = arm === 'disarmed'
-    ? { Icon: LockOpen, color: ARM_BLUE, text: 'Desarme', who: 'Você', when: 'hoje às 07:50' }
-    : { Icon: LockClosed, color: '#ff5a5a', text: arm === 'armed' ? 'Arme' : 'Arme Parcial', who: 'Você', when: 'hoje às 07:50' }
-  const events: Ev[] = iaPhase >= PH.armed
-    ? [ // na cena "Em ação", a sequência de um disparo: o arme pelo controle, o disparo pelo magnético e a imagem
-        ...(iaPhase >= PH.image ? [{ Icon: Shield, color: 'rgba(255,255,255,.7)', text: 'Imagem', who: 'Sala de estar', when: 'agora' }] : []),
-        ...(iaPhase >= PH.alarm ? [{ Icon: Speaker, color: '#ff5a5a', text: 'Disparo', who: 'Porta de entrada', when: 'agora' }] : []),
-        { Icon: LockClosed, color: '#ff5a5a', text: 'Arme', who: 'Controle remoto', when: 'agora' },
-        { Icon: LockOpen, color: ARM_BLUE, text: 'Desarme', who: 'Você', when: 'hoje às 07:50' },
+  // cada comando novo (arme, arme parcial, desarme) entra no topo da linha do tempo com "agora", e o resto desce: pelo
+  // app (o pedido passou por armPending) é "Você"; direto pelo controle remoto, "Controle remoto". O reset limpa
+  const allPending = useShowroom((s) => s.armPending)
+  const resetTick = useShowroom((s) => s.resetTick)
+  const viaApp = useRef<ArmState | null>(null)
+  const seen = useRef({ arm: armState, tick: resetTick })
+  const [cmds, setCmds] = useState<Ev[]>([])
+  useEffect(() => { if (allPending) viaApp.current = allPending }, [allPending])
+  useEffect(() => {
+    const h = seen.current
+    if (h.tick !== resetTick) { seen.current = { arm: armState, tick: resetTick }; viaApp.current = null; setCmds([]); return }
+    if (h.arm === armState) return
+    h.arm = armState
+    const who = viaApp.current === armState ? 'Você' : 'Controle remoto'
+    viaApp.current = null
+    setCmds((c) => [armEvent(armState, who), ...c].slice(0, 5))
+  }, [armState, resetTick])
+  const timeline: Ev[] = [...cmds, ...TIMELINE]
+
+  // Últimos eventos: os 3 mais novos. Na cena "Em ação", a sequência de um disparo entra no topo: o arme pelo controle,
+  // o disparo pelo magnético e a imagem do fotossensor
+  const events: Ev[] = inAction
+    ? [
+        ...(iaPhase >= PH.image ? [{ ...EV_IMAGEM_DISPARO, day: 'agora' as const }] : []),
+        ...(iaPhase >= PH.alarm ? [{ ...EV_DISPARO, day: 'agora' as const }] : []),
+        ...(iaPhase >= PH.armed ? [armEvent('armed', 'Controle remoto')] : []),
+        ...TIMELINE_IA,
       ].slice(0, 3)
-    : [
-        armEv,
-        { Icon: Shield, color: 'rgba(255,255,255,.7)', text: 'Imagem', who: 'Você', when: 'ontem às 20:28' },
-        { Icon: Speaker, color: '#ff5a5a', text: 'Disparo', who: 'Porta de entrada', when: 'ontem às 07:30' },
-      ]
+    : timeline.slice(0, 3)
 
   return (
     <div className={`relative flex h-[688px] w-[320px] select-none flex-col overflow-hidden rounded-[34px] ${BG} font-body text-white`} lang="pt-BR">
@@ -243,11 +284,11 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
       )}
       {/* barra de status com o entalhe */}
       <StatusBar />
-      {notif && <Notifications onBack={() => setNotif(false)} />}
+      {notif && <Notifications items={timeline} onBack={() => setNotif(false)} />}
       {action === 'solicitar-imagem' && <ImageHistory photo={photo} onBack={() => useShowroom.getState().stopAction()} />}
       <AppTop onBell={interactive ? () => setNotif(true) : undefined} />
 
-      {/* saudação e, à direita, o botão SOS (só o contorno, como no app) */}
+      {/* saudação e, à direita, o botão SOS (fundo cinza, como no app) */}
       <div className="flex items-center justify-between px-4 pt-2">
         <div className="text-[20px] font-light text-white/90">Olá!</div>
         <Region id="sos" interactive={interactive} className="!rounded-xl">
@@ -274,11 +315,19 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
                 <div className="text-[10.5px] text-white/55">{ARM_TEXT[arm]}</div>
               </>
             )}
-            <div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-[#323337] p-1">
+            {/* botão ativo: fundo escuro neutro (mais escuro que o trilho) e só a borda azul. Fora da ação, o toque
+                escolhe o Alarme geral, abre "Mudar o estado do alarme" e já manda o comando */}
+            <div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-[#3d4142] p-1">
               {ARM.map(({ id, label, Icon }) => (
-                <button key={id} aria-label={label} aria-pressed={arm === id} tabIndex={canArm ? 0 : -1}
-                  onClick={(e) => { if (!canArm) return; e.stopPropagation(); beep('ui'); useShowroom.getState().requestArm(id) }}
-                  className={`grid h-9 place-items-center rounded-lg border-[1.5px] transition-colors duration-fast ease-out ${arm === id ? 'border-[#4d8dff] bg-[#1d2a44] text-[#4d8dff]' : pending === id ? 'animate-pulse border-[#4d8dff]/50 text-[#4d8dff] motion-reduce:animate-none' : 'border-transparent text-white/60'} ${canArm ? 'hover:border-[#4d8dff]' : ''}`}>
+                <button key={id} aria-label={label} aria-pressed={arm === id} tabIndex={interactive ? 0 : -1}
+                  onClick={(e) => {
+                    if (!interactive) return
+                    e.stopPropagation(); beep('ui')
+                    const s = useShowroom.getState()
+                    if (!canArm) { s.selectPart('alarme-geral'); s.startAction('alarme-geral') }
+                    s.requestArm(id)
+                  }}
+                  className={`grid h-9 place-items-center rounded-lg border-[1.5px] transition-colors duration-fast ease-out ${arm === id ? 'border-[#4d8dff] bg-[#242626] text-[#4d8dff]' : pending === id ? 'animate-pulse border-[#4d8dff]/50 text-[#4d8dff] motion-reduce:animate-none' : 'border-transparent text-white/60'} ${interactive ? 'hover:border-[#4d8dff]' : ''}`}>
                   <Icon size={19} />
                 </button>
               ))}
@@ -288,13 +337,13 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
 
         <Region id="ultimas-imagens" interactive={interactive}>
           <div className={LABEL}>Últimas imagens</div>
-          <div className="relative h-[150px] overflow-hidden rounded-xl bg-[#26272b]">
+          <div className="relative h-[150px] overflow-hidden rounded-xl bg-[#2b2d2c]">
             {/* na cena "Em ação", antes do disparo a última imagem é a sala vazia (de manhã); depois chega a do disparo */}
             <img src={inAction ? (iaPhase >= PH.image ? aiPhotoDataUrl(true) : aiPhotoDataUrl(false, true)) : aiPhotoDataUrl(photo === 'done')} alt="Foto do fotossensor" width={480} height={360} className="h-full w-full object-cover" draggable={false} />
             {/* etiqueta da foto, no canto, escura como no app: de qual aparelho e quando */}
             <div className="absolute left-1.5 top-1.5 rounded-md bg-[#1d1e21]/90 px-1.5 py-0.5 leading-tight">
               <div className="text-[10px] text-white">Sala de estar</div>
-              <div className="text-[8px] text-white/60">{photo === 'done' || iaPhase >= PH.image ? 'agora' : 'hoje às 07:31'}</div>
+              <div className="text-[8px] text-white/60">{photo === 'done' || iaPhase >= PH.image ? 'agora' : inAction ? 'ontem às 20:28' : 'hoje às 07:31'}</div>
             </div>
             {photo === 'loading' && (
               <div className="absolute inset-0 grid place-items-center bg-black/60 text-white">
@@ -309,18 +358,26 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
               {[0, 1, 2, 3, 4].map((i) => <i key={i} className={`h-1.5 w-1.5 rounded-full ${i === 0 ? 'bg-white/90' : 'bg-white/45'}`} />)}
             </div>
           </div>
-          {/* botão amarelo, como em "Histórico de imagens" do app */}
         </Region>
 
         <Region id="ultimos-eventos" interactive={interactive}>
           <div className={LABEL}>Últimos eventos</div>
+          {/* agrupados por dia, com o título "Hoje" (e "Ontem", se aparecer) dentro do cartão; embaixo do nome, só a hora */}
           <div className={`${CARD} !py-1.5`}>
-            {events.map(({ Icon, color, text, who, when }, i) => (
-              <div key={i} className="flex items-center gap-2.5 border-b border-white/10 py-1 last:border-0">
-                <span className="w-5 shrink-0" style={{ color }}><Icon size={16} /></span>
-                <span className="flex-1 leading-tight"><span className="block text-[11.5px] text-white/90">{text}</span><span className="text-[9px] text-white/50">{who} · {when}</span></span>
-              </div>
-            ))}
+            {events.map(({ Icon, color, text, who, day, time }, i) => {
+              const group = dayGroup(day)
+              const first = i === 0 || dayGroup(events[i - 1].day) !== group
+              const last = i === events.length - 1 || dayGroup(events[i + 1].day) !== group
+              return (
+                <div key={i}>
+                  {first && <div className={`pb-0.5 text-[11px] leading-4 text-white/90 ${i ? 'pt-1' : ''}`}>{group}</div>}
+                  <div className={`flex items-center gap-2.5 py-1 ${last ? '' : 'border-b border-white/10'}`}>
+                    <span className="w-5 shrink-0" style={{ color }}><Icon size={16} /></span>
+                    <span className="flex-1 leading-tight"><span className="block text-[12px] text-white/90">{text}</span><span className="block text-[9.5px] text-white/50">{who} · {day === 'agora' ? 'agora' : time}</span></span>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </Region>
       </div>

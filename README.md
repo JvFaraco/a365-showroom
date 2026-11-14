@@ -31,7 +31,7 @@ A câmera só gira quando alguém arrasta: não há giro automático.
 
 No modo apresentação, `→` (ou o clicker, que envia PageDown) segue para o próximo aparelho quando as partes acabam. Sem ele, as setas dão a volta nas partes do mesmo aparelho.
 
-As micro-animações que abrem ou tiram algo (tampa do fotossensor, tampa do controle, bateria da sirene, sirene fora do suporte) ficam abertas até o botão de desfazer do card ("Fechar", "Recolocar"), que volta pelo mesmo caminho. A sirene não gira para encaixar: desce de cima para baixo no suporte e trava com um clique.
+As micro-animações que abrem ou tiram algo (sirene fora do suporte, tampa do módulo e do magnético no tamper) ficam abertas até o botão de desfazer do card ("Fechar", "Recolocar", "Encaixar"), que volta pelo mesmo caminho. A tampa do fotossensor ("Trocar as pilhas") e a do controle ("Trocar a bateria") abrem, trocam e fecham sozinhas. A sirene não gira para encaixar: desce de cima para baixo no suporte e trava com um clique.
 
 ## Fluidez
 
@@ -121,10 +121,10 @@ A lista de partes de cada aparelho, com primitivas, proporções e materiais, es
 
 ## Pendências a confirmar com a Orsegups
 
-- Destino do QR Code do rodapé da placa. O que aparece no demo é ilustrativo e não codifica nada.
+- Destino do QR Code da placa (rodapé da frente). O que aparece no demo é ilustrativo e não codifica nada.
 - Cor do filete lateral do controle: azul na arte oficial, amarelo na foto real. O demo usa o azul.
 - Disco central do controle: não é botão. A arte de marketing mostra o logo nele e o ícone do sistema mostra liso; o demo usa o logo em baixo-relevo discreto.
-- Sensor magnético: a foto de instalação mostra o corpo na folha da porta e o ímã no batente (o texto antigo dizia o contrário); confirmar no manual. As fotos novas do sensor instalado mostram só as duas peças (corpo e ímã); o terceiro bloco branco da foto antiga não faz parte dele. Qual ponta fica com o borne e qual com a antena é suposição: a foto da placa não mostra o lado da tampinha.
+- Sensor magnético: a foto de instalação mostra o corpo na folha da porta e o ímã no batente (o texto antigo dizia o contrário); confirmar no manual. As fotos novas do sensor instalado mostram só as duas peças (corpo e ímã); o terceiro bloco branco da foto antiga não faz parte dele. Qual ponta fica com o borne e qual com a antena é suposição: a foto da placa não mostra o lado da ponta do LED.
 - Módulo: a antena sai atrás, fora do centro, ao lado do bolsão dos cabos (pelo vídeo do fundo e pela foto de estúdio); a distância até o centro é estimada. O contorno da tampa e da base segue as medidas externas do aparelho; nervuras, pés, rebaixo do fundo e o que fica por dentro saem das fotos e são aproximados. O QR do adesivo "Dúvidas?" é ilustrativo (não codifica nada).
 - Fotossensor, sensor magnético e controle: o contorno externo (corpo, capuz da câmera, moldura da lente PIR, tampa das pilhas, olhal e tampa do controle) segue as medidas externas dos aparelhos; o que fica por dentro é só a posição aproximada das peças grandes.
 - Sirene: cúpula e suporte seguem as medidas externas; a posição exata das travas, do tamper e da placa é aproximada. A cor e o tamanho da bateria vêm do vídeo e do espaço do berço.

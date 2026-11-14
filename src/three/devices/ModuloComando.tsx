@@ -24,7 +24,7 @@ const RF = 0.9 // raio de referência do corpo (72 mm)
 const R_TOP = 58.5 / 80 // raio do topo plano (58,5 mm): bem menor que o corpo; a lateral abre em curva até 75 mm no fundo
 const YC = 0.39 // altura do topo (antes do achatamento): plano e nivelado
 const TILT = 0 // o topo não é rampa: fica paralelo à base
-const CAPSULE_Z = 0.63 // a cápsula do LED/190 fica na frente, rente à borda do topo plano
+const CAPSULE_Z = 0.61 // a cápsula do LED/190 fica na frente, rente à borda do topo plano
 const PCB_Y = -0.08 // topo da placa
 // borda da placa onde o cabo da bateria sobe (referência do grupo do plugue, que desliza ao desplugar)
 const BAT_PIVOT: [number, number, number] = [0.7625, PCB_Y + 0.03, 0.1725]
@@ -62,11 +62,11 @@ function lidRim(t: number): [number, number] {
 
 /**
  * Quanto a borda já subiu (0 no apoio, 1 no alto do arco), contando do apoio da frente e dos dois de trás. Cada apoio
- * é plano em ±12°; daí a borda sobe rápido e arredonda até o meio do arco, a 60° do apoio.
+ * é plano em ±12°; daí a borda sobe rápido e arredonda, chegando ao alto do arco ~40° depois do apoio.
  */
 function lidFeet(t: number): [number, number] {
   const a = Math.abs(Math.atan2(Math.sin(t), Math.cos(t))) // 0 na frente, π atrás
-  const rise = (phi: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, (phi - 12.5 * DEG) / (47.5 * DEG))), 3)
+  const rise = (phi: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, (phi - 12.5 * DEG) / (40 * DEG))), 3)
   return [rise(a), rise(Math.abs(a - FOOT_T))]
 }
 
@@ -134,15 +134,19 @@ function stickerGeometry() {
 const Y_BOT = BOTTOM
 // Visto por baixo, com a antena para cima: o bolsão fica NO MEIO (um nada para a esquerda) e é um rasgo aberto na
 // borda de trás, por onde saem os cabos; a antena sai ao lado dele, à direita (−X), e o furo do reset fica do outro lado, junto da entrada da fonte.
-const POCKET = { x0: -0.2, x1: 0.3, z1: -0.22, d: 0.3 } // bolsão fundo dos cabos, no meio: começa em z1 e vai até a borda de trás, aberto
+const POCKET = { x0: -0.165, x1: 0.29, z1: -0.145, d: 0.35 } // bolsão fundo dos cabos, no meio: começa em z1 e vai até a borda de trás, aberto (~37 mm de largura, 16 a 18 mm de fundo)
 const PLATE = { x0: POCKET.x0 + 0.03, x1: POCKET.x1 - 0.03, z0: -0.78, z1: POCKET.z1 + 0.02 } // moldura da grade de som, na face funda
-const LABEL = { x0: -0.365, x1: 0.375, z0: 0.075, z1: 0.425 } // rebaixo raso da etiqueta (fica vazio): ~59 × 28 mm, à frente do bolsão
+const LABEL = { x0: -0.356, x1: 0.356, z0: 0.131, z1: 0.469 } // rebaixo raso da etiqueta (fica vazio): ~57 × 27 mm, à frente do bolsão
 const RJ = { x: 0.0, y: Y_BOT + 0.145 } // RJ45 deitado, na PAREDE DA FRENTE do bolsão, com a boca virada para dentro dele
-const GRILLE = { x: (POCKET.x0 + POCKET.x1) / 2, z: -0.47, pitch: 0.054 } // grade de som: hexágono de furos na face funda do bolsão
-/** Onde a base tem nervuras: só nos dois lados, sob os arcos laterais da tampa (de ~15° a ~105° da frente). */
+const GRILLE = { x: (POCKET.x0 + POCKET.x1) / 2, z: -0.425, pitch: 0.056 } // grade de som: hexágono de furos na face funda do bolsão
+/**
+ * Onde a base tem nervuras: nos dois lados, sob os arcos laterais da tampa (de ~15° a ~105° da frente), e nos dois
+ * cantos de trás, entre o apoio de trás e o bolsão (de ~137° a ~157°; do lado da antena, −X, param em ~147°).
+ */
 const ribZone = (t: number) => {
-  const a = Math.abs(Math.atan2(Math.sin(t), Math.cos(t)))
-  return THREE.MathUtils.smoothstep(a, 13 * DEG, 19 * DEG) * (1 - THREE.MathUtils.smoothstep(a, 101 * DEG, 107 * DEG))
+  const a = Math.abs(Math.atan2(Math.sin(t), Math.cos(t))), ss = THREE.MathUtils.smoothstep
+  const back = Math.sin(t) < 0 ? [145, 149] : [155, 159]
+  return ss(a, 13 * DEG, 19 * DEG) * (1 - ss(a, 101 * DEG, 107 * DEG)) + ss(a, 134 * DEG, 139 * DEG) * (1 - ss(a, back[0] * DEG, back[1] * DEG))
 }
 // Perfil externo da base cinza: [mm acima do fundo, raio em mm]. Sob os arcos ela afina para baixo; sob os três apoios
 // ela abre para baixo, acompanhando a tampa por dentro.
@@ -160,10 +164,12 @@ const baseR = (t: number, y: number) => {
   const h = (y - BOTTOM) * 48, w = Math.pow(1 - Math.min(...lidFeet(t)), 1.5)
   return (lerpTable(BASE_ARCH, h) + w * (lerpTable(BASE_FOOT, h) - lerpTable(BASE_ARCH, h))) / 80
 }
-const FEET: [number, number][] = [[0, 0.675], [0.65, -0.45], [-0.65, -0.45]] // pés: um atrás do apoio da frente e dois sob os apoios de trás
+const FEET: [number, number][] = [[0, 0.754], [0.653, -0.377], [-0.653, -0.377]] // pés: a ~60 mm do centro, sob os três apoios (0° e ±120°)
 // cartão do modem (pela foto da placa aberta): ~51 × 30 mm, na frente e para o lado de +X, inteiro dentro da placa
 const MODEM = { x0: -0.2, x1: 0.42, z0: 0.17, z1: 0.54 }
-const ANT_X = -0.35 // a antena não fica no centro: sai num ressalto ao lado do bolsão, sob o arco de trás da tampa
+const ANT_X = -0.27 // a antena não fica no centro: sai ao lado do bolsão (−X), sob o arco de trás da tampa
+/** Profundidade do conector da antena: a rosca sai rente à parede de trás da base, na altura dele. */
+const ANT_Z = 0.09 - Math.sqrt(baseR(Math.PI + Math.asin(-ANT_X / 0.82), -0.14) ** 2 - ANT_X * ANT_X)
 /** Altura depois do achatamento do corpo (para o que fica fora do grupo achatado). */
 const sq = (y: number) => BOTTOM + (y - BOTTOM) * SQUASH
 const NET_Z = POCKET.z1 - 0.13, POW_X = POCKET.x1 - 0.15 // posição encaixada dos plugues
@@ -303,6 +309,17 @@ function roundWire(points: [number, number, number][], radius: number) {
   return g
 }
 
+// trecho do cabo da bateria por cima da placa: da borda da placa até o plugue
+const BAT_A2: [number, number, number][] = [[0.765, PCB_Y + 0.03, 0.19], [0.68, PCB_Y + 0.03, 0.09], [0.615, PCB_Y + 0.025, 0.005]]
+const BAT_B2: [number, number, number][] = [[0.76, PCB_Y + 0.03, 0.155], [0.665, PCB_Y + 0.03, 0.06], [0.585, PCB_Y + 0.025, 0.005]]
+/** Estica o fio de S até E: S fica parado e a ponta E anda (dx, 0, dz); os pontos do meio andam na proporção. */
+function stretch(o: THREE.Object3D, S: [number, number, number], E: [number, number, number], dx: number, dz: number) {
+  const L = [E[0] - S[0], E[1] - S[1], E[2] - S[2]], l2 = L[0] * L[0] + L[1] * L[1] + L[2] * L[2]
+  const k = L.map((v) => v / l2), sk = S[0] * k[0] + S[1] * k[1] + S[2] * k[2]
+  o.matrix.set(1 + dx * k[0], dx * k[1], dx * k[2], -sk * dx, 0, 1, 0, 0, dz * k[0], dz * k[1], 1 + dz * k[2], -sk * dz, 0, 0, 0, 1)
+  o.matrixWorldNeedsUpdate = true
+}
+
 type Geo = ReturnType<typeof build>
 let cache: Geo | null = null
 function build() {
@@ -316,7 +333,7 @@ function build() {
     sticker: stickerGeometry(),
     base: baseGeometry(),
     slit: new THREE.BoxGeometry(0.034, 0.004, 0.15), // rasgo do fundo: a continuação de cada nervura
-    foot: new THREE.CylinderGeometry(0.07, 0.075, 0.06, 20), // pé de ~3 mm
+    foot: new THREE.CylinderGeometry(0.07, 0.04, 0.06, 20), // pé de ~3 mm: afina do fundo (~11 mm) até a mesa (~6 mm)
     capsuleRim: roundedRectGeometry(0.365, 0.155, 0.05, 0.012, 0.004), // fresta em volta da tecla (29,2 × 12,4 mm)
     capsule: roundedRectGeometry(0.339, 0.129, 0.04, 0.014, 0.005), // tecla branca do botão
     paddle: stadiumGeometry(0.17, 1.2, 0.05, 0.014),
@@ -329,27 +346,27 @@ function build() {
     coaxA: wire([[-0.49, PCB_Y + 0.045, 0.5], [-0.47, PCB_Y + 0.07, 0.56], [-0.42, PCB_Y + 0.08, 0.62], [-0.36, PCB_Y + 0.14, 0.66]], 0.007),
     // coaxial do 4G: do cartão do chip até a rosca da antena, pelo braço da placa ao lado do recorte
     // coaxial do conector MAIN do modem até a antena externa, por cima do módulo Wi-Fi
-    coaxB: wire([[MODEM.x0 + 0.06, PCB_Y + 0.06, 0.445], [-0.22, PCB_Y + 0.09, 0.32], [-0.36, PCB_Y + 0.085, 0.08], [-0.4, PCB_Y + 0.075, -0.2], [-0.37, PCB_Y + 0.06, -0.45], [ANT_X, PCB_Y + 0.02, -0.61]], 0.007),
+    coaxB: wire([[MODEM.x0 + 0.06, PCB_Y + 0.06, 0.445], [-0.22, PCB_Y + 0.09, 0.32], [-0.36, PCB_Y + 0.085, 0.08], [-0.4, PCB_Y + 0.075, -0.2], [-0.37, PCB_Y + 0.06, -0.45], [ANT_X, PCB_Y + 0.02, ANT_Z + 0.04]], 0.007),
     // antena de fio do rádio dos sensores: acompanha a borda da placa
     // antena do rádio: fio amarelo soldado atrás do rádio, que sobe pela borda de trás, por cima da caixinha do alto-falante
-    yellow: wire([[-0.43, PCB_Y + 0.012, -0.45], [-0.36, PCB_Y + 0.04, -0.6], [-0.18, 0.075, -0.64], [0.06, 0.08, -0.64], [0.2, 0.075, -0.6], [0.25, 0.07, -0.52], [0.24, 0.062, -0.45]], 0.009),
-    spkA: wire([[0.01, 0.075, -0.33], [-0.06, 0.09, -0.24], [-0.1, 0.06, -0.19], [-0.2, PCB_Y + 0.03, -0.14], [-0.24, PCB_Y + 0.012, -0.1]], 0.007),
-    spkB: wire([[0.08, 0.075, -0.33], [0.02, 0.09, -0.23], [-0.04, 0.06, -0.17], [-0.13, PCB_Y + 0.03, -0.11], [-0.2, PCB_Y + 0.012, -0.06]], 0.007),
+    yellow: wire([[-0.43, PCB_Y + 0.012, -0.45], [-0.36, PCB_Y + 0.06, -0.6], [-0.18, 0.125, -0.64], [0.06, 0.13, -0.64], [0.2, 0.125, -0.6], [0.25, 0.12, -0.52], [0.24, 0.112, -0.45]], 0.009),
+    spkA: wire([[0.022, 0.125, -0.255], [-0.05, 0.13, -0.2], [-0.1, 0.07, -0.16], [-0.2, PCB_Y + 0.03, -0.12], [-0.24, PCB_Y + 0.012, -0.1]], 0.007),
+    spkB: wire([[0.092, 0.125, -0.255], [0.03, 0.13, -0.2], [-0.04, 0.07, -0.16], [-0.13, PCB_Y + 0.03, -0.11], [-0.2, PCB_Y + 0.012, -0.06]], 0.007),
     micA: wire([[0.36, -0.2, -0.26], [0.4, -0.1, -0.2], [0.38, PCB_Y + 0.03, -0.12], [0.33, PCB_Y + 0.012, -0.08]], 0.006),
     micB: wire([[0.39, -0.2, -0.24], [0.44, -0.1, -0.17], [0.42, PCB_Y + 0.03, -0.1], [0.37, PCB_Y + 0.012, -0.05]], 0.006),
     // cabo da bateria: sai da ponta da bateria (embaixo da placa), sobe por fora da borda e passa por cima da placa até o conector
-    // cabo da bateria em dois trechos: da bateria até a borda da placa (fixo) e, por cima da placa, até o plugue (gira
-    // na borda quando o plugue é puxado do conector)
+    // cabo da bateria em dois trechos: da bateria até a borda da placa (fixo) e, por cima da placa, até o plugue (preso na
+    // borda; a ponta acompanha o plugue quando ele é puxado do conector)
     batA: wire([[0.36, -0.2, 0.2], [0.6, -0.17, 0.23], [0.755, -0.12, 0.21], [0.765, PCB_Y + 0.03, 0.19]], 0.008),
     batB: wire([[0.36, -0.2, 0.16], [0.6, -0.17, 0.19], [0.75, -0.12, 0.175], [0.76, PCB_Y + 0.03, 0.155]], 0.008),
-    batA2: wire([[0.765, PCB_Y + 0.03, 0.19], [0.68, PCB_Y + 0.03, 0.09], [0.615, PCB_Y + 0.025, 0.005]], 0.008),
-    batB2: wire([[0.76, PCB_Y + 0.03, 0.155], [0.665, PCB_Y + 0.03, 0.06], [0.585, PCB_Y + 0.025, 0.005]], 0.008),
+    batA2: wire(BAT_A2, 0.008),
+    batB2: wire(BAT_B2, 0.008),
     // cabos de rede e da fonte: saem deitados pela abertura de trás do bolsão
     netCable: roundWire([[0, 0, -0.08], [0, -0.03, -0.45], [-0.02, -0.06, -0.9], [-0.1, -0.08, -1.7]], 0.03),
     powCable: roundWire([[0, 0, -0.22], [0, -0.03, -0.45], [0.03, -0.06, -0.8], [0.16, -0.08, -1.5]], 0.024),
     // os 8 contatos dourados na ponta do RJ45, em cima, e os frisos de pegada do plugue da fonte
     rjRibs: mergeGeometries([-0.13, -0.155, -0.18, -0.205].map((z, i) => { const t = new THREE.TorusGeometry(0.058 - i * 0.004, 0.006, 6, 24); t.translate(0, -0.01, z); return t })),
-    rjPins: boxesGeometry(Array.from({ length: 8 }, (_, i) => [-0.0525 + i * 0.015, 0.052, 0.07, 0.008, 0.016, 0.055] as Block)),
+    rjPins: boxesGeometry(Array.from({ length: 8 }, (_, i) => [-0.0525 + i * 0.015, 0.045, 0.07, 0.008, 0.016, 0.055] as Block)),
     powRibs: mergeGeometries([-0.04, -0.07, -0.1, -0.13].map((z) => { const t = new THREE.TorusGeometry(0.049, 0.005, 6, 24); t.translate(0, 0, z); return t })),
     plugCable: wire([[0, 0, 0], [-0.03, 0, -0.2], [0, -0.03, -0.5], [0.35, -0.05, -0.85], [0.8, -0.05, -0.75], [1.05, -0.04, -0.5]], 0.03),
   }
@@ -386,6 +403,9 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
   const lid = useRef<THREE.Group>(null!)
   const tPin = useRef<THREE.Group>(null!)
   const antenna = useRef<THREE.Group>(null!)
+  const paddle = useRef<THREE.Group>(null!)
+  const batWA = useRef<THREE.Group>(null!)
+  const batWB = useRef<THREE.Group>(null!)
   const pressA = useRef<THREE.Group>(null!)
   const pressB = useRef<THREE.Group>(null!)
   const plug = useRef<THREE.Group>(null!)
@@ -398,6 +418,9 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
   const inited = useRef(false)
   const cableMat = useMemo(() => fxBasic('#2a2d35'), [])
   const apronMat = useMemo(() => { const m = M.white.clone(); m.side = THREE.DoubleSide; return m }, [])
+  // base: cinza neutro, puxando para o quente, como a peça (clones só do módulo, mesmas flags)
+  const baseMat = useMemo(() => { const m = M.grey.clone(); m.color.set('#9a9a94'); return m }, [])
+  const baseDark = useMemo(() => { const m = M.greyDark.clone(); m.color.set('#6b6b66'); return m }, [])
   // o disco do topo é fosco; a lateral tem o brilho do plástico. Mesmo material (clones), só muda o acabamento
   const topMat = useMemo(() => { const m = M.white.clone(); m.side = THREE.DoubleSide; m.roughness = 0.62; m.clearcoat = 0.06; return m }, [])
   // adesivo "Dúvidas?" da frente: mesmo tipo de material da placa (padrão, com textura)
@@ -422,6 +445,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
       for (let i = 0; i < 60; i++) {
         const a = (i / 60) * Math.PI * 2, r = baseR(a, BOTTOM) - 0.085, x = Math.sin(a) * r, z = Math.cos(a) * r
         if (ribZone(a) < 0.5) continue // na frente (sob a ponta da tampa) e atrás (bolsão e antena) o fundo é liso
+        if (z < POCKET.z1 && x > POCKET.x0 - 0.03 && x < POCKET.x1 + 0.03) continue // nem na abertura do bolsão
         o.position.set(x, Y_BOT - 0.0015, z); o.rotation.set(0, a, 0); o.scale.setScalar(1)
         o.updateMatrix(); fins.current.setMatrixAt(n++, o.matrix)
       }
@@ -449,7 +473,9 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
     const s = useShowroom.getState()
     // antena: desrosqueia, sai e volta
     const ta = actionTime('antena')
-    const out = ta < 0 ? 0 : bump(ta, 0, 1.5, 2.1, 3.6)
+    // a pá deita primeiro (fica no eixo da rosca) para girar sem bater no piso, e levanta de novo no fim
+    paddle.current.rotation.x = -0.62 - (Math.PI / 2 - 0.62) * (ta < 0 ? 0 : bump(ta, 0, 0.4, 3.6, 4.0))
+    const out = ta < 0 ? 0 : bump(ta, 0.4, 1.9, 2.5, 3.6)
     antenna.current.position.z = -out * 0.4
     antenna.current.rotation.z = -out * Math.PI * 2
     // a cápsula inteira afunda ~1 mm enquanto o 190 é segurado
@@ -474,7 +500,11 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
     }
     // abrir: vira de cabeça para baixo, desvira e a cúpula se solta e sobe, mostrando a placa
     const to = actionTau('abrir-modulo')
-    root.current.rotation.z = to < 0 ? 0 : (seg(to, 0, 0.8) - seg(to, 1.2, 2.0)) * Math.PI
+    const th = to < 0 ? 0 : (seg(to, 0, 0.8) - seg(to, 1.2, 2.0)) * Math.PI
+    root.current.rotation.z = th
+    // ao virar, o módulo sobe pelo ponto mais baixo (borda de baixo, borda do topo ou ponta da antena) e não entra no pedestal
+    const sn = Math.sin(th), cs = Math.cos(th)
+    root.current.position.y = th ? Math.max(0, Math.max(0.94 * sn + 0.44 * cs, 0.73 * sn - 0.07 * cs, (0.085 - ANT_X) * sn - 0.78 * cs) - 0.45) : 0
     // desplugar a bateria: a cúpula sobe e o plugue do cabo da bateria sai do conector da placa
     const td = actionTau('desplugar-bateria')
     const tt = actionTau('tamper-modulo')
@@ -484,6 +514,9 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
     const pull = td < 0 ? 0 : seg(td, 1.3, 1.9)
     // o plugue sai do conector deslizando na direção dos fios (o conector branco fica soldado na placa)
     batPlug.current.position.set(pull * 0.012, 0, pull * 0.075)
+    // os fios por cima da placa ficam presos na borda dela e a ponta acompanha o plugue
+    stretch(batWA.current, BAT_A2[0], BAT_A2[BAT_A2.length - 1], pull * 0.012, pull * 0.075)
+    stretch(batWB.current, BAT_B2[0], BAT_B2[BAT_B2.length - 1], pull * 0.012, pull * 0.075)
     lid.current.position.set(0, up * 1.35, -up * 0.35)
     lid.current.rotation.x = -up * 0.35
   })
@@ -560,7 +593,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         {/* ================= antena tipo pá: conector rosqueado e articulação ================= */}
         </group>
         <ClickablePart id="antena">
-          <group position={[ANT_X, BOTTOM + (-0.14 - BOTTOM) * SQUASH, -0.648]}>
+          <group position={[ANT_X, BOTTOM + (-0.14 - BOTTOM) * SQUASH, ANT_Z]}>
             <mesh material={M.gold} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.04]}><cylinderGeometry args={[0.048, 0.048, 0.1, 20]} /></mesh>
             <group ref={antenna}>
               {[0, 1, 2, 3].map((i) => (
@@ -572,7 +605,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
                 <mesh material={M.white} rotation={[0, 0, Math.PI / 2]}><capsuleGeometry args={[0.07, 0.06, 6, 20]} /></mesh>
                 <mesh material={M.metal} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[0.022, 0.022, 0.215, 12]} /></mesh>
                 <mesh material={M.groove} rotation={[0, Math.PI / 2, 0]}><torusGeometry args={[0.071, 0.004, 6, 32]} /></mesh>
-                <group rotation={[-0.62, 0, 0]}>
+                <group ref={paddle} rotation={[-0.62, 0, 0]}>
                   <mesh geometry={g.paddle} material={M.white} position={[0, 0.66, -0.025]} castShadow />
                   <mesh material={M.groove} position={[0, 0.1, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.062, 0.004, 6, 32]} /></mesh>
                 </group>
@@ -584,24 +617,24 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
 
         {/* ================= base cinza: tambor redondo rente à tampa, fendas na borda, pés, rebaixos ================= */}
         <ClickablePart id="base">
-          <mesh geometry={g.base} material={M.grey} castShadow />
-          <instancedMesh ref={fins} args={[g.slit, M.greyDark, 60]} />
+          <mesh geometry={g.base} material={baseMat} castShadow />
+          <instancedMesh ref={fins} args={[g.slit, baseDark, 60]} />
         </ClickablePart>
         <ClickablePart follow="base">
           {/* pés redondos e baixos, com o furo do parafuso no centro */}
           {FEET.map(([x, z]) => (
             <group key={x} position={[x, Y_BOT - 0.03, z]}>
-              <mesh geometry={g.foot} material={M.grey} />
+              <mesh geometry={g.foot} material={baseMat} />
               <mesh material={M.hole} position={[0, -0.0305, 0]} rotation={[Math.PI / 2, 0, 0]}><circleGeometry args={[0.02, 12]} /></mesh>
             </group>
           ))}
           {/* furo do botão de reset (o botão fica na placa, logo acima): do lado da entrada da fonte, ao lado do bolsão */}
           <mesh material={M.hole} position={[0.44, Y_BOT - 0.001, -0.47]} rotation={[Math.PI / 2, 0, 0]}><circleGeometry args={[0.022, 14]} /></mesh>
-          {/* ressalto da rosca da antena: bloco de face plana na borda de trás, à direita do bolsão; aparece sob o arco de trás da tampa */}
-          <RoundedBox args={[0.16, 0.341, 0.122]} radius={0.03} smoothness={3} position={[ANT_X, -0.2255, -0.679]} material={M.grey} />
+          {/* ressalto da rosca da antena: bloco por dentro da parede de trás, ao lado do bolsão, onde a rosca é presa */}
+          <RoundedBox args={[0.16, 0.341, 0.122]} radius={0.03} smoothness={3} position={[ANT_X, -0.2255, ANT_Z - 0.031]} material={baseMat} />
           {/* duas travas cinza, em lados opostos, que prendem a placa */}
           {[-1, 1].map((sx) => (
-            <RoundedBox key={sx} args={[0.07, 0.07, 0.2]} radius={0.02} smoothness={3} position={[sx * 0.74, PCB_Y + 0.01, -0.1]} material={M.grey} />
+            <RoundedBox key={sx} args={[0.07, 0.07, 0.2]} radius={0.02} smoothness={3} position={[sx * 0.74, PCB_Y + 0.01, -0.1]} material={baseMat} />
           ))}
         </ClickablePart>
 
@@ -671,9 +704,9 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         </ClickablePart>
 
         <ClickablePart id="led-botao-placa">
-          <Led on="board" sample={sampleLed} boost={3.5} baseColor="#b9c8ee" position={[-0.06, PCB_Y + 0.012, CAPSULE_Z - 0.045]}><boxGeometry args={[0.04, 0.022, 0.03]} /></Led>
-          <mesh material={M.metal} position={[0.07, PCB_Y + 0.014, CAPSULE_Z - 0.03]}><boxGeometry args={[0.085, 0.028, 0.085]} /></mesh>
-          <mesh material={M.wireBlue} position={[0.07, PCB_Y + 0.04, CAPSULE_Z - 0.03]}><cylinderGeometry args={[0.026, 0.028, 0.03, 16]} /></mesh>
+          <Led on="board" sample={sampleLed} boost={3.5} core={0.3} baseColor="#b9c8ee" position={[0, PCB_Y + 0.012, CAPSULE_Z - 0.045]}><boxGeometry args={[0.04, 0.022, 0.03]} /></Led>
+          <mesh material={M.metal} position={[0.12, PCB_Y + 0.014, CAPSULE_Z - 0.03]}><boxGeometry args={[0.085, 0.028, 0.085]} /></mesh>
+          <mesh material={M.wireBlue} position={[0.12, PCB_Y + 0.04, CAPSULE_Z - 0.03]}><cylinderGeometry args={[0.026, 0.028, 0.03, 16]} /></mesh>
         </ClickablePart>
 
         {/* cartão do modem 4G (mini PCIe, ~51 × 30 mm): espetado no slot preto do lado de +X, preso pela presilha metálica na
@@ -723,14 +756,14 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         {/* caixinha cinza do alto-falante, no recorte da placa, logo acima da grade do bolsão: é da base e fica nela na
             vista explodida; só o alto-falante sai */}
         <ClickablePart follow="base" internal>
-          <group position={[GRILLE.x, -0.02, -0.5]}>
-            <RoundedBox args={[0.44, 0.15, 0.5]} radius={0.04} smoothness={4} material={M.grey} />
+          <group position={[GRILLE.x, 0.03, GRILLE.z]}>
+            <RoundedBox args={[0.44, 0.15, 0.5]} radius={0.04} smoothness={4} material={baseMat} />
             <mesh material={M.groove} position={[0, 0.0755, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.186, 0.196, 48]} /></mesh>
           </group>
         </ClickablePart>
         {/* alto-falante: cone preto e ímã cromado */}
         <ClickablePart id="speaker">
-          <group position={[GRILLE.x, -0.02, -0.5]}>
+          <group position={[GRILLE.x, 0.03, GRILLE.z]}>
             <mesh geometry={g.cone} material={M.black} position={[0, 0.045, 0]} />
             <mesh geometry={g.magnet} material={M.chrome} position={[0, 0.05, 0]} />
             {/* as duas abas de solda na borda do cone, onde chegam os fios */}
@@ -748,7 +781,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         {/* bateria (pacote amarelo) por baixo da placa; conector branco de 2 pinos na borda, fios vermelho e preto */}
         <ClickablePart id="bateria">
           {/* pacote amarelo, como nas fotos do módulo aberto */}
-          <RoundedBox args={[0.6, 0.1, 0.34]} radius={0.03} smoothness={3} position={[0.1, -0.25, 0.12]} material={M.yellow} />
+          <RoundedBox args={[0.6, 0.1, 0.34]} radius={0.03} smoothness={3} position={[0.1, -0.25, 0.18]} material={M.yellow} />
           <mesh geometry={g.batA} material={M.red} />
           <mesh geometry={g.batB} material={M.chip} />
           {/* conector branco soldado na placa (fica parado) e, encaixado na boca dele, o plugue com os fios vermelho e
@@ -761,11 +794,11 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
             <group ref={batPlug}>
               <group position={[-BAT_PIVOT[0], -BAT_PIVOT[1], -BAT_PIVOT[2]]}>
                 <RoundedBox args={[0.052, 0.024, 0.045]} radius={0.004} smoothness={2} position={[0.6, PCB_Y + 0.02, -0.012]} material={M.white} />
-                <mesh geometry={g.batA2} material={M.red} />
-                <mesh geometry={g.batB2} material={M.chip} />
               </group>
             </group>
           </group>
+          <group ref={batWA} matrixAutoUpdate={false}><mesh geometry={g.batA2} material={M.red} /></group>
+          <group ref={batWB} matrixAutoUpdate={false}><mesh geometry={g.batB2} material={M.chip} /></group>
         </ClickablePart>
 
         {/* cabos que entram pela abertura de trás do bolsão: plugue de energia em L e cabo de rede */}
@@ -774,20 +807,23 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
             <group ref={netRef} position={[RJ.x, RJ.y, NET_Z]}>
               {/* plugue RJ45 (~12 × 14 × 21 mm): corpo transparente com os 8 contatos dourados na ponta, a trava de
                   apertar embaixo, o cabo visível por dentro e a capa azul que afina até o cabo */}
-              <RoundedBox args={[0.145, 0.115, 0.2]} radius={0.012} smoothness={2} position={[0, 0, 0.0]} material={M.crystal} userData={{ fx: true }} />
-              <mesh geometry={g.rjPins} material={M.gold} userData={{ fx: true }} raycast={() => null} />
-              <mesh material={M.wireBlue} position={[0, 0, -0.04]} rotation={[Math.PI / 2, 0, 0]} userData={{ fx: true }}><cylinderGeometry args={[0.03, 0.03, 0.12, 14]} /></mesh>
-              <mesh material={M.crystal} position={[0, -0.072, 0.0]} rotation={[-0.22, 0, 0]} userData={{ fx: true }}><boxGeometry args={[0.055, 0.012, 0.15]} /></mesh>
-              <mesh material={M.wireBlue} position={[0, -0.01, -0.165]} rotation={[-Math.PI / 2, 0, 0]} userData={{ fx: true }}><cylinderGeometry args={[0.045, 0.062, 0.13, 18]} /></mesh>
-              <mesh material={M.wireBlue} position={[0, -0.075, -0.1]} userData={{ fx: true }}><boxGeometry args={[0.07, 0.025, 0.05]} /></mesh>
-              <mesh geometry={g.rjRibs} material={M.wireBlue} userData={{ fx: true }} raycast={() => null} />
+              {/* o plugue desfaz o achatamento do corpo (sai com a forma real); só o cabo fica no grupo achatado */}
+              <group scale={[1, 1 / SQUASH, 1]}>
+                <RoundedBox args={[0.145, 0.1, 0.2]} radius={0.012} smoothness={2} position={[0, 0, 0.0]} material={M.crystal} userData={{ fx: true }} />
+                <mesh geometry={g.rjPins} material={M.gold} userData={{ fx: true }} raycast={() => null} />
+                <mesh material={M.wireBlue} position={[0, 0, -0.04]} rotation={[Math.PI / 2, 0, 0]} userData={{ fx: true }}><cylinderGeometry args={[0.03, 0.03, 0.12, 14]} /></mesh>
+                <mesh material={M.crystal} position={[0, -0.065, 0.0]} rotation={[-0.22, 0, 0]} userData={{ fx: true }}><boxGeometry args={[0.055, 0.012, 0.15]} /></mesh>
+                <mesh material={M.wireBlue} position={[0, -0.01, -0.165]} rotation={[-Math.PI / 2, 0, 0]} userData={{ fx: true }}><cylinderGeometry args={[0.045, 0.062, 0.13, 18]} /></mesh>
+                <mesh material={M.wireBlue} position={[0, -0.068, -0.1]} userData={{ fx: true }}><boxGeometry args={[0.07, 0.025, 0.05]} /></mesh>
+                <mesh geometry={g.rjRibs} material={M.wireBlue} userData={{ fx: true }} raycast={() => null} />
+              </group>
               <mesh geometry={g.netCable} material={M.wireBlue} userData={{ fx: true }} raycast={() => null} />
             </group>
             <group ref={powRef} position={[POW_X, JACK.y, JACK.z]}>
               {/* plugue em L: o pino entra de lado na parede do bolsão e o corpo fica deitado, apontando para trás */}
               {/* plugue P4 em L: o pino metálico entra no conector, a gola, o cotovelo arredondado, o corpo com frisos de
                   pegada e a ponta que afina até o cabo */}
-              <PowerPlugL g={g} />
+              <group scale={[1, 1 / SQUASH, 1]}><PowerPlugL g={g} /></group>
               <mesh geometry={g.powCable} material={M.chip} userData={{ fx: true }} raycast={() => null} />
             </group>
           </group>
@@ -813,7 +849,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
               </div>
             </Html>
           )}
-          <VoiceWaves on={() => actionTime('audio') >= 0.4} position={[GRILLE.x, -0.44, GRILLE.z]} rotation={[-0.5, 0, Math.PI]} />
+          {/* a voz sai em anéis em volta do módulo, logo acima do pedestal */}
+          <VoiceWaves on={() => actionTime('audio') >= 0.4} position={[0, -0.45, 0]} rotation={[-Math.PI / 2, 0, 0]} arc={Math.PI * 2} />
           {unplugPhase >= 0 && (
             <Html position={[0.6, 0.55, 0]} center style={{ pointerEvents: 'none' }}>
               <div className="fx-tag rounded-full bg-black/75 px-4 py-1.5 text-sm font-semibold text-white">Cabo da bateria desconectado</div>

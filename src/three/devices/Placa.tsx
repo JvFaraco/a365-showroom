@@ -16,7 +16,7 @@ const face = (map: THREE.Texture) => {
   return m
 }
 
-/** Placa de aviso: retângulo azul de cantos redondos; frente com logo, telefone e faixa amarela; verso liso. */
+/** Placa de aviso: retângulo azul de cantos redondos; frente com logo e marca, telefone, faixa amarela e rodapé; verso liso. */
 export function Placa({ interactive = false }: DeviceProps) {
   const root = useRef<THREE.Group>(null!)
   const shine = useRef<THREE.Mesh>(null!)
@@ -44,13 +44,16 @@ export function Placa({ interactive = false }: DeviceProps) {
       <group ref={root}>
         <ClickablePart follow="corpo">
           <mesh geometry={plate} material={mats.chapa} castShadow />
-          <mesh material={mats.rodape} position={[0, -0.84, 0.0292]}><planeGeometry args={[1.3, 0.3]} /></mesh>
         </ClickablePart>
+        {/* logo + "ORSEGUPS" num plano só e o telefone logo abaixo, sem sobreposição (o clique não fica ambíguo) */}
         <ClickablePart id="logo">
-          <mesh material={mats.logo} position={[0, 0.5, 0.0292]}><planeGeometry args={[1.3, 0.96]} /></mesh>
+          <mesh material={mats.logo} position={[0, 0.415, 0.0292]}><planeGeometry args={[1.3, 1.13]} /></mesh>
         </ClickablePart>
         <ClickablePart id="telefone">
-          <mesh material={mats.fone} position={[0, -0.13, 0.0292]}><planeGeometry args={[1.3, 0.34]} /></mesh>
+          <mesh material={mats.fone} position={[0, -0.2255, 0.0292]}><planeGeometry args={[1.3, 0.149]} /></mesh>
+        </ClickablePart>
+        <ClickablePart id="rodape">
+          <mesh material={mats.rodape} position={[0, -0.84, 0.0292]}><planeGeometry args={[1.3, 0.3]} /></mesh>
         </ClickablePart>
         <ClickablePart id="faixa">
           <mesh material={mats.faixa} position={[0, -0.5, 0.0298]}><planeGeometry args={[1.5, 0.346]} /></mesh>

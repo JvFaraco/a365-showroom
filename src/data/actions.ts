@@ -39,7 +39,7 @@ export const ACTIONS: Record<ActionId, {
   som: { label: 'Tocar a sirene', camera: { position: [1.1, 0.4, 3.6], target: [0, 0, 0.2] } },
   encaixe: { label: 'Encaixar no suporte', duration: 4.6, camera: { position: [3.6, 1.5, 6.4], target: [0, 0.9, 0] } },
   'bateria-sirene': { label: 'Retirar a bateria', hold: 4.0, undo: 'Recolocar', camera: { position: [1.8, 1.6, 7.0], target: [0, 0.9, 0] } },
-  tamper: { label: 'Retirar da parede', hold: 1.4, undo: 'Recolocar', camera: { position: [-3.8, 1.3, 6.2], target: [0, 0.9, 0] } },
+  tamper: { label: 'Retirar da parede', hold: 1.4, undo: 'Recolocar', camera: { position: [-3.4, 0.6, -5.2], target: [0, 1.0, -0.2] } }, // de trás: mostra a chave na traseira
   'btn-desarmar': { label: 'Apertar: desarmar', duration: 4.6, camera: { position: [1.1, 0.7, 7.2], target: [1.0, 0.2, 0] } },
   'btn-armar': { label: 'Apertar: armar', duration: 4.6, camera: { position: [1.1, 0.7, 7.2], target: [1.0, 0.2, 0] } },
   'btn-parcial': { label: 'Apertar: armar parcial', duration: 4.6, camera: { position: [1.1, 0.7, 7.2], target: [1.0, 0.2, 0] } },

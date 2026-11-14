@@ -6,7 +6,7 @@ import { ClickablePart } from '../parts/ClickablePart'
 import { M } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
-import { boxesGeometry, roundedRectGeometry, stadiumGeometry, type Block } from '../common/shapes'
+import { boxesGeometry, stadiumGeometry, type Block } from '../common/shapes'
 import { DeviceCtx, bump, seg, useActionPhase, type DeviceProps } from '../common/util'
 import { actionTau, actionTime, now, useShowroom } from '../../store/showroomStore'
 import { MagneticField } from '../fx/MagneticField'
@@ -24,20 +24,22 @@ const DEITA: [number, number, number] = [0, 0, Math.PI / 2]
 const mm = (v: number) => v / 49.5
 const BODY = { w: mm(24), len: mm(92.6), d: mm(27.6), x: -mm(9.5) }
 const MAG = { w: mm(11), len: mm(92.3), d: mm(15), gap: mm(7) }
-const LED_Y = mm(18) // janela do LED: a 18 mm do meio, do lado da tampinha
+const LED_Y = mm(18) // janela do LED: a 18 mm do meio, perto de uma ponta (a "ponta do LED")
 const BZ = 0.04, FRONT = BZ + BODY.d / 2, BACK = BZ - BODY.d / 2 // centro, frente e costas do corpo em Z
-const SPLIT = BACK + BODY.d * 0.42 // emenda entre a base (atrás) e a tampa (na frente)
+const SPLIT = BACK + mm(7.5) // emenda entre a base (atrás) e a tampa (na frente), a ~7,5 mm das costas
 const MAG_X = BODY.x + BODY.w / 2 + MAG.gap + MAG.w / 2
 const MAG_Z = BACK + MAG.d / 2 // as costas das duas peças no mesmo plano
 export const DOOR_TOP = BODY.x + BODY.w / 2 + MAG.gap / 2 // o topo da folha passa no meio do vão
 export const HINGE_X = 1.85 // o sensor fica no canto de cima da folha, do lado que abre
 const MINI: [number, number, number] = [-2.0, 1.05, 1.0]
-// Por dentro (pela foto da placa). Ao longo do comprimento (Y): a tampinha e o borne ficam na ponta do LED (+Y); a
-// antena em mola sai da outra ponta da placa (−Y) e ocupa o resto do corpo.
-const CAP_Y = BODY.len / 2 - mm(12.8) // emenda da tampinha da ponta (a ~13 mm dela)
-const PCB = { len: mm(74), w: mm(19), y: BODY.len / 2 - mm(3) - mm(74) / 2, z: -0.1 }
+// Por dentro (pela foto da placa). Ao longo do comprimento (Y): o borne fica na ponta do LED (+Y); a antena em mola
+// sai da outra ponta da placa (−Y) e ocupa o resto do corpo. A placa fica a ~14 mm das costas, com o LED na face
+// virada para a janela e a pilha atrás.
+const CAP_Y = BODY.len / 2 - mm(12.3) // friso de alinhamento na lateral virada para o ímã (a ~12 mm da ponta do LED)
+const PCB = { len: mm(74), w: mm(19), y: BODY.len / 2 - mm(3) - mm(74) / 2, z: BACK + mm(14) }
 const PCB_END = PCB.y - PCB.len / 2 // borda da placa do lado da antena
-const CELL = { r: mm(5.2), len: mm(43), y: PCB.y - mm(1) } // pilha cilíndrica, deitada sobre a placa, entre as duas presilhas
+const CELL = { r: mm(5.2), len: mm(31), y: mm(6.5) } // pilha cilíndrica, deitada atrás da placa, entre as duas presilhas
+const CELL_Z = PCB.z - 0.02 - CELL.r // centro da pilha em Z (mesma folga de antes, agora do lado de trás)
 
 /** Retângulo de cantos redondos centrado (contorno de casca). */
 function rrect(w: number, h: number, r: number, hole = false) {
@@ -96,21 +98,21 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
     return new THREE.ExtrudeGeometry(sh, { depth: mm(4), bevelEnabled: false, curveSegments: 12 })
   }, [])
   const slit = useMemo(() => stadiumGeometry(mm(8), mm(3.9), 0.01, 0.003), [])
-  // emenda da tampinha: um aro fino com o mesmo perfil arredondado da tampa
-  const capSeam = useMemo(() => roundedRectGeometry(BODY.w + 0.004, FRONT - SPLIT + 0.1 + 0.004, 0.047, 0.01, 0), [])
+  // ponto de onde saem as ondas de rádio: o LED, que gira com a folha (atualizado no useFrame)
+  const radioFrom = useMemo(() => [-LED_Y, BODY.x, FRONT + 0.03] as [number, number, number], [])
   // cena da porta (só nas ações): canto de cima de uma porta de madeira com almofada, no vão de uma parede clara com
   // batente branco; o ímã fica no batente de cima
   const doorMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#8a6a4e', roughness: 0.7 }), [])
   const doorDark = useMemo(() => new THREE.MeshStandardMaterial({ color: '#6f533c', roughness: 0.75 }), [])
   const wallMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#c3c7cf', roughness: 0.95 }), [])
   const doorPanel = useMemo(() => {
-    const x0 = HINGE_X - 2.55, x1 = HINGE_X - 0.35, y0 = DOOR_TOP - 4.1, y1 = DOOR_TOP - 0.5, z = -0.16, t = 0.07
+    const x0 = HINGE_X - 2.55, x1 = HINGE_X - 0.35, y0 = DOOR_TOP - 4.1, y1 = DOOR_TOP - 0.5, z = -0.23, t = 0.07
     return boxesGeometry([[(x0 + x1) / 2, y1, z, x1 - x0, t, 0.025], [(x0 + x1) / 2, y0, z, x1 - x0, t, 0.025], [x0, (y0 + y1) / 2, z, t, y1 - y0, 0.025], [x1, (y0 + y1) / 2, z, t, y1 - y0, 0.025]])
   }, [])
   const jambs = useMemo(() => boxesGeometry([
-    [HINGE_X - 1.45, DOOR_TOP + 0.36, -0.155, 2.9 + 0.84 + 0.06, 0.5, 0.03], // batente de cima (onde fica o ímã)
-    [HINGE_X - 2.93 - 0.21, DOOR_TOP - 2.0, -0.155, 0.42, 4.2, 0.03], // lado da fechadura
-    [HINGE_X + 0.03 + 0.21, DOOR_TOP - 2.0, -0.155, 0.42, 4.2, 0.03], // lado da dobradiça
+    [HINGE_X - 1.45, DOOR_TOP + 0.36, -0.255, 2.9 + 0.84 + 0.06, 0.5, 0.03], // batente de cima (onde fica o ímã)
+    [HINGE_X - 2.93 - 0.21, DOOR_TOP - 2.0, -0.255, 0.42, 4.2, 0.03], // lado da fechadura
+    [HINGE_X + 0.03 + 0.21, DOOR_TOP - 2.0, -0.255, 0.42, 4.2, 0.03], // lado da dobradiça
   ]), [])
   // antena em mola de cobre
   const smd = useMemo(() => {
@@ -133,7 +135,7 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
     const capD = 0.1
     return {
       baseWalls: shellWalls(BODY.w, BODY.len, 0.03, WALL_T, BACK + FLOOR_T, SPLIT),
-      coverWalls: shellWalls(BODY.w, BODY.len, 0.045, WALL_T, SPLIT - 0.1, FRONT - capD + 0.046),
+      coverWalls: shellWalls(BODY.w, BODY.len, 0.045, WALL_T, SPLIT - 0.001, FRONT - capD + 0.046),
       // linha da emenda: aro fino na borda, não chapa cheia (senão tampa o miolo da base na vista explodida)
       seam: shellWalls(BODY.w + 0.004, BODY.len + 0.004, 0.032, mm(1), SPLIT - 0.006, SPLIT + 0.006),
       capD,
@@ -151,6 +153,10 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
       if (tk >= 0 && tk < 0.7) rot += Math.sin(tk * 70) * 0.012 * (1 - tk / 0.7)
     }
     door.current.rotation.y = rot
+    // as ondas saem do LED onde ele estiver: o mesmo giro da folha em volta da dobradiça (HINGE_X, z −0,3)
+    const dx = -LED_Y - HINGE_X, dz = FRONT + 0.03 + 0.3, c = Math.cos(rot), sn = Math.sin(rot)
+    radioFrom[0] = HINGE_X + dx * c + dz * sn
+    radioFrom[2] = -0.3 - dx * sn + dz * c
     // anti-sabotagem: separar a tampa da base (a base vai para trás); o pino da chave sobe quando o da base sai
     const ts = interactive ? actionTau('tamper-mag') : -1
     const sep = ts < 0 ? 0 : seg(ts, 0.1, 1.0)
@@ -182,7 +188,9 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
                   {[[0, mm(5)], [mm(5), 0]].map(([w, h], i) => <mesh key={i} material={M.white} position={[BODY.w / 2 - WALL_T - mm(5), mm(-24.5), mm(1)]}><boxGeometry args={[w + mm(2), h + mm(2), mm(2)]} /></mesh>)}
                   <mesh material={M.white} position={[0, mm(-22.5), mm(0.8)]}><boxGeometry args={[mm(6), mm(1.6), mm(1.6)]} /></mesh>
                   <mesh material={M.white} position={[0, mm(35.5), mm(3)]}><boxGeometry args={[BODY.w - 2 * WALL_T, mm(1.6), mm(6)]} /></mesh>
-                  <mesh material={M.hole} position={[0, mm(31.5), 0.001]} rotation={[0, 0, Math.PI / 2]}><planeGeometry args={[mm(13), mm(3)]} /></mesh>
+                  {/* rasgo passante atravessado na largura: aparece por dentro e por trás */}
+                  <mesh material={M.hole} position={[0, mm(31.5), 0.001]}><planeGeometry args={[mm(12), mm(1.5)]} /></mesh>
+                  <mesh material={M.hole} position={[0, mm(31.5), -FLOOR_T - 0.001]} rotation={[0, Math.PI, 0]}><planeGeometry args={[mm(12), mm(1.5)]} /></mesh>
                   {/* pino que aperta o anti-sabotagem da placa (pelo CAD: a 39 mm do meio, do lado do LED) */}
                   <mesh material={M.white} position={[0, mm(39), (PCB.z - 0.045 - (BACK + FLOOR_T)) / 2]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(1.7), mm(1.7), PCB.z - 0.045 - (BACK + FLOOR_T), 12]} /></mesh>
                   <mesh material={M.hole} position={[0, mm(39), 0.001]}><circleGeometry args={[mm(2.6), 16]} /></mesh>
@@ -205,11 +213,14 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
                 </group>
                 {/* logo em relevo, no meio do comprimento */}
                 <LogoGroove r={0.146} position={[BODY.x, 0, FRONT + 0.0005]} />
-                {/* emenda da tampinha da ponta: dá a volta na frente e nos dois lados */}
-                <mesh geometry={capSeam} material={M.logoGroove} position={[BODY.x, CAP_Y, (FRONT + SPLIT - 0.1) / 2]} rotation={[Math.PI / 2, 0, 0]} />
+                {/* friso de alinhamento: filete fino saliente só na lateral virada para o ímã, da emenda até perto da face */}
+                <mesh material={M.white} position={[BODY.x + BODY.w / 2 + mm(0.4), CAP_Y, (SPLIT + FRONT - mm(1.5)) / 2]}><boxGeometry args={[mm(0.8), mm(1), FRONT - mm(1.5) - SPLIT]} /></mesh>
+                {/* entalhe na quina da face, na ponta oposta ao LED (versão simples: um bloco escuro rente à frente e à ponta,
+                    cobrindo a quina arredondada, de raio 0,045) */}
+                <mesh material={M.hole} position={[BODY.x, -BODY.len / 2 + mm(0.9) - 0.0005, FRONT - 0.045 / 2 + 0.00025]}><boxGeometry args={[mm(9.5), mm(1.8), 0.045 + 0.0005]} /></mesh>
               </group>
             </ClickablePart>
-            {/* janela do LED: pequena (~8 × 4 mm), atravessada na face, entre o logo e a tampinha da ponta */}
+            {/* janela do LED: pequena (~8 × 4 mm), atravessada na face, entre o logo e a ponta */}
             <ClickablePart id="led">
               <group rotation={DEITA}>
                 <mesh geometry={slit} material={M.white} position={[BODY.x, LED_Y, FRONT - 0.013]} />
@@ -251,22 +262,22 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
                 <mesh material={M.chip} position={[BODY.x + 0.05, PCB_END + 0.2, PCB.z + 0.021]}><boxGeometry args={[0.1, 0.1, 0.02]} /></mesh>
               </group>
             </ClickablePart>
-            {/* pilha cilíndrica deitada sobre a placa, presa por duas presilhas metálicas; corpo preto e faixa dourada no + */}
+            {/* pilha cilíndrica deitada atrás da placa, presa por duas presilhas metálicas; corpo preto e faixa dourada no + */}
             <ClickablePart id="bateria">
               <group rotation={DEITA}>
-                <mesh material={M.black} position={[BODY.x, CELL.y, PCB.z + 0.02 + CELL.r]}><cylinderGeometry args={[CELL.r, CELL.r, CELL.len, 24]} /></mesh>
-                <mesh material={M.gold} position={[BODY.x, CELL.y + CELL.len * 0.32, PCB.z + 0.02 + CELL.r]}><cylinderGeometry args={[CELL.r + 0.002, CELL.r + 0.002, CELL.len * 0.36, 24, 1, true]} /></mesh>
-                <mesh material={M.metal} position={[BODY.x, CELL.y + CELL.len / 2 + 0.012, PCB.z + 0.02 + CELL.r]}><cylinderGeometry args={[0.035, 0.035, 0.024, 12]} /></mesh>
+                <mesh material={M.black} position={[BODY.x, CELL.y, CELL_Z]}><cylinderGeometry args={[CELL.r, CELL.r, CELL.len, 24]} /></mesh>
+                <mesh material={M.gold} position={[BODY.x, CELL.y + CELL.len * 0.32, CELL_Z]}><cylinderGeometry args={[CELL.r + 0.002, CELL.r + 0.002, CELL.len * 0.36, 24, 1, true]} /></mesh>
+                <mesh material={M.metal} position={[BODY.x, CELL.y + CELL.len / 2 + 0.012, CELL_Z]}><cylinderGeometry args={[0.035, 0.035, 0.024, 12]} /></mesh>
                 {[1, -1].map((sy) => (
-                  <group key={sy} position={[BODY.x, CELL.y + sy * (CELL.len / 2 + 0.035), PCB.z + 0.02 + CELL.r]}>
+                  <group key={sy} position={[BODY.x, CELL.y + sy * (CELL.len / 2 + 0.035), CELL_Z]}>
                     <mesh material={M.metal}><boxGeometry args={[0.24, 0.018, 0.21]} /></mesh>
-                    <mesh material={M.metal} position={[0, -sy * 0.07, -CELL.r - 0.004]}><boxGeometry args={[0.24, 0.16, 0.012]} /></mesh>
+                    <mesh material={M.metal} position={[0, -sy * 0.07, CELL.r + 0.004]}><boxGeometry args={[0.24, 0.16, 0.012]} /></mesh>
                   </group>
                 ))}
               </group>
             </ClickablePart>
             <group visible={sceneOn}>
-              <mesh material={doorMat} position={[HINGE_X - 1.45, DOOR_TOP - 2.2, -0.24]} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[2.9, 4.4, 0.14]} /></mesh>
+              <mesh material={doorMat} position={[HINGE_X - 1.45, DOOR_TOP - 2.2, -0.31]} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[2.9, 4.4, 0.14]} /></mesh>
               <mesh geometry={doorPanel} material={doorDark} userData={{ fx: true }} raycast={() => null} />
             </group>
           </group>
@@ -303,9 +314,9 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
         <>
           {/* batente: a parede em cima e dos lados da folha */}
           <group visible={sceneOn}>
-            <mesh material={wallMat} position={[HINGE_X - 1.45, DOOR_TOP + 0.03 + 1.7, -0.26]} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[12, 3.4, 0.18]} /></mesh>
-            <mesh material={wallMat} position={[HINGE_X - 2.93 - 2.25, DOOR_TOP - 2.2, -0.26]} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[4.5, 4.46, 0.18]} /></mesh>
-            <mesh material={wallMat} position={[HINGE_X + 0.03 + 2.25, DOOR_TOP - 2.2, -0.26]} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[4.5, 4.46, 0.18]} /></mesh>
+            <mesh material={wallMat} position={[HINGE_X - 1.45, DOOR_TOP + 0.03 + 1.7, -0.36]} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[12, 3.4, 0.18]} /></mesh>
+            <mesh material={wallMat} position={[HINGE_X - 2.93 - 2.25, DOOR_TOP - 2.2, -0.36]} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[4.5, 4.46, 0.18]} /></mesh>
+            <mesh material={wallMat} position={[HINGE_X + 0.03 + 2.25, DOOR_TOP - 2.2, -0.36]} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[4.5, 4.46, 0.18]} /></mesh>
             <mesh geometry={jambs} material={M.white} userData={{ fx: true }} raycast={() => null} />
           </group>
           <group rotation={DEITA}>
@@ -314,7 +325,7 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
           {sceneOn && (
             <>
               <MiniModulo position={MINI} led={() => (alarmOn() ? 'disparo' : 'armado')} />
-              <RadioPulse from={[-LED_Y, BODY.x, FRONT + 0.03]} to={MINI} on={alarmOn} />
+              <RadioPulse from={radioFrom} to={MINI} on={alarmOn} />
               <SoundWaves position={[1.0, -1.4, -0.1]} color="#ffb020" count={3} maxRadius={1.0} speed={1.4}
                 level={() => { const t = knockT(); return t >= 0 && t < 1.1 ? 2 : 0 }} />
             </>
