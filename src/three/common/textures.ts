@@ -200,15 +200,17 @@ function fakeQr(ctx: CanvasRenderingContext2D, x: number, y: number, size: numbe
   }
 }
 
-/** Adesivo "Dúvidas?" da frente do módulo: texto azul e um QR ilustrativo (não codifica nada) sobre fundo branco. */
+/** Tinta do adesivo "Dúvidas?": anil escuro, puxando para o violeta (não é o azul da marca). */
+const TINTA_DUVIDAS = '#25236B'
+/** Adesivo "Dúvidas?" da frente do módulo: texto anil e um QR ilustrativo (não codifica nada) sobre fundo branco. */
 export const duvidasStickerTexture = () =>
   memo('duvidas-sticker', () => {
     const [c, ctx] = canvas(320, 420, 2)
     ctx.fillStyle = '#fbfbfa'; ctx.fillRect(0, 0, 320, 420)
-    ctx.fillStyle = AZUL; ctx.textAlign = 'center'
+    ctx.fillStyle = TINTA_DUVIDAS; ctx.textAlign = 'center'
     fitText(ctx, 'Dúvidas?', 160, 60, 230, 46, '700 SIZEpx Poppins, sans-serif')
-    fakeQr(ctx, 50, 86, 220, AZUL, '#fbfbfa')
-    ctx.fillStyle = AZUL; ctx.textAlign = 'center'
+    fakeQr(ctx, 50, 86, 220, TINTA_DUVIDAS, '#fbfbfa')
+    ctx.fillStyle = TINTA_DUVIDAS; ctx.textAlign = 'center'
     fitText(ctx, 'Aponte a câmera para o', 160, 352, 270, 23, '600 SIZEpx "Encode Sans", sans-serif')
     fitText(ctx, 'QRCode e fale conosco', 160, 384, 270, 23, '600 SIZEpx "Encode Sans", sans-serif')
     return tex(c)
