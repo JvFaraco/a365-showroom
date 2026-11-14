@@ -80,17 +80,17 @@ A traseira também tem os furos quadrados e os ganchos em "L" do encaixe, e a et
 
 ## Controle Remoto (44 × 51 × 13 mm; 1 un = 25,9 mm; frente em +Z)
 
-O corpo é um seixo, não uma moeda: duas placas finas no contorno inteiro, em gota (círculo de 22 mm de raio que se funde, por concordâncias largas, com o olhal da argola, um círculo de ~6 mm de raio com o centro quase na borda do corpo), e dois ombros arredondados feitos como sólidos de revolução, um na frente e um atrás. Espessura no meio de ~13 mm; o teclado fica no centro do corpo.
+O corpo é um seixo, não uma moeda: duas placas finas no contorno inteiro, em gota (círculo de 22 mm de raio que se funde, por concordâncias largas, com o olhal da argola, um círculo de ~7 mm de raio com o centro quase na borda do corpo), e dois ombros feitos como sólidos de revolução, um na frente e um atrás, pela tabela das medidas externas (raio → meia espessura): perto da borda eles descem quase retos. Espessura no meio de ~13 mm. O teclado (~29 mm) fica no centro do corpo, numa abertura de 14,75 mm de raio; o aro em volta desce ~1 mm do alto do ombro até ela, e as teclas e o disco central ficam quase rentes ao alto do aro.
 
 | part.id | Como é modelada |
 |---|---|
-| `btn-panico`, `btn-desarmar`, `btn-armar`, `btn-parcial` | Setores de anel extrudados, em cruz, com o ícone em textura. |
+| `btn-panico`, `btn-desarmar`, `btn-armar`, `btn-parcial` | Setores de anel extrudados, em cruz, com o ícone em textura, dentro da abertura do aro. Apertada, a tecla desce até o fundo do teclado. |
 | centro (sem `id`) | Disco fixo, modelado com o corpo; não é botão. Logo em baixo-relevo discreto (a confirmar). |
-| `led` | Fenda de ~7 × 2 mm na parte plana da frente, entre o teclado e a borda de cima. |
+| `led` | Fenda de ~7 × 2 mm no aro, entre o teclado e a borda de cima, inclinada como ele. Apagada fica preta; acesa, a luz ocupa a fenda quase toda. |
 | `corpo` | Gota (extrusão com chanfro), preto soft-touch, com o filete azul em volta. A casca da frente é oca, como a peça real: a face é aberta em anel onde entra o teclado de borracha, o miolo fica preso por quatro raios em X (nas frestas entre as teclas) e, por dentro, há os pinos das cascas (por fora da borda da placa) e o anel do miolo, que encosta na frente da placa em volta do CI. O teclado (lâmina e um pino embaixo de cada tecla, que aperta o domo dourado da placa) sai junto com as teclas na vista explodida. Atrás, o aro grosso com a cavidade da bateria. |
-| `argola` | Furo oval deitado (~6,5 × 4 mm) perto da ponta do olhal, com a borda chanfrada. |
-| `tampa` | Disco com um lado reto, girado 45° em relação ao olhal: no lado reto, duas abas que engancham; no lado oposto, a presilha, uma aba curta com a fenda por onde a tampa abre e fecha. Fora do lado reto a casca de trás é fechada (a placa não aparece por fora). Por dentro: nervura em U e etiqueta lisa. |
-| `bateria` (i) | CR2032 prateada com o "+" gravado, encostada atrás da placa, no suporte marrom aberto de um lado (por onde ela sai) com a lâmina dourada por cima. |
+| `argola` | Olhal grosso (~6,8 mm) de borda redonda, por cima das placas, que afina no pescoço até sumir dentro do ombro. Furo oval deitado (~6,2 × 3,9 mm) com ~3 mm de ponte até a ponta; a borda redonda do furo faz o chanfro. Na vista explodida, sai com a casca da frente. |
+| `tampa` | Disco com um lado reto, girado 45° em relação ao olhal, quase rente às costas: no lado reto, duas abas que engancham (escondidas sob a parte fechada da casca); no lado oposto, a presilha, quase rente, e o entalhe de abrir, um vão na borda da cavidade, na casca. Fora do lado reto a casca de trás é fechada (a placa não aparece por fora). Por dentro: nervura em U e etiqueta lisa grande. "Ver em ação" troca a bateria (ciclo de 8 s). |
+| `bateria` (i) | CR2032 prateada com o "+" gravado, encostada atrás da placa, no suporte marrom aberto do lado da presilha da tampa (por onde ela sai), com a lâmina dourada. Na troca, a velha sai por esse lado, por fora da casca, e cai até o pedestal; a nova faz o caminho inverso. |
 | placa (i, sem `id`) | Disco de ~38 mm, 1 mm à frente da emenda das cascas, com um entalhe pequeno na borda do lado da argola. Na frente, virados para o teclado: as 4 teclas (base quadrada preta e domo dourado) a 14 mm do centro, embaixo dos pinos do teclado; o CI quadrado no centro; o cristal metálico; capacitores, resistores e pads dourados como na foto da placa (girada 135°); o LED na borda, embaixo da fenda; e a antena de fio amarelo correndo por dentro da borda. Atrás: o suporte da bateria e uma etiqueta lisa. |
 
 ## Placa de aviso (1,5 × 2,0)
