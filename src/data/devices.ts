@@ -286,7 +286,7 @@ export const DEVICES: Device[] = [
         name: 'Suporte de parede',
         what: 'Faz parte da base: sobe pela traseira e tem o encaixe em "Λ" onde entra a peça de fixação da parede. O sensor é fixo nele, e os dois giram juntos para a esquerda e para a direita, sempre em pé, para apontar para a área.',
         facts: ['Altura de instalação: 2,10 m a 2,40 m do chão'],
-        tip: 'Instale no canto, entre 2,10 m e 2,40 m do chão, apontando para o centro da área.',
+        tip: 'Instale no canto, entre 2,10 m e 2,40 m do chão, apontando para o centro da área. Diante de vitrines, janelas ou portas de vidro, instale paralelo ao acesso, não de frente.',
         camera: { position: [1.5, -0.2, -2.2], target: [0, -0.6, -0.6] },
         action: 'suporte',
         // a luva faz parte da base: não se separa dela na vista explodida
@@ -306,6 +306,7 @@ export const DEVICES: Device[] = [
         name: 'Pilhas',
         what: '3 pilhas AA.',
         facts: ['Duram até 2 anos, conforme o uso'],
+        tip: 'Retire os lacres de proteção e respeite a polaridade.',
         camera: { position: [-1.3, 0.6, -2.2], target: [0, 0.23, -0.37] },
         action: 'tampa-foto',
         internal: true,
@@ -317,6 +318,7 @@ export const DEVICES: Device[] = [
         name: 'Peça de fixação',
         what: 'Peça solta que vai parafusada na parede. A guia dela entra no encaixe do suporte, e o sensor desce até travar.',
         facts: ['Os parafusos de trava impedem que o sensor seja retirado'],
+        tip: 'Serve de gabarito para furar a parede; depois, é a guia onde o sensor encaixa.',
         camera: { position: [-1.3, -0.3, -2.2], target: [0, -0.6, -0.55] },
         explode: [0, 0.22, -1.15],
         pin: [-0.05, 0.15, 0],
@@ -332,7 +334,7 @@ export const DEVICES: Device[] = [
       },
       {
         id: 'modulo-camera',
-        name: 'Câmera (módulo interno)',
+        name: 'Módulo da câmera',
         what: 'Preso na parte de cima da placa principal: um suporte branco segura o tubo da lente, apontado para a lente do capuz, e a plaquinha dos LEDs.',
         facts: [],
         camera: { position: [0.9, 0.7, 2.2], target: [0, 0.4, 0.2] },
