@@ -629,9 +629,14 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
         <ClickablePart id="tamper">
           {/* chave preta pequena na placa, com a alavanquinha preta (~2,5 mm): com a tampa fechada ela fica escondida
               dentro da carcaça da chave; aberta, ela sai */}
-          <mesh material={M.chip} position={[-0.45, PCB_Y + 0.02, 0.03]}><boxGeometry args={[0.09, 0.04, 0.07]} /></mesh>
+          {/* como na foto da placa: bloquinho preto comprido (~4 × 7 mm) deitado, com quatro perninhas metálicas nas laterais;
+              a alavanca fica na ponta */}
+          <mesh material={M.chip} position={[-0.45, PCB_Y + 0.03, 0.03]}><boxGeometry args={[0.05, 0.06, 0.0875]} /></mesh>
+          {[-1, 1].flatMap((sx) => [-1, 1].map((sz) => (
+            <mesh key={`${sx}${sz}`} material={M.metal} position={[-0.45 + sx * 0.032, PCB_Y + 0.006, 0.03 + sz * 0.028]}><boxGeometry args={[0.016, 0.012, 0.014]} /></mesh>
+          )))}
           <group ref={tPin}>
-            <mesh material={M.chip} position={[-0.45, PCB_Y + 0.012, 0.03]}><boxGeometry args={[0.022, 0.05, 0.012]} /></mesh>
+            <mesh material={M.chip} position={[-0.45, PCB_Y + 0.03, 0.03 - 0.0875 / 2 + 0.012]}><boxGeometry args={[0.024, 0.055, 0.014]} /></mesh>
           </group>
         </ClickablePart>
         {/* botão de reset: embaixo da placa, sobre o furo do fundo (base preta e botão azul, como na foto da placa) */}
@@ -677,8 +682,11 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
           <mesh material={M.pcbDark} position={[(MODEM.x0 + MODEM.x1) / 2, PCB_Y + 0.045, (MODEM.z0 + MODEM.z1) / 2]}><boxGeometry args={[MODEM.x1 - MODEM.x0, 0.012, MODEM.z1 - MODEM.z0]} /></mesh>
           <RoundedBox args={[0.05, 0.05, MODEM.z1 - MODEM.z0 + 0.03]} radius={0.01} smoothness={2} position={[MODEM.x1 + 0.025, PCB_Y + 0.03, (MODEM.z0 + MODEM.z1) / 2]} material={M.chip} />
           <mesh material={M.white} position={[0.215, PCB_Y + 0.056, 0.355]}><boxGeometry args={[0.18, 0.008, 0.3]} /></mesh>
-          <mesh material={M.metal} position={[0.215, PCB_Y + 0.064, 0.355]}><boxGeometry args={[0.045, 0.008, 0.31]} /></mesh>
-          <mesh material={M.metal} position={[0.215, PCB_Y + 0.064, 0.355]}><boxGeometry args={[0.18, 0.008, 0.03]} /></mesh>
+          {/* suporte metálico do SIM em "I", como na foto: a barra no comprimento do cartão e uma barra em cada ponta */}
+          <mesh material={M.metal} position={[0.215, PCB_Y + 0.064, 0.355]}><boxGeometry args={[0.17, 0.008, 0.03]} /></mesh>
+          {[-0.08, 0.08].map((dx) => <mesh key={dx} material={M.metal} position={[0.215 + dx, PCB_Y + 0.064, 0.355]}><boxGeometry args={[0.035, 0.008, 0.22]} /></mesh>)}
+          {/* contatos dourados da ponta do cartão, entrando no slot preto */}
+          <mesh material={M.gold} position={[MODEM.x1 - 0.012, PCB_Y + 0.0515, (MODEM.z0 + MODEM.z1) / 2]}><boxGeometry args={[0.024, 0.002, MODEM.z1 - MODEM.z0 - 0.03]} /></mesh>
           {[0, 1, 2].map((i) => <mesh key={i} material={M.gold} position={[MODEM.x0 + 0.06, PCB_Y + 0.056, 0.245 + i * 0.1]}><cylinderGeometry args={[0.015, 0.015, 0.014, 10]} /></mesh>)}
           <mesh geometry={g.coaxB} material={M.brown} />
           {/* presilha metálica na ponta do cartão (o lado oposto ao slot): uma base e duas travas que seguram os cantos */}
@@ -745,6 +753,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
           {/* conector branco soldado na placa (fica parado) e, encaixado na boca dele, o plugue com os fios vermelho e
               preto: ao desplugar, o plugue desliza para fora do conector, na direção dos fios */}
           <RoundedBox args={[0.07, 0.04, 0.07]} radius={0.008} smoothness={2} position={[0.6, PCB_Y + 0.02, -0.05]} material={M.white} />
+          {/* os frisos de cima do conector, como na foto */}
+          {[-0.068, -0.045].map((z) => <mesh key={z} material={M.white} position={[0.6, PCB_Y + 0.043, z]}><boxGeometry args={[0.06, 0.008, 0.01]} /></mesh>)}
           <mesh material={M.hole} position={[0.6, PCB_Y + 0.02, -0.0145]}><planeGeometry args={[0.055, 0.026]} /></mesh>
           <group position={BAT_PIVOT}>
             <group ref={batPlug}>
