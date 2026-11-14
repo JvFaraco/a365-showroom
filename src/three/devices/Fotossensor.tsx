@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { Html, RoundedBox } from '@react-three/drei'
 import { ClickablePart } from '../parts/ClickablePart'
-import { M, fxBasic } from '../common/materials'
+import { M } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
@@ -424,7 +424,6 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   const walker = useRef<THREE.Group>(null!)
   const sensTag = useRef<HTMLDivElement>(null)
   const sensShow = useRef(0)
-  const ruler = useRef<THREE.Group>(null!)
   const alertV = useRef(0)
   const hand = useRef<THREE.Group>(null!)
   const handG = useMemo(handGeometries, [])
@@ -438,10 +437,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   const shellMat = useMemo(() => { const m = M.white.clone(); m.side = THREE.DoubleSide; return m }, [])
   const lensBack = useMemo(() => new THREE.MeshStandardMaterial({ color: '#bfc4ca', roughness: 0.7 }), []) // janela translúcida, um pouco mais escura que o corpo (fotos)
   const pirMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#f1f2f3', roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12, transparent: true, opacity: 0.8, envMapIntensity: 1.4 }), [])
-  const rulerMat = useMemo(() => fxBasic('#ffffff', 0.5), [])
-  const bandMat = useMemo(() => fxBasic('#35d46a', 0.35), [])
   const pirPhase = useActionPhase('pir', [0, 3.1, 5.9])
-  const supPhase = useActionPhase('suporte')
   const camPhase = useActionPhase('camera', [1.0, 6.4])
   const sabPhase = useActionPhase('sabotagem', [1.7, 2.6, 8.6])
   const sensPhase = useActionPhase('sensibilidade')
@@ -470,7 +466,6 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
     const hx = HAND_OUT.x * away * 2.2, hz = HAND_OUT.z * away * 2.2 - PAN[2], c = Math.cos(pan), sn = Math.sin(pan)
     hand.current.rotation.y = pan
     hand.current.position.set(hx * c + hz * sn, HAND_Y + HAND_OUT.y * away * 2.2, -hx * sn + hz * c + PAN[2])
-    ruler.current.visible = ts >= 0
     // troca das pilhas: o sensor vira de costas; aperta-se a aba de cima e a tampa abre pelo alto, girando nas
     // presilhas de baixo (~30°), e sai para cima e para trás. As 3 pilhas velhas saem uma a uma, as novas entram, a
     // tampa volta, fecha com um clique e o sensor vira de frente. Abrir a tampa não dispara nada (não há tamper)
@@ -776,17 +771,6 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
           )}
           <group ref={person} position={[0, FAN_Y, PERSON_Z]} visible={false}><LowPolyPerson scale={1.5} /></group>
           {pirPhase === 1 && alertBadge()}
-          <group ref={ruler} visible={false} position={[-0.95, 0, -0.78]}>
-            <mesh material={rulerMat} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[0.02, 3.2, 0.02]} /></mesh>
-            <mesh material={bandMat} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[0.12, 1.9, 0.01]} /></mesh>
-            {supPhase >= 0 && (
-              <>
-                <Html position={[-0.1, 0.95, 0]} center style={{ pointerEvents: 'none' }}><div className="fx-tag rounded bg-black/70 px-2 text-sm font-semibold text-white">2,40 m</div></Html>
-                <Html position={[-0.1, -0.95, 0]} center style={{ pointerEvents: 'none' }}><div className="fx-tag rounded bg-black/70 px-2 text-sm font-semibold text-white">2,10 m</div></Html>
-                <Html position={[-0.1, -1.5, 0]} center style={{ pointerEvents: 'none' }}><div className="fx-tag text-xs text-white/70">altura do chão</div></Html>
-              </>
-            )}
-          </group>
         </>
       )}
     </DeviceCtx.Provider>

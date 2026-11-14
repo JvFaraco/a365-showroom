@@ -158,7 +158,7 @@ export const useShowroom = create<State>((set, get) => ({
     setTimeout(() => { if (get().armPending === a) get().setArm(a) }, ARM_DELAY_MS)
   },
   setLed: (ledState) => set({ ledState }),
-  startAction: (id) => { holdRef.v = 0; set({ ...clean, sirenOn: id === 'som', action: { id, t0: now() } }) },
+  startAction: (id) => { holdRef.v = 0; set({ ...clean, sirenOn: id === 'som', action: { id, t0: now() }, ...(ACTIONS[id].outside ? { view: 'normal' as const } : {}) }) },
   // ao terminar uma ação, o aparelho continua inteiro à vista (não volta a esmaecer a carcaça de repente, o que fazia as
   // peças de dentro "atravessarem" a tampa recém-fechada); volta ao normal no próximo clique, vista ou aparelho
   // a foto pedida pelo app continua em "Últimas imagens" depois de fechar a ação

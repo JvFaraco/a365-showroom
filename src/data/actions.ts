@@ -13,6 +13,8 @@ export const ACTIONS: Record<ActionId, {
   undo?: string
   /** mantém as outras partes esmaecidas durante a ação (para ver o interior) */
   keepDim?: boolean
+  /** a ação mostra o aparelho por fora: sai do Raio-X ao começar (ex.: o reset apertado pelo furo do fundo) */
+  outside?: boolean
   /** câmera própria da ação, quando o efeito não cabe no enquadramento da parte */
   camera?: { position: Vec3; target: Vec3 }
   /** raio da cena da ação, para caber na tela estreita (padrão: 30% da distância da câmera da ação) */
@@ -25,7 +27,7 @@ export const ACTIONS: Record<ActionId, {
   cabos: { label: 'Encaixar os cabos', duration: 5.5, camera: { position: [-0.8, -2.9, -2.5], target: [0, -0.5, -0.6] } },
   audio: { label: 'Ouvir a Central', duration: 8, camera: { position: [2.9, 1.3, 3.4], target: [0.25, 0.2, 0] } },
   // o módulo visto por baixo: o palito entra no furo do fundo e aperta o botão de reset
-  'reset-modulo': { label: 'Apertar o reset', duration: 6, camera: { position: [1.5, -2.0, -1.4], target: [0.44, -0.55, -0.47] } },
+  'reset-modulo': { label: 'Apertar o reset', duration: 6, outside: true, camera: { position: [1.5, -2.0, -1.4], target: [0.44, -0.55, -0.47] } },
   'tamper-modulo': { label: 'Abrir a tampa', hold: 1.4, undo: 'Fechar', keepDim: true, camera: { position: [-1.9, 1.5, 1.8], target: [-0.45, 0.1, 0.05] } },
   'desplugar-bateria': { label: 'Desplugar a bateria', hold: 2.4, undo: 'Reconectar', camera: { position: [2.3, 2.3, 1.9], target: [0.45, 0.15, 0.05] } },
   'bateria-modulo': { label: 'Tirar da tomada', duration: 9, camera: { position: [2.6, 1.3, 3.0], target: [0.4, 0, 0] } },
