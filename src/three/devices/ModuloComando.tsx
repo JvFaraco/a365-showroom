@@ -424,7 +424,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
   const baseMat = useMemo(() => { const m = M.grey.clone(); m.color.set('#9a9a94'); return m }, [])
   const baseDark = useMemo(() => { const m = M.greyDark.clone(); m.color.set('#6b6b66'); return m }, [])
   // o disco do topo é fosco; a lateral tem o brilho do plástico. Mesmo material (clones), só muda o acabamento
-  const topMat = useMemo(() => { const m = M.white.clone(); m.side = THREE.DoubleSide; m.roughness = 0.62; m.clearcoat = 0.06; return m }, [])
+  const topMat = useMemo(() => { const m = M.white.clone(); m.side = THREE.DoubleSide; m.roughness = 0.45; m.clearcoat = 0.15; return m }, []) // topo brilhante, como na peça real (escolha do usuário)
   // adesivo "Dúvidas?" da frente: mesmo tipo de material da placa (padrão, com textura)
   const stickerMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.5, map: duvidasStickerTexture() }), [])
   const viasPhase = useActionPhase('antena', [4, 7.5, 10])
