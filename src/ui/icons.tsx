@@ -31,7 +31,15 @@ export const Sound = ({ size, on, ...p }: P & { on: boolean }) => (<svg {...base
 export const Fullscreen = ({ size, ...p }: P) => (<svg {...base(size, p)}><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>)
 export const ListIcon = ({ size, ...p }: P) => (<svg {...base(size, p)}><path d="M8 6h12M8 12h12M8 18h12" /><circle cx="4" cy="6" r="1" fill="currentColor" /><circle cx="4" cy="12" r="1" fill="currentColor" /><circle cx="4" cy="18" r="1" fill="currentColor" /></svg>)
 export const Close = ({ size, ...p }: P) => (<svg {...base(size, p)}><path d="M6 6l12 12M18 6L6 18" /></svg>)
-export const Chevron = ({ size, dir = 'right', ...p }: P & { dir?: 'left' | 'right' }) => (<svg {...base(size, p)}><path d={dir === 'right' ? 'M9 5l7 7-7 7' : 'M15 5l-7 7 7 7'} /></svg>)
+// engrenagem simples: oito dentes em volta de um furo
+export const Gear = ({ size, ...p }: P) => (<svg {...base(size, p)}><circle cx="12" cy="12" r="3" /><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" /><circle cx="12" cy="12" r="6.5" /></svg>)
+// sensor de abertura: o corpo e o ímã lado a lado
+export const DoorSensor = ({ size, ...p }: P) => (<svg {...base(size, p)}><rect x="7" y="7" width="3.5" height="10" rx="1" /><rect x="12.5" y="4" width="4.5" height="16" rx="1.2" /></svg>)
+// controle remoto: a gota com a argola no alto e o botão no meio
+export const Remote = ({ size, ...p }: P) => (<svg {...base(size, p)}><path d="M12 3c1.6 0 2.4 1.4 2.6 2.6A7 7 0 1 1 9.4 5.6C9.6 4.4 10.4 3 12 3z" /><circle cx="12" cy="13" r="2.4" /></svg>)
+// módulo de comando visto de lado: a tampa arredondada sobre a base, com o LED na frente
+export const Hub = ({ size, ...p }: P) => (<svg {...base(size, p)}><path d="M4 17c0-5 3.6-9 8-9s8 4 8 9" /><path d="M3 17h18v2.5H3z" /><circle cx="12" cy="14" r=".9" fill="currentColor" /></svg>)
+export const Chevron =({ size, dir = 'right', ...p }: P & { dir?: 'left' | 'right' }) => (<svg {...base(size, p)}><path d={dir === 'right' ? 'M9 5l7 7-7 7' : 'M15 5l-7 7 7 7'} /></svg>)
 
 // logo Orsegups na forma oficial (a mesma da placa): anel + corte, num viewBox de 120 com raio de fora 54
 const LR = 54
