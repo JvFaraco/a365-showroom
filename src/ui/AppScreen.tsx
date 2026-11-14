@@ -36,6 +36,46 @@ function AppTop({ onBell }: { onBell?: () => void }) {
   )
 }
 
+/**
+ * Tela "Histórico de imagens" (tocar num fotossensor em Equipamentos): a zona, o botão de pedir uma imagem atualizada e as
+ * fotos em grade, com a data embaixo. A imagem pedida entra no primeiro lugar: primeiro carregando, depois a foto.
+ */
+function ImageHistory({ photo, onBack }: { photo: 'idle' | 'loading' | 'done'; onBack: () => void }) {
+  const old = ['hoje às 07:31', 'ontem às 20:26', 'ontem às 07:31', '12 nov às 15:14', '11 nov às 9:58', '11 nov às 15:17']
+  const tiles = photo === 'idle' ? old : ['', ...old.slice(0, 5)]
+  return (
+    <div className={`absolute inset-0 z-[7] flex flex-col ${BG} text-white`}>
+      <StatusBar />
+      <div className="relative flex items-center justify-center px-4 pb-1 pt-4 text-[15px]">
+        <button aria-label="Voltar" className="absolute left-4 cursor-pointer text-white/85" onClick={(e) => { e.stopPropagation(); beep('ui'); onBack() }}><Chevron dir="left" size={20} /></button>
+        Histórico de imagens
+      </div>
+      <div className="text-center leading-tight"><div className="text-[12.5px] text-white/90">Sala de estar</div><div className="text-[9.5px] text-white/50">Partição 1</div></div>
+      <button disabled={photo === 'loading'}
+        onClick={(e) => { e.stopPropagation(); if (photo === 'loading') return; beep('ui'); useShowroom.getState().set({ appPhoto: 'loading' }) }}
+        className="mx-5 mt-2.5 rounded-xl bg-[#F9E000] py-2 text-[12px] font-medium text-[#151618] disabled:opacity-70">
+        {photo === 'loading' ? 'Solicitando…' : 'Solicitar imagem atualizada'}
+      </button>
+      <div className="mt-3 grid grid-cols-2 gap-2 px-2">
+        {tiles.map((when, i) => (
+          <div key={i} className="overflow-hidden rounded-xl bg-[#26272b]">
+            <div className="relative h-[88px]">
+              {when === '' && photo === 'loading' ? (
+                <div className="grid h-full place-items-center bg-black/40">
+                  <span className="h-6 w-6 rounded-full border-[3px] border-white/30 border-t-white" style={{ animation: 'spin 0.9s linear infinite' }} />
+                </div>
+              ) : (
+                <img src={aiPhotoDataUrl(when === '')} alt="" width={240} height={180} className="h-full w-full object-cover" draggable={false} />
+              )}
+            </div>
+            <div className="py-1 text-center text-[9.5px] text-white/75">{when === '' ? (photo === 'loading' ? 'solicitando…' : 'agora') : when}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /** Tela "Notificações" (o sino do topo), como no app: ponto de não lida, foto ou ícone, o patrimônio, o aviso, quem e quando. */
 function Notifications({ onBack }: { onBack: () => void }) {
   const items: { thumb?: boolean; Icon?: typeof LockOpen; title: string; who: string; when: string }[] = [
@@ -197,6 +237,7 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
       {/* barra de status com o entalhe */}
       <StatusBar />
       {notif && <Notifications onBack={() => setNotif(false)} />}
+      {action === 'solicitar-imagem' && <ImageHistory photo={photo} onBack={() => useShowroom.getState().stopAction()} />}
       <AppTop onBell={interactive ? () => setNotif(true) : undefined} />
 
       {/* saudação e, à direita, o botão SOS (só o contorno, como no app) */}
@@ -261,11 +302,6 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
             </div>
           </div>
           {/* botão amarelo, como em "Histórico de imagens" do app */}
-          {action === 'solicitar-imagem' && <button
-            onClick={(e) => { if (action !== 'solicitar-imagem' || photo === 'loading') return; e.stopPropagation(); beep('ui'); useShowroom.getState().set({ appPhoto: 'loading' }) }}
-            className="mt-1.5 w-full rounded-lg bg-[#F9E000] py-1.5 text-[11.5px] font-medium text-[#151618]">
-            Solicitar imagem atualizada
-          </button>}
         </Region>
 
         <Region id="ultimos-eventos" interactive={interactive}>

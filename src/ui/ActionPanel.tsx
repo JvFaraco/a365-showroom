@@ -166,7 +166,7 @@ export function ActionPanel() {
       )}
       {action.id === 'solicitar-imagem' && (
         <div>
-          <p className="mb-2 text-xs text-white/70">Toque em "Solicitar imagem atualizada" na tela do celular (ou aqui). No demo leva ~4 s.</p>
+          <p className="mb-2 text-xs text-white/70">Abre o Histórico de imagens do fotossensor, como ao tocar nele em Equipamentos. Toque em "Solicitar imagem atualizada" no celular (ou aqui). No demo leva ~4 s.</p>
           <button className="btn btn-primary w-full" disabled={photo === 'loading'} onClick={() => set({ appPhoto: 'loading' })}>
             {photo === 'loading' ? 'Solicitando…' : photo === 'done' ? 'Solicitar de novo' : 'Solicitar imagem atualizada'}
           </button>
