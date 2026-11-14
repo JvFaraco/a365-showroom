@@ -737,7 +737,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
           <CameraFlash power={flashPower} position={[0, LEDWIN_Y + 0.04, HD + 0.1]} />
           {/* a foto chega no aplicativo: a tela "Imagem", com a pessoa marcada pela IA (como no app oficial) */}
           {camPhase === 0 && (
-            <Html position={[-1.2, LENS_Y - 0.35, HD + 0.3]} center style={{ pointerEvents: 'none' }}>
+            <Html position={[-1.35, LENS_Y - 0.35, HD + 0.3]} center style={{ pointerEvents: 'none' }}>
               {/* o celular vem de longe até a frente, já com a tela "Imagem" do app aberta; a notificação passa por cima */}
               <div className="fx-tag overflow-hidden rounded-[24px] border-[5px] border-[#1b1d22] bg-[#0b0c10] shadow-2xl"
                 style={{ animation: 'phone-in 0.9s cubic-bezier(.16,.84,.3,1) both' }}>
