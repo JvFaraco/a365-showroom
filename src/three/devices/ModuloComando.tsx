@@ -355,7 +355,7 @@ function build() {
     rjRibs: mergeGeometries([-0.13, -0.155, -0.18, -0.205].map((z, i) => { const t = new THREE.TorusGeometry(0.058 - i * 0.004, 0.006, 6, 24); t.translate(0, -0.01, z); return t })),
     rjPins: boxesGeometry(Array.from({ length: 8 }, (_, i) => [-0.0525 + i * 0.015, 0.052, 0.07, 0.008, 0.016, 0.055] as Block)),
     powRibs: mergeGeometries([-0.04, -0.07, -0.1, -0.13].map((z) => { const t = new THREE.TorusGeometry(0.049, 0.005, 6, 24); t.translate(0, 0, z); return t })),
-    plugCable: wire([[0, 0, 0], [-0.03, 0, -0.2], [0, -0.03, -0.5], [0.5, -0.05, -0.95], [1.5, -0.05, -0.9], [2.6, -0.05, -0.6]], 0.03),
+    plugCable: wire([[0, 0, 0], [-0.03, 0, -0.2], [0, -0.03, -0.5], [0.35, -0.05, -0.85], [0.8, -0.05, -0.75], [1.05, -0.04, -0.5]], 0.03),
   }
 }
 const G = () => (cache ??= build())
@@ -827,7 +827,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
             <PowerPlugL g={g} />
             {/* a fonte, na outra ponta do cabo: o carregador de parede preto, com os dois pinos redondos e o cabo
                 saindo por baixo, com a capa de frisos */}
-            <group position={[2.62, 0.3, -0.6]}>
+            <group position={[1.05, 0.3, -0.5]}>
               <RoundedBox args={[0.5, 0.68, 0.36]} radius={0.05} smoothness={3} material={M.chip} userData={{ fx: true }} />
               <RoundedBox args={[0.3, 0.36, 0.1]} radius={0.03} smoothness={2} position={[0, 0.04, -0.22]} material={M.chip} userData={{ fx: true }} />
               {[-0.12, 0.12].map((y) => (
@@ -836,7 +836,7 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
               <mesh geometry={g.powRibs} material={M.chip} position={[0, -0.34, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[0.6, 0.6, 0.8]} userData={{ fx: true }} raycast={() => null} />
             </group>
           </group>
-          {interactive && <TamperTag id="tamper-modulo" openAt={0.6} position={[-0.45, 1.3, 0.05]} />}
+          {interactive && <TamperTag id="tamper-modulo" openAt={0.6} position={[-0.1, 0.55, 0.35]} />}
           {batPhase >= 0 && (
             <Html position={[0, 1.15, 0]} center style={{ pointerEvents: 'none' }}>
               <div className="fx-tag flex items-center gap-3 rounded-2xl bg-black/75 px-4 py-2 text-white">

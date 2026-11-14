@@ -10,7 +10,6 @@ import { boxesGeometry, smoothLatheZ, stadiumGeometry, wire, type Block } from '
 import { DeviceCtx, bump, clamp01, explodeAmt, seg, useActionPhase, type DeviceProps } from '../common/util'
 import { actionTau, actionTime, useShowroom } from '../../store/showroomStore'
 import { SoundWaves } from '../fx/SoundWaves'
-import { TamperTag } from '../fx/TamperTag'
 import { beep } from '../../ui/audio'
 
 const TAMPER: [number, number] = [-0.5, 0.0] // micro-chave do anti-sabotagem (em coordenadas do miolo, antes do giro)
@@ -196,7 +195,6 @@ export function Sirene({ interactive = false, sounding, waves = [5, 1.9] }: Devi
 
   return (
     <DeviceCtx.Provider value={{ deviceId: 'sirene', interactive }}>
-      {interactive && <TamperTag id="tamper" openAt={0.25} position={[0, 2.1, 0]} />}
       <group ref={body}>
         <ClickablePart id="corpo">
           <group ref={shell}>
