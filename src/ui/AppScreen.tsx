@@ -59,9 +59,12 @@ function Region({ id, interactive, children, className = '' }: { id: string; int
   )
 }
 
+const PENDING_TEXT: Record<ArmState, string> = { armed: 'Armando…', disarmed: 'Desarmando…', partial: 'Armando parcial…' }
+
 /** Tela inicial do aplicativo Alarme Orsegups, em React, renderizada dentro do celular 3D. */
 export function AppScreen({ interactive }: { interactive: boolean }) {
   const armState = useShowroom((s) => s.armState)
+  const pending = useShowroom((s) => (s.scene === 'inaction' ? null : s.armPending))
   const photo = useShowroom((s) => s.appPhoto)
   // na cena "Em ação" o celular acompanha o disparo: alarme armado, o aviso do disparo e, por fim, a tela "Imagem"
   const iaStep = useShowroom((s) => (s.scene === 'inaction' ? s.iaStep : -1))
@@ -132,13 +135,25 @@ export function AppScreen({ interactive }: { interactive: boolean }) {
         <Region id="alarme-geral" interactive={interactive}>
           <div className={LABEL}>Alarme geral</div>
           <div className={CARD}>
-            <div className="font-title text-[15px] font-semibold" style={{ color: arm === 'disarmed' ? '#2f6bff' : arm === 'armed' ? '#e03131' : '#e8890c' }}>{ARM.find((a) => a.id === arm)!.label}</div>
-            <div className="text-[11px] text-slate-500">{ARM_TEXT[arm]}</div>
+            {pending ? (
+              <>
+                <div className="flex items-center gap-1.5 font-title text-[15px] font-semibold text-slate-600">
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-[#2f6bff] motion-reduce:animate-none" />
+                  {PENDING_TEXT[pending]}
+                </div>
+                <div className="text-[11px] text-slate-500">Enviando o comando ao módulo…</div>
+              </>
+            ) : (
+              <>
+                <div className="font-title text-[15px] font-semibold" style={{ color: arm === 'disarmed' ? '#2f6bff' : arm === 'armed' ? '#e03131' : '#e8890c' }}>{ARM.find((a) => a.id === arm)!.label}</div>
+                <div className="text-[11px] text-slate-500">{ARM_TEXT[arm]}</div>
+              </>
+            )}
             <div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-[#e4e7ec] p-1">
               {ARM.map(({ id, label, Icon }) => (
                 <button key={id} aria-label={label} aria-pressed={arm === id} tabIndex={canArm ? 0 : -1}
-                  onClick={(e) => { if (!canArm) return; e.stopPropagation(); beep('ui'); useShowroom.getState().setArm(id) }}
-                  className={`grid h-10 place-items-center rounded-lg border-[1.5px] transition-colors duration-fast ease-out ${arm === id ? 'border-[#2f6bff] bg-white text-[#2f6bff]' : 'border-transparent text-slate-500'} ${canArm ? 'hover:border-[#2f6bff]' : ''}`}>
+                  onClick={(e) => { if (!canArm) return; e.stopPropagation(); beep('ui'); useShowroom.getState().requestArm(id) }}
+                  className={`grid h-10 place-items-center rounded-lg border-[1.5px] transition-colors duration-fast ease-out ${arm === id ? 'border-[#2f6bff] bg-white text-[#2f6bff]' : pending === id ? 'animate-pulse border-[#2f6bff]/50 bg-white/70 text-[#2f6bff] motion-reduce:animate-none' : 'border-transparent text-slate-500'} ${canArm ? 'hover:border-[#2f6bff]' : ''}`}>
                   <Icon size={20} />
                 </button>
               ))}

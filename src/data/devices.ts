@@ -179,7 +179,7 @@ export const DEVICES: Device[] = [
         facts: [],
         camera: { position: [0.9, 1.4, -1.6], target: [0, -0.08, -0.5] },
         internal: true,
-        explode: [0, 0.5, 0],
+        explode: [0, 0.75, 0], // ligado na placa pelos fios: sai junto com ela
       },
       {
         id: 'microfone',
@@ -479,11 +479,10 @@ export const DEVICES: Device[] = [
       {
         id: 'bateria',
         name: 'Bateria de lítio',
-        what: 'Alimenta a sirene, sem fios. Fica num berço na traseira.',
+        what: 'Alimenta a sirene, sem fios. Fica por dentro, num berço na traseira, e não é trocada pelo usuário.',
         facts: ['Dura até 2 anos, conforme o uso'],
         camera: { position: [-1.0, 0.6, -2.7], target: [-0.38, 0.02, -0.3] },
         internal: true,
-        action: 'bateria-sirene',
         explode: [0, 0, -0.9],
       },
       {
@@ -617,7 +616,6 @@ export const DEVICES: Device[] = [
         what: 'Avisa que o local tem registro de imagem.',
         facts: ['Desestimula a invasão'],
         camera: { position: [0.4, -0.4, 1.9], target: [0, -0.49, 0.04] },
-        action: 'brilho',
         explode: [0, 0, 0.5],
       },
       {

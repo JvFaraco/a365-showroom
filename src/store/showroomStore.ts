@@ -14,6 +14,7 @@ export const now = () => performance.now() / 1000
 export const holdRef = { v: 0 }
 /** Tempo (s) da cena "Em ação". */
 export const ia = { t: 0 }
+export const ARM_DELAY_MS = 2500
 /** Luz da sala na cena "Em ação", escrita pela própria cena a cada quadro: `flash` clareia (0..1), `red` tinge de
  * vermelho (0..1, a sirene) e `night` escurece (0..1). O palco aplica isso na luz do cômodo, que existe sempre. */
 export const roomFx = { flash: 0, red: 0, night: 0 }
@@ -57,6 +58,9 @@ type State = {
   stepPart: (dir: 1 | -1, crossDevices?: boolean) => void
   setTour: (t: boolean) => void
   setArm: (a: ArmState) => void
+  /** Pede a troca do estado do alarme: o comando leva um tempo até o módulo confirmar (não é instantâneo). */
+  requestArm: (a: ArmState) => void
+  armPending: ArmState | null
   setLed: (l: LedStateId) => void
   startAction: (id: ActionId) => void
   stopAction: () => void
@@ -76,6 +80,7 @@ export const useShowroom = create<State>((set, get) => ({
   tour: false,
   armState: 'disarmed',
   ledState: 'desarmado',
+  armPending: null,
   ...clean,
   sirenLevel: 2,
   iaPlaying: false,
@@ -136,7 +141,14 @@ export const useShowroom = create<State>((set, get) => ({
     set({ tour })
     if (tour && !get().part) get().stepPart(1)
   },
-  setArm: (armState) => set({ armState, ledState: ARM_TO_LED[armState] }),
+  setArm: (armState) => set({ armState, ledState: ARM_TO_LED[armState], armPending: null }),
+  requestArm: (a) => {
+    const s = get()
+    if (s.armPending || s.armState === a) return
+    set({ armPending: a })
+    // o comando vai do app à central e ao módulo, que confirma: ~2,5 s até o estado e o LED mudarem
+    setTimeout(() => { if (get().armPending === a) get().setArm(a) }, ARM_DELAY_MS)
+  },
   setLed: (ledState) => set({ ledState }),
   startAction: (id) => { holdRef.v = 0; set({ ...clean, sirenOn: id === 'som', action: { id, t0: now() } }) },
   stopAction: () => { holdRef.v = 0; set({ ...clean }) },
@@ -144,7 +156,7 @@ export const useShowroom = create<State>((set, get) => ({
   reset: () =>
     set((s) => ({
       scene: 'showroom', part: null, hovered: null, view: 'normal', tour: false,
-      armState: 'disarmed', ledState: 'desarmado', ...clean, resetTick: s.resetTick + 1,
+      armState: 'disarmed', ledState: 'desarmado', armPending: null, ...clean, resetTick: s.resetTick + 1,
     })),
 }))
 

@@ -30,7 +30,7 @@ const MAG_X = BODY.x + BODY.w / 2 + MAG.gap + MAG.w / 2
 const MAG_Z = BACK + MAG.d / 2 // as costas das duas peças no mesmo plano
 export const DOOR_TOP = BODY.x + BODY.w / 2 + MAG.gap / 2 // o topo da folha passa no meio do vão
 export const HINGE_X = 1.85 // o sensor fica no canto de cima da folha, do lado que abre
-const MINI: [number, number, number] = [-2.3, 1.35, 0.6]
+const MINI: [number, number, number] = [-2.0, 1.05, 1.0]
 // Por dentro (pela foto da placa). Ao longo do comprimento (Y): a tampinha e o borne ficam na ponta do LED (+Y); a
 // antena em mola sai da outra ponta da placa (−Y) e ocupa o resto do corpo.
 const CAP_Y = BODY.len / 2 - mm(12.8) // emenda da tampinha da ponta (a ~13 mm dela)
@@ -95,8 +95,20 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
   const slit = useMemo(() => stadiumGeometry(mm(8), mm(3.9), 0.01, 0.003), [])
   // emenda da tampinha: um aro fino com o mesmo perfil arredondado da tampa
   const capSeam = useMemo(() => roundedRectGeometry(BODY.w + 0.004, FRONT - SPLIT + 0.1 + 0.004, 0.047, 0.01, 0), [])
-  const doorMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#6b5a4a', roughness: 0.8 }), [])
-  const wallMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2a3145', roughness: 0.9 }), [])
+  // cena da porta (só nas ações): canto de cima de uma porta de madeira com almofada, no vão de uma parede clara com
+  // batente branco; o ímã fica no batente de cima
+  const doorMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#8a6a4e', roughness: 0.7 }), [])
+  const doorDark = useMemo(() => new THREE.MeshStandardMaterial({ color: '#6f533c', roughness: 0.75 }), [])
+  const wallMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#c3c7cf', roughness: 0.95 }), [])
+  const doorPanel = useMemo(() => {
+    const x0 = HINGE_X - 2.55, x1 = HINGE_X - 0.35, y0 = DOOR_TOP - 4.1, y1 = DOOR_TOP - 0.5, z = -0.16, t = 0.07
+    return boxesGeometry([[(x0 + x1) / 2, y1, z, x1 - x0, t, 0.025], [(x0 + x1) / 2, y0, z, x1 - x0, t, 0.025], [x0, (y0 + y1) / 2, z, t, y1 - y0, 0.025], [x1, (y0 + y1) / 2, z, t, y1 - y0, 0.025]])
+  }, [])
+  const jambs = useMemo(() => boxesGeometry([
+    [HINGE_X - 1.45, DOOR_TOP + 0.36, -0.155, 2.9 + 0.84 + 0.06, 0.5, 0.03], // batente de cima (onde fica o ímã)
+    [HINGE_X - 2.93 - 0.21, DOOR_TOP - 2.0, -0.155, 0.42, 4.2, 0.03], // lado da fechadura
+    [HINGE_X + 0.03 + 0.21, DOOR_TOP - 2.0, -0.155, 0.42, 4.2, 0.03], // lado da dobradiça
+  ]), [])
   // antena em mola de cobre
   const smd = useMemo(() => {
     const z = PCB.z + 0.015, x = BODY.x, b = (dx: number, y: number, w: number, h: number, d = 0.012): Block => [x + dx, y, z, w, h, d]
@@ -234,7 +246,7 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
             </ClickablePart>
             <group visible={sceneOn}>
               <mesh material={doorMat} position={[HINGE_X - 1.45, DOOR_TOP - 2.2, -0.24]} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[2.9, 4.4, 0.14]} /></mesh>
-              <mesh material={M.metal} position={[HINGE_X - 2.65, DOOR_TOP - 2.5, -0.12]} userData={{ fx: true }} raycast={() => null}><sphereGeometry args={[0.09, 16, 12]} /></mesh>
+              <mesh geometry={doorPanel} material={doorDark} userData={{ fx: true }} raycast={() => null} />
             </group>
           </group>
         </group>
@@ -269,9 +281,10 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
         <>
           {/* batente: a parede em cima e dos lados da folha */}
           <group visible={sceneOn}>
-            <mesh material={wallMat} position={[HINGE_X - 1.45, DOOR_TOP + 0.03 + 1.2, -0.26]} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[7.2, 2.4, 0.18]} /></mesh>
-            <mesh material={wallMat} position={[HINGE_X - 2.93 - 1.1, DOOR_TOP - 2.2, -0.26]} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[2.2, 4.46, 0.18]} /></mesh>
-            <mesh material={wallMat} position={[HINGE_X + 0.03 + 1.1, DOOR_TOP - 2.2, -0.26]} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[2.2, 4.46, 0.18]} /></mesh>
+            <mesh material={wallMat} position={[HINGE_X - 1.45, DOOR_TOP + 0.03 + 1.7, -0.26]} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[12, 3.4, 0.18]} /></mesh>
+            <mesh material={wallMat} position={[HINGE_X - 2.93 - 2.25, DOOR_TOP - 2.2, -0.26]} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[4.5, 4.46, 0.18]} /></mesh>
+            <mesh material={wallMat} position={[HINGE_X + 0.03 + 2.25, DOOR_TOP - 2.2, -0.26]} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[4.5, 4.46, 0.18]} /></mesh>
+            <mesh geometry={jambs} material={M.white} userData={{ fx: true }} raycast={() => null} />
           </group>
           <group rotation={DEITA}>
             <MagneticField position={[BODY.x + BODY.w / 2, 0, 0.05]} gap={MAG.gap} height={1.5} strength={() => (sceneOn ? Math.max(0, 1 - doorOpen() * 6) : 0)} />

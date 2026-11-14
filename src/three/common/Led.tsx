@@ -43,23 +43,24 @@ export function Led({ sample, children, boost = 3.2, baseColor = '#111318', halo
     c.color.lerp(_c.set(o.color), 1 - Math.exp(-20 * Math.min(dt, 0.1)))
     const m = mesh.current.material as THREE.MeshStandardMaterial
     // miolo quente: perto do máximo, a cor clareia na direção do branco
-    m.emissive.copy(c.color).lerp(WHITE, Math.min(1, c.on) * 0.35)
+    m.emissive.copy(c.color).lerp(WHITE, Math.min(1, c.on) * 0.5)
     m.emissiveIntensity = c.on * boost
-    // halo: plano virado para a câmera, um pouco à frente do LED, do tamanho de ~4 vezes o LED
+    // halo: plano virado para a câmera, um pouco à frente do LED, do tamanho de ~5 vezes o LED (com teto, para não vazar para fora do aparelho)
     const g = glow.current, a = Math.min(1, c.on) * halo
-    g.visible = a > 0.18
+    g.visible = a > 0.08
     if (!g.visible) return
     if (!c.size) { const geo = mesh.current.geometry; geo.computeBoundingSphere(); c.size = geo.boundingSphere?.radius ?? 0.02 }
     mesh.current.getWorldPosition(_p); mesh.current.getWorldScale(_s)
     const r = c.size * Math.max(_s.x, _s.y, _s.z)
     glowMat.color.copy(c.color)
-    glowMat.opacity = a * 0.6
+    glowMat.opacity = Math.min(1, a * 1.1)
     // posição e giro no mundo convertidos para o espaço do LED (o halo é filho dele)
     _v.copy(camera.position).sub(_p).normalize().multiplyScalar(r * 1.2).add(_p)
     mesh.current.worldToLocal(g.position.copy(_v))
     mesh.current.getWorldQuaternion(_q).invert().multiply(camera.quaternion)
     g.quaternion.copy(_q)
-    g.scale.set(r * 8 / _s.x, r * 8 / _s.y, r * 8 / _s.z)
+    const w = Math.min(r * 11, 0.42)
+    g.scale.set(w / _s.x, w / _s.y, w / _s.z)
   })
   return (
     <mesh ref={mesh} material={mat} userData={{ led: true }} {...props}>

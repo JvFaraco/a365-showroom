@@ -102,6 +102,7 @@ export function ActionPanel() {
   const sirenLevel = useShowroom((s) => s.sirenLevel)
   const shock = useShowroom((s) => s.shockLevel)
   const arm = useShowroom((s) => s.armState)
+  const pending = useShowroom((s) => s.armPending)
   const photo = useShowroom((s) => s.appPhoto)
   const set = useShowroom((s) => s.set)
   if (!action) return null
@@ -142,10 +143,10 @@ export function ActionPanel() {
       )}
       {action.id === 'alarme-geral' && (
         <div>
-          <p className="mb-2 text-xs text-white/70">Toque num dos 3 ícones na tela do celular (ou aqui). O LED do módulo acompanha.</p>
+          <p className="mb-2 text-xs text-white/70">Toque num dos 3 ícones na tela do celular (ou aqui). O comando leva alguns segundos até o módulo confirmar; aí o LED muda.</p>
           <div className="flex gap-2">
             {ARM_BTN.map(({ id, label, Icon }) => (
-              <button key={id} aria-label={label} aria-pressed={arm === id} className={`btn flex-1 ${arm === id ? 'btn-on' : ''}`} onClick={() => { beep(); useShowroom.getState().setArm(id) }}><Icon size={18} /></button>
+              <button key={id} aria-label={label} aria-pressed={arm === id} className={`btn flex-1 ${arm === id ? 'btn-on' : ''} ${pending === id ? 'animate-pulse motion-reduce:animate-none' : ''}`} disabled={!!pending} onClick={() => { beep(); useShowroom.getState().requestArm(id) }}><Icon size={18} /></button>
             ))}
           </div>
         </div>
