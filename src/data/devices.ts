@@ -5,7 +5,7 @@ export type Vec3 = [number, number, number]
 
 export type ActionId =
   // Módulo de Comando
-  | 'antena' | 'sos190' | 'led' | 'audio' | 'bateria-modulo' | 'abrir-modulo' | 'cabos' | 'desplugar-bateria' | 'tamper-modulo'
+  | 'antena' | 'sos190' | 'led' | 'audio' | 'bateria-modulo' | 'abrir-modulo' | 'cabos' | 'desplugar-bateria' | 'tamper-modulo' | 'reset-modulo'
   // Fotossensor
   | 'pir' | 'camera' | 'suporte' | 'tampa-foto' | 'sabotagem' | 'sensibilidade'
   // Sensor magnético
@@ -198,6 +198,8 @@ export const DEVICES: Device[] = [
         what: 'Fica embaixo da placa, sobre o furo do fundo, do lado da entrada da fonte.',
         facts: [],
         camera: { position: [1.4, -1.8, -1.6], target: [0.44, -0.3, -0.47] },
+        tip: 'Aperte com a ponta de um palito ou de uma pinça, pelo furo do fundo.',
+        action: 'reset-modulo',
         internal: true,
         explode: [0, 0.75, 0],
       },

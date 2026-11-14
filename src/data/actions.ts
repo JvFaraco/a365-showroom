@@ -24,6 +24,8 @@ export const ACTIONS: Record<ActionId, {
   'abrir-modulo': { label: 'Abrir o módulo', hold: 3.3, undo: 'Fechar', camera: { position: [2.4, 2.8, 4.4], target: [0, 0.55, 0] } },
   cabos: { label: 'Encaixar os cabos', duration: 5.5, camera: { position: [-0.8, -2.9, -2.5], target: [0, -0.5, -0.6] } },
   audio: { label: 'Ouvir a Central', duration: 8, camera: { position: [2.9, 1.3, 3.4], target: [0.25, 0.2, 0] } },
+  // o módulo visto por baixo: o palito entra no furo do fundo e aperta o botão de reset
+  'reset-modulo': { label: 'Apertar o reset', duration: 6, camera: { position: [1.5, -2.0, -1.4], target: [0.44, -0.55, -0.47] } },
   'tamper-modulo': { label: 'Abrir a tampa', hold: 1.4, undo: 'Fechar', keepDim: true, camera: { position: [-1.9, 1.5, 1.8], target: [-0.45, 0.1, 0.05] } },
   'desplugar-bateria': { label: 'Desplugar a bateria', hold: 2.4, undo: 'Reconectar', camera: { position: [2.3, 2.3, 1.9], target: [0.45, 0.15, 0.05] } },
   'bateria-modulo': { label: 'Tirar da tomada', duration: 9, camera: { position: [2.6, 1.3, 3.0], target: [0.4, 0, 0] } },

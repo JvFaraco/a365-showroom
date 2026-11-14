@@ -27,7 +27,7 @@ A tampa é uma superfície só: topo plano e nivelado, de 58,5 mm de raio, e lat
 | `microfone` (i) | Cápsula pequena e dois fios, ao lado do alto-falante. |
 | `bateria` (i) | Bloco por baixo da placa, com o cabo vermelho e preto que sai da ponta dela, sobe por fora da borda e passa por cima da placa até o conector branco de 2 pinos. Sai junto com a placa na vista explodida. A ação "Desplugar a bateria" sobe a tampa e puxa o plugue do conector (o trecho do cabo por cima da placa fica preso na borda dela e a ponta acompanha o plugue). | Pacote amarelo, como nas fotos do módulo aberto; autonomia de ~2 h. O conector branco de 2 pinos fica soldado na placa; ao desplugar, o plugue com os fios sai dele deslizando na direção dos fios.
 | `tamper` (i) | Chave preta na placa, à esquerda e logo atrás do Wi-Fi, com o pino de mola que sobe até o teto da cúpula (no CAD não há nada descendo do teto: a chave é componente eletrônico e alcança a tampa). Ação "Abrir a tampa": a cúpula sobe, o pino salta (~3 mm) e aparece "Tamper aberto"; no "Fechar", a cúpula desce e aperta o pino ("Tamper fechado"). |
-| `reset` (i) | Botão azul embaixo da placa, sobre o furo do fundo, do lado da entrada da fonte (pelas medidas externas e pela foto do fundo). |
+| `reset` (i) | Botão azul embaixo da placa, sobre o furo do fundo, do lado da entrada da fonte (pelas medidas externas e pela foto do fundo). Ação "Apertar o reset": com o módulo visto por baixo, um palito sobe, entra no furo e aperta o botão (que afunda um pouco) e depois sai. |
 
 Vista explodida, de cima para baixo: cúpula; placa (com o cartão do chip um pouco acima); caixinha do alto-falante; bateria; base cinza, que fica parada com a antena.
 
@@ -58,7 +58,7 @@ O corpo é um cilindro de 68 mm de diâmetro e 137 de altura (medidas externas d
 | `led` | O mesmo LED do módulo (mesmo tamanho, intensidade e brilho), sobre o plástico branco, a 18 mm do meio, entre o logo e a ponta. Aceso em azul; pisca rápido ao detectar. |
 | `placa`, `choque` (i) | Placa verde comprida e estreita (~74 × 19 mm, pela foto da placa): a ~14 mm das costas, com o LED na face virada para a janela; borne preto de 2 parafusos num canto, do lado da ponta do LED; na outra ponta, a antena em mola de cobre, que sai para fora da placa e ocupa o resto do corpo; fila de cinco pontos de teste numa borda; sensor do ímã no canto da antena; chip do sensor de choque. Sem etiqueta. |
 | `tamper` (i) | Chave com pino de mola atrás da placa, perto da ponta do LED, apertada pelo pino da base (pelo CAD, a 39 mm do meio). Ação "Separar a tampa da base": a base vai para trás, o pino sobe e aparece "Tamper aberto"; "Encaixar" fecha de novo. |
-| `bateria` (i) | Pilha cilíndrica (~31 mm) deitada atrás da placa, entre ela e o fundo, presa por duas presilhas metálicas; corpo preto e faixa dourada no +, sem marca. |
+| `bateria` (i) | Pilha cilíndrica (~31 mm) deitada na face da placa virada para a tampa (como o usuário mostrou), longe do LED, presa por duas presilhas metálicas; corpo preto e faixa dourada no +, sem marca. |
 
 ## Sirene (128 mm de diâmetro, 60 mm de projeção; 1 un = 64 mm; face em +Z)
 
