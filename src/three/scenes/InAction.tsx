@@ -31,7 +31,9 @@ const doorOpen = () => {
   return t < 11.1 ? enter * (1 - close) : flee
 }
 const flashP = () => bump(T(), 7.6, 7.66, 7.74, 8.2)
-const SIREN = [10, 16.5] as const
+// a sirene toca assim que o magnético detecta a porta abrindo (o módulo dispara na hora)
+const SIREN = [3.9, 16.5] as const
+const FLEE = 10 // o invasor desiste e foge
 const sirenOn = () => T() >= SIREN[0] && T() < SIREN[1]
 const MOD: [number, number, number] = [-2.7, 1.25, -2.2]
 const MAG_S = 0.3
@@ -96,11 +98,11 @@ function Intruder() {
     armR.current.rotation.x = swing * amp * 0.8 * (1 - s.shield) - s.shield * 2.3
     armR.current.rotation.z = s.shield * 0.5
     // corpo: inclina mais correndo; susto quando a sirene começa (endireita de repente)
-    const startle = bump(t, SIREN[0], SIREN[0] + 0.08, SIREN[0] + 0.2, SIREN[0] + 0.35)
+    const startle = bump(t, FLEE, FLEE + 0.08, FLEE + 0.2, FLEE + 0.35)
     s.lean += ((moving ? (run ? 0.32 : 0.12) : 0.04) - startle * 0.2 - s.lean) * k
     body.current.rotation.x = s.lean
     // cabeça: olha para o fotossensor no flash e para os lados enquanto está parado
-    const lookAround = t > 8.9 && t < SIREN[0] ? Math.sin((t - 8.9) * 2.6) * 0.7 : 0
+    const lookAround = t > 8.9 && t < FLEE ? Math.sin((t - 8.9) * 2.6) * 0.7 : 0
     s.look += (lookAround - s.look) * k
     head.current.rotation.y = s.look
     head.current.rotation.x = -startle * 0.25
@@ -307,12 +309,12 @@ export function InAction() {
       <Waves at={[-2.6, 1.42, 2.36]} color="#5b8cff" on={() => { const t = T(); return t > 0.6 && t < 2.4 }} />
       <Waves at={[MAG_POS[0], 2.2, -2.86]} color="#ff5050" on={() => { const t = T(); return t > 3.5 && t < 5.6 }} />
       <Waves at={[-3.5, 2.5, -2.45]} color="#ffffff" on={() => { const t = T(); return t > 7.8 && t < 9.4 }} />
-      <Waves at={[MOD[0] - 0.12, MOD[1] + 0.42, MOD[2] + 0.1]} color="#35d46a" on={() => { const t = T(); return (t > 9.6 && t < 10.8) || (t > 12.4 && t < 14.4) }} />
+      <Waves at={[MOD[0] - 0.12, MOD[1] + 0.42, MOD[2] + 0.1]} color="#35d46a" on={() => { const t = T(); return (t > 3.6 && t < 4.8) || (t > 12.4 && t < 14.4) }} />
       <Waves at={[3.0, 1.55, 2.5]} color="#35d46a" on={() => { const t = T(); return t > 13.4 && t < 15.2 }} />
       <RadioPulse from={[-2.6, 1.7, 2.3]} to={MOD} on={() => { const t = T(); return t > 0.6 && t < 2.6 }} />
       <RadioPulse from={[MAG_POS[0], 2.2, -2.9]} to={MOD} color="#ff5050" on={() => { const t = T(); return t > 3.5 && t < 6 }} />
       <RadioPulse from={[-3.5, 2.5, -2.5]} to={MOD} color="#ffffff" on={() => { const t = T(); return t > 7.8 && t < 9.6 }} />
-      <RadioPulse from={MOD} to={[-1.2, 2.7, -2.8]} color="#ff5050" on={() => { const t = T(); return t > 9.6 && t < 11 }} />
+      <RadioPulse from={MOD} to={[-1.2, 2.7, -2.8]} color="#ff5050" on={() => { const t = T(); return t > 3.6 && t < 5 }} />
       <RadioPulse from={MOD} to={[3.0, 1.9, 2.4]} color="#35d46a" on={() => { const t = T(); return t > 12.4 && t < 14.5 }} />
 
       <group ref={intruder} visible={false}>

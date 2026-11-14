@@ -7,8 +7,6 @@ import { M, fxBasic } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
 import { aiPhotoDataUrl } from '../common/textures'
-import { RadioPulse } from '../fx/RadioPulse'
-import { MiniModulo } from '../fx/MiniModulo'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { boxesGeometry, stadiumGeometry, type Block } from '../common/shapes'
 import { DeviceCtx, bump, seg, useActionPhase, type DeviceProps } from '../common/util'
@@ -90,7 +88,7 @@ const ZC = (z: number) => (z - 50.9) / 79.07 // profundidade em mm a partir da p
 const WALL = { hw: mm(15.5), top: H(63.5), floor: ZC(11), back: ZC(3.5), plate0: ZC(0.5), plate1: ZC(2.3), guide: ZC(10) }
 /** Meia largura do encaixe da luva na altura h (mm): 13 mm embaixo, 5,5 mm no alto. */
 const slotHW = (h: number) => mm(13 - (7.5 * h) / 68)
-const HINGE: [number, number, number] = [0, Y0, WALL.floor] // eixo horizontal no pé da placa: é ali que o sensor inclina
+const HINGE: [number, number, number] = [0, Y0, WALL.floor] // pé do suporte: é ali que o suporte articulado gira para os lados
 const PCB_DZ = -0.17 // a placa principal fica ~5 mm atrás do eixo do aparelho; o funil vem da lente até o sensor, na frente dela
 const BOARD = { y0: H(24), y1: H(128), hw: mm(27), z: PCB_DZ + 0.1 } // placa principal: da altura do funil até o topo
 const UP = 0.22 // na vista explodida tudo sobe um pouco e a base cinza fica embaixo (é como ela "desce" sem entrar no pedestal)
@@ -338,9 +336,9 @@ function pirAlert() {
  */
 export function Fotossensor({ interactive = false, flash }: DeviceProps & { flash?: () => number }) {
   const tilt = useRef<THREE.Group>(null!)
+  const swing = useRef<(THREE.Group | null)[]>([])
   const cover = useRef<THREE.Group>(null!)
   const flip = useRef<THREE.Group>(null!)
-  const pin = useRef<THREE.Mesh>(null!)
   const cellRefs = useRef<(THREE.Group | null)[]>([])
   const arrowPhase = useActionPhase('tampa-foto', [0.8, 1.5], true)
   const person = useRef<THREE.Group>(null!)
@@ -360,7 +358,6 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   const pirPhase = useActionPhase('pir', [0, 3.1, 5.9, 9.5])
   const supPhase = useActionPhase('suporte')
   const camPhase = useActionPhase('camera', [1.0, 6.4])
-  const tamperPhase = useActionPhase('tampa-foto', [1.45, 7.15])
 
   const flashPower = () => {
     if (flash) return flash()
@@ -370,14 +367,16 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
 
   useFrame((_, dt) => {
     if (!interactive) return
-    // suporte: o sensor inclina para os lados (não para a frente e para trás), girando no pé do suporte (que fica parado)
+    // suporte: o fotossensor fica parado; quem vai para a esquerda e para a direita é o suporte articulado (a luva e a
+    // peça de fixação), girando no pé, atrás da base
     const ts = actionTime('suporte')
     const amp = ts < 0 ? 0 : bump(ts, 0, 0.8, 7, 8)
-    tilt.current.rotation.z = Math.sin(ts * 1.3) * 0.2 * amp
+    const sw = Math.sin(ts * 1.3) * 0.28 * amp
+    for (const g of swing.current) if (g) g.rotation.z = sw
     ruler.current.visible = ts >= 0
     // troca das pilhas: o sensor vira de costas; aperta-se a aba de cima e a tampa abre pelo alto, girando nas
-    // presilhas de baixo (~30°), e sai para cima e para trás. Ao sair, solta o pino do anti-sabotagem, que dispara. As 3
-    // pilhas velhas saem uma a uma, as novas entram, a tampa volta, fecha com um clique e o sensor vira de frente
+    // presilhas de baixo (~30°), e sai para cima e para trás. As 3 pilhas velhas saem uma a uma, as novas entram, a
+    // tampa volta, fecha com um clique e o sensor vira de frente. Abrir a tampa não dispara nada (não há tamper)
     const tt = actionTime('tampa-foto')
     const sm = (x: number) => x * x * (3 - 2 * x)
     const at = (a: number, b: number) => (tt < 0 ? 0 : sm(seg(tt, a, b)))
@@ -388,7 +387,6 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
     const open = at(1.2, 1.9) * (1 - at(6.7, 7.3)), lift = at(2.0, 2.7) * (1 - at(5.9, 6.6))
     cover.current.rotation.x = -open * 0.52
     cover.current.position.set(0, -press * 0.012 + lift * 0.22, -lift * 0.5 + clic)
-    pin.current.position.z = -(CELL.s + 0.06) - (tt < 0 ? 0 : seg(tt, 1.35, 1.5) * (1 - seg(tt, 7.05, 7.2))) * 0.03
     for (let i = 0; i < 3; i++) {
       const c = cellRefs.current[i]
       if (!c) continue
@@ -421,8 +419,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
 
   // LED de status: verde piscando; vermelho fixo no alerta do PIR
   const sampleStatus = (t: number, o: { color: string; on: number }) => {
-    const tp = actionTime('tampa-foto')
-    const al = interactive ? Math.max(alertV.current, tp > 1.45 && tp < 7.15 ? 1 : 0) : 0
+    const al = interactive ? alertV.current : 0
     o.color = al > 0.5 ? '#ff2a2a' : '#27d455'
     o.on = al > 0.5 ? 1 : t % 3 < 0.25 ? 0.9 : 0.25
   }
@@ -557,12 +554,14 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
 
             {/* luva do suporte de parede: faz parte da base cinza; o encaixe em Λ e o parafuso de trava ficam atrás */}
             <ClickablePart id="suporte">
-              <mesh geometry={g.sleeve} material={mountMat} castShadow />
-              <group position={[0, H(25), WALL.floor - 0.001]} rotation={[0, Math.PI, 0]}>
-                <mesh material={M.metal} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, mm(0.6)]}><cylinderGeometry args={[mm(3), mm(3), mm(1.2), 20]} /></mesh>
-                <mesh material={M.greyDark} position={[0, 0, mm(1.25)]} rotation={[0, 0, 0.6]}><planeGeometry args={[mm(4), mm(0.7)]} /></mesh>
-                <mesh material={M.greyDark} position={[0, 0, mm(1.26)]} rotation={[0, 0, 0.6 + Math.PI / 2]}><planeGeometry args={[mm(4), mm(0.7)]} /></mesh>
-              </group>
+              <group position={HINGE}><group ref={(gr) => { swing.current[0] = gr }}><group position={[-HINGE[0], -HINGE[1], -HINGE[2]]}>
+                <mesh geometry={g.sleeve} material={mountMat} castShadow />
+                <group position={[0, H(25), WALL.floor - 0.001]} rotation={[0, Math.PI, 0]}>
+                  <mesh material={M.metal} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, mm(0.6)]}><cylinderGeometry args={[mm(3), mm(3), mm(1.2), 20]} /></mesh>
+                  <mesh material={M.greyDark} position={[0, 0, mm(1.25)]} rotation={[0, 0, 0.6]}><planeGeometry args={[mm(4), mm(0.7)]} /></mesh>
+                  <mesh material={M.greyDark} position={[0, 0, mm(1.26)]} rotation={[0, 0, 0.6 + Math.PI / 2]}><planeGeometry args={[mm(4), mm(0.7)]} /></mesh>
+                </group>
+              </group></group></group>
             </ClickablePart>
             {/* faixa cinza da base, um pouco recuada */}
             <ClickablePart id="base">
@@ -600,10 +599,6 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
                 </group>
               ))}
             </ClickablePart>
-            {/* pino do anti-sabotagem, no canto do compartimento: a tampa o mantém pressionado */}
-            <ClickablePart follow="tampa-traseira" internal>
-              <mesh ref={pin} material={M.grey} position={[0.098, BAY.y1 - 0.03, -(CELL.s + 0.06)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.014, 0.014, 0.04, 12]} /></mesh>
-            </ClickablePart>
             {interactive && arrowPhase === 0 && (
               <Html position={[0, 0.92, -(HD + 0.1)]} center style={{ pointerEvents: 'none' }}>
                 <div className="fx-tag -translate-y-7 text-center text-xs font-semibold text-accent">aba<div className="text-xl leading-none">▼</div></div>
@@ -616,13 +611,15 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
       {/* placa de parede (solta): fica parafusada na parede e parada quando o sensor inclina; a guia entra no encaixe
           da luva. Na frente da guia, os dois furos dos parafusos da parede */}
       <ClickablePart id="fixacao">
-        <mesh geometry={g.plate} material={mountMat} castShadow />
-        {[[13, 1.6], [55, 1]].map(([h, sx]) => (
-          <group key={h} position={[0, H(h), WALL.guide + 0.004]} scale={[sx, 1, 1]}>
-            <mesh material={M.hole}><circleGeometry args={[mm(3.4), 20]} /></mesh>
-            <mesh material={M.metal} position={[0, 0, 0.001]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(2.6), mm(2.6), mm(0.6), 16]} /></mesh>
-          </group>
-        ))}
+        <group position={HINGE}><group ref={(gr) => { swing.current[1] = gr }}><group position={[-HINGE[0], -HINGE[1], -HINGE[2]]}>
+          <mesh geometry={g.plate} material={mountMat} castShadow />
+          {[[13, 1.6], [55, 1]].map(([h, sx]) => (
+            <group key={h} position={[0, H(h), WALL.guide + 0.004]} scale={[sx, 1, 1]}>
+              <mesh material={M.hole}><circleGeometry args={[mm(3.4), 20]} /></mesh>
+              <mesh material={M.metal} position={[0, 0, 0.001]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(2.6), mm(2.6), mm(0.6), 16]} /></mesh>
+            </group>
+          ))}
+        </group></group></group>
       </ClickablePart>
 
       </group>
@@ -647,13 +644,6 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
                 </div>
               </div>
             </Html>
-          )}
-          {/* anti-sabotagem: ao abrir a tampa, o fotossensor avisa o módulo (o aviso em texto é o toast da ação) */}
-          {tamperPhase === 0 && (
-            <>
-              <MiniModulo position={[2.4, 1.2, 0]} led={() => 'disparo'} />
-              <RadioPulse from={[0, 0.5, 0]} to={[2.4, 1.2, 0]} color="#ff5050" on={() => actionTime('tampa-foto') > 1.45} />
-            </>
           )}
           <DetectionFan position={[0, FAN_Y, HD - 0.1]} length={4.2} labels={pirPhase >= 0} alert={() => alertV.current}
             show={() => { const t = actionTime('pir'); return t < 0 ? 0 : bump(t, 0, 1.2, 13, 14) }} />
