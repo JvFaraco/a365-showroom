@@ -79,7 +79,20 @@ const LOADERS: Record<ChunkName, () => Promise<ComponentType>> = {
 const loadChunk = (name: ChunkName) => (pending[name] ??= LOADERS[name]().then((C) => {
   chunkCache[name] = C
   useShowroom.setState((s) => ({ chunks: s.chunks + 1 }))
-}))
+}).catch(() => { delete pending[name]; reloadStale() }))
+/**
+ * Aba aberta numa versão antiga: depois de uma publicação nova, os pacotes antigos somem do servidor e a cena que ainda
+ * não tinha chegado não carrega (ficava tudo preto). Recarrega a página uma vez para pegar a versão nova.
+ */
+function reloadStale() {
+  try {
+    const last = Number(sessionStorage.getItem('stale-reload') || 0)
+    if (Date.now() - last < 60_000) return // já recarregou há pouco: não entra em laço
+    sessionStorage.setItem('stale-reload', String(Date.now()))
+  } catch { /* sem sessionStorage: recarrega assim mesmo */ }
+  window.location.reload()
+}
+if (typeof window !== 'undefined') window.addEventListener('vite:preloadError', (e) => { e.preventDefault(); reloadStale() })
 if (typeof window !== 'undefined') {
   // o pós-processamento começa a baixar junto com o resto; as duas cenas, em tempo ocioso depois da carga
   void loadChunk('PostFX')
@@ -119,6 +132,20 @@ export default function App() {
     if (dpr > 1 && FORCE_DPR === null) { setDpr(1); s.set({ quality: Math.max(1, s.quality) as 1 }) }
     else if (s.quality < 3) s.set({ quality: Math.max(2, s.quality + 1) as 2 | 3 })
   }
+  // e volta a subir, um degrau por vez, quando os quadros ficam folgados (antes, uma queda era para sempre)
+  const incline = () => {
+    const s = useShowroom.getState()
+    if (s.quality > 0) s.set({ quality: (s.quality === 2 ? 0 : s.quality - 1) as 0 | 1 | 2 })
+  }
+  // o medidor só começa uns segundos depois da carga: durante a compilação e a chegada das cenas os quadros são
+  // lentos por natureza, e ele rebaixava a qualidade até numa placa de vídeo forte (RTX 4060 terminava em 3 a 60 fps)
+  const ready = useShowroom((s) => s.ready)
+  const [monitorOn, setMonitorOn] = useState(false)
+  useEffect(() => {
+    if (!ready) return
+    const t = setTimeout(() => setMonitorOn(true), 4000)
+    return () => clearTimeout(t)
+  }, [ready])
   return (
     <main className={`relative h-full w-full ${presenter ? 'presenter' : ''}`}>
       {/* eventSource no contêiner: arrastar por cima da tela do celular (Html) também gira a câmera */}
@@ -145,9 +172,11 @@ export default function App() {
             {Perf && <Perf position="bottom-right" />}
           </Suspense>
           {FORCE_DPR === null && <AdaptiveDpr />}
-          {!FORCE_HQ && !REF_ON && FORCE_Q === null && (
-            <PerformanceMonitor flipflops={3} onDecline={decline} onFallback={() => useShowroom.getState().set({ quality: 3 })}
-              {...(FPS_MIN !== null ? { bounds: (rr: number) => [FPS_MIN!, Math.max(FPS_MIN! + 5, rr > 100 ? 100 : 60)] as [number, number] } : {})} />
+          {!FORCE_HQ && !REF_ON && FORCE_Q === null && monitorOn && (
+            // limite de cima abaixo da taxa da tela, senão nunca sobe (numa tela de 60 Hz o fps não passa de 60). Se
+            // ficar alternando, para de medir e fica onde está
+            <PerformanceMonitor flipflops={4} onDecline={decline} onIncline={incline} onFallback={() => {}}
+              bounds={(rr: number) => (FPS_MIN !== null ? [FPS_MIN, Math.max(FPS_MIN + 3, rr > 100 ? 95 : 57)] : rr > 100 ? [60, 95] : [40, 57]) as [number, number]} />
           )}
           {PERF_HUD && <PerfBridge />}
         </Canvas>

@@ -6,7 +6,6 @@ import { ClickablePart } from '../parts/ClickablePart'
 import { M, fxBasic } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
-import { aiPhotoDataUrl } from '../common/textures'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { boxesGeometry, stadiumGeometry, type Block } from '../common/shapes'
 import { DeviceCtx, bump, seg, useActionPhase, type DeviceProps } from '../common/util'
@@ -14,6 +13,7 @@ import { actionTau, actionTime, useShowroom } from '../../store/showroomStore'
 import { DetectionFan, LowPolyDog, LowPolyPerson } from '../fx/DetectionFan'
 import { CameraFlash } from '../fx/CameraFlash'
 import { REF_ON } from '../../dev/RefMode'
+import { ImageScreen, SabotageScreen } from '../../ui/AppScreen'
 
 // ---------- medidas externas (frente em +Z). Corpo cilíndrico de 68 mm de diâmetro e 137 de altura: a planta é um
 // círculo. Com a base cinza (7 mm), 144 de altura. 1 unidade = 79 mm (o raio é 0,43). ----------
@@ -88,8 +88,9 @@ const ZC = (z: number) => (z - 50.9) / 79.07 // profundidade em mm a partir da p
 const WALL = { hw: mm(15.5), top: H(63.5), floor: ZC(11), back: ZC(3.5), plate0: ZC(0.5), plate1: ZC(2.3), guide: ZC(10) }
 /** Meia largura do encaixe da luva na altura h (mm): 13 mm embaixo, 5,5 mm no alto. */
 const slotHW = (h: number) => mm(13 - (7.5 * h) / 68)
-// eixo vertical no centro do corpo (redondo): o sensor gira sobre o suporte, para a esquerda e para a direita
-const PAN: [number, number, number] = [0, Y0, 0]
+// articulação: eixo vertical no encaixe da peça de fixação da parede. O sensor é fixo no suporte (a luva da base) e
+// os dois giram juntos, em pé, para a esquerda e para a direita; só a peça de fixação fica parada
+const PAN: [number, number, number] = [0, Y0, WALL.floor]
 const PCB_DZ = -0.17 // a placa principal fica ~5 mm atrás do eixo do aparelho; o funil vem da lente até o sensor, na frente dela
 const BOARD = { y0: H(24), y1: H(128), hw: mm(27), z: PCB_DZ + 0.1 } // placa principal: da altura do funil até o topo
 const UP = 0.22 // na vista explodida tudo sobe um pouco e a base cinza fica embaixo (é como ela "desce" sem entrar no pedestal)
@@ -324,9 +325,80 @@ const G = () => (cache ??= build())
 
 /** Alerta do PIR durante a ação: a pessoa está dentro do leque de 90°? */
 function pirAlert() {
+  if (sensDetect()) return 1
   const t = actionTime('pir')
   if (t < 2.5 || t > 6.5) return 0
   return Math.abs(personX(t)) < PERSON_Z ? 1 : 0
+}
+
+// ---------- ação "Ajustar a sensibilidade" ----------
+// Uma pessoa vai e volta numa linha fixa na frente do sensor. O leque mostra até onde o PIR percebe movimento em cada
+// nível (sem medida: só a proporção). Na alta e na média ele a alcança; na baixa ela passa sem disparar.
+const SENS_REACH = [0.55, 0.78, 1] // fração do leque cheio, por nível
+const FAN_LEN = 4.2, FAN_Z = HD - 0.1, SENS_Z = FAN_Z + 2.65
+const sensX = (t: number) => Math.sin(t * 0.9) * 2.0
+function sensDetect() {
+  const t = actionTime('sensibilidade')
+  if (t < 1.2) return false
+  const x = sensX(t), dz = SENS_Z - FAN_Z
+  const reach = FAN_LEN * SENS_REACH[useShowroom.getState().pirLevel - 1]
+  return Math.abs(x) < dz && Math.hypot(x, dz) < reach
+}
+
+// ---------- mão da ação "Mexer no sensor" (efeito, fora do aparelho) ----------
+// Pegada de garrafa pela direita, na altura da lente PIR: a palma encosta no lado direito do corpo, os dedos dão a
+// volta pela frente (é o que aparece de frente) e o polegar fica atrás. O antebraço sai para trás e para a direita, na
+// manga. Tudo em cápsulas, juntado numa malha só (pele) mais a manga. Eixo do corpo na origem; mão de tamanho real
+// (palma ~85 mm).
+const HAND_Y = -0.36
+const HAND_OUT = new THREE.Vector3(0.75, 0.05, -0.4).normalize() // por onde a mão chega e vai embora
+function handGeometries() {
+  const skin: THREE.BufferGeometry[] = []
+  const at = (r: number, phi: number, y: number) => new THREE.Vector3(r * Math.cos(phi), y, r * Math.sin(phi))
+  const up = new THREE.Vector3(0, 1, 0)
+  const capsule = (a: THREE.Vector3, b: THREE.Vector3, r: number) => {
+    const d = b.clone().sub(a)
+    const g = new THREE.CapsuleGeometry(r, Math.max(0.002, d.length()), 4, 10)
+    g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(up, d.normalize()))
+    g.translate((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2)
+    g.deleteAttribute('uv')
+    skin.push(g)
+  }
+  const PHI_W = -0.55, PHI_K = 0.6 // palma: do pulso (lado de trás) até os nós dos dedos (lado da frente)
+  const fingers = [
+    { y: 0.25, r: 0.1, len: 0.92 }, // indicador
+    { y: 0.07, r: 0.105, len: 1.02 }, // médio
+    { y: -0.1, r: 0.1, len: 0.95 }, // anelar
+    { y: -0.26, r: 0.088, len: 0.76 }, // mínimo
+  ]
+  for (const f of fingers) {
+    // ossos da palma: cápsulas grossas lado a lado formam a palma curva; os nós dos dedos saltam um pouco
+    capsule(at(HW + 0.13, PHI_W + 0.05, f.y * 0.8), at(HW + 0.13, PHI_K, f.y), 0.12)
+    // falanges: três segmentos seguindo a curva do corpo, mais finos para a ponta
+    const rr = HW + f.r + 0.012
+    let phi = PHI_K
+    ;[0.45, 0.3, 0.25].forEach((k, i) => {
+      const dphi = (f.len * k) / rr
+      capsule(at(rr, phi, f.y), at(rr, phi + dphi, f.y), f.r * (1 - i * 0.07))
+      phi += dphi
+    })
+  }
+  // polegar: sai da base da palma e sobe pela traseira
+  capsule(at(HW + 0.19, PHI_W - 0.02, 0.06), at(HW + 0.14, PHI_W - 0.3, 0.19), 0.14)
+  capsule(at(HW + 0.14, PHI_W - 0.3, 0.19), at(HW + 0.115, PHI_W - 0.48, 0.33), 0.115)
+  capsule(at(HW + 0.115, PHI_W - 0.48, 0.33), at(HW + 0.105, PHI_W - 0.56, 0.46), 0.1)
+  // pulso e antebraço: tangente ao corpo no pulso, abrindo para fora
+  const w = at(HW + 0.2, PHI_W - 0.08, 0)
+  const dir = new THREE.Vector3(Math.sin(PHI_W), 0, -Math.cos(PHI_W)).multiplyScalar(0.5)
+    .add(new THREE.Vector3(Math.cos(PHI_W), 0, Math.sin(PHI_W)).multiplyScalar(0.85)).setY(-0.1).normalize()
+  capsule(w, w.clone().addScaledVector(dir, 1.0), 0.24)
+  // manga: tubo fechado de tecido, do meio do antebraço para fora
+  const sleeve = new THREE.CylinderGeometry(0.29, 0.32, 2.4, 18)
+  sleeve.translate(0, 1.2, 0)
+  sleeve.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(up, dir))
+  sleeve.translate(...w.clone().addScaledVector(dir, 0.62).toArray())
+  sleeve.deleteAttribute('uv')
+  return { skin: mergeGeometries(skin)!, sleeve }
 }
 
 /**
@@ -344,8 +416,14 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   const arrowPhase = useActionPhase('tampa-foto', [0.8, 1.5], true)
   const person = useRef<THREE.Group>(null!)
   const dog = useRef<THREE.Group>(null!)
+  const walker = useRef<THREE.Group>(null!)
+  const sensTag = useRef<HTMLDivElement>(null)
+  const sensShow = useRef(0)
   const ruler = useRef<THREE.Group>(null!)
   const alertV = useRef(0)
+  const hand = useRef<THREE.Group>(null!)
+  const handG = useMemo(handGeometries, [])
+  const skinMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#d4a083', roughness: 0.6 }), [])
   const g = G()
   // base e suporte de parede: o mesmo plástico cinza fosco
   const baseMat = useMemo(() => { const m = M.grey.clone(); m.color.set('#80848c'); return m }, [])
@@ -359,6 +437,8 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   const pirPhase = useActionPhase('pir', [0, 3.1, 5.9, 9.5])
   const supPhase = useActionPhase('suporte')
   const camPhase = useActionPhase('camera', [1.0, 6.4])
+  const sabPhase = useActionPhase('sabotagem', [1.7, 2.6, 8.6])
+  const sensPhase = useActionPhase('sensibilidade')
 
   const flashPower = () => {
     if (flash) return flash()
@@ -368,13 +448,22 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
 
   useFrame((_, dt) => {
     if (!interactive) return
-    // suporte: fica parado; o fotossensor gira sobre ele para a esquerda e para a direita, sempre em pé (não inclina),
-    // em torno do próprio eixo vertical. A luva, que está no mesmo grupo do corpo, gira de volta para ficar parada
+    // suporte: o fotossensor é fixo nele e os dois giram juntos para a esquerda e para a direita, sempre em pé (não
+    // inclina), na articulação com a peça de fixação da parede, que fica parada
     const ts = actionTime('suporte')
     const amp = ts < 0 ? 0 : bump(ts, 0, 0.8, 7, 8)
-    const pan = Math.sin(ts * 1.3) * 0.45 * amp
+    // sabotagem: a mão chega, pega o sensor pelo lado e o sacode para os lados (gira na articulação), e vai embora
+    const tb = actionTime('sabotagem')
+    const shake = tb < 0 ? 0 : bump(tb, 1.15, 1.45, 3.3, 3.7) * (Math.sin((tb - 1.15) * 10.5) * 0.12 + Math.sin((tb - 1.15) * 3.4) * 0.07)
+    const pan = Math.sin(ts * 1.3) * 0.45 * amp + shake
     tilt.current.rotation.y = pan
-    if (swing.current[0]) swing.current[0].rotation.y = -pan
+    const ease = (x: number) => 1 - Math.pow(1 - x, 3)
+    const away = tb < 0 ? 1 : Math.max(1 - ease(seg(tb, 0.1, 1.15)), Math.pow(seg(tb, 3.8, 4.8), 2))
+    hand.current.visible = useShowroom.getState().warm || (tb >= 0 && away < 0.999)
+    // a mão gira junto com o sensor, em volta da mesma articulação
+    const hx = HAND_OUT.x * away * 2.2, hz = HAND_OUT.z * away * 2.2 - PAN[2], c = Math.cos(pan), sn = Math.sin(pan)
+    hand.current.rotation.y = pan
+    hand.current.position.set(hx * c + hz * sn, HAND_Y + HAND_OUT.y * away * 2.2, -hx * sn + hz * c + PAN[2])
     ruler.current.visible = ts >= 0
     // troca das pilhas: o sensor vira de costas; aperta-se a aba de cima e a tampa abre pelo alto, girando nas
     // presilhas de baixo (~30°), e sai para cima e para trás. As 3 pilhas velhas saem uma a uma, as novas entram, a
@@ -417,6 +506,23 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
       dog.current.position.y = FAN_Y + Math.abs(Math.sin(tp * 10)) * 0.04
     }
     alertV.current += (pirAlert() - alertV.current) * Math.min(1, dt * 10)
+    // sensibilidade: o leque cresce ou encolhe suave conforme o nível; a pessoa vai e volta
+    const tsn = actionTime('sensibilidade')
+    const target = tsn < 0 ? 0 : SENS_REACH[useShowroom.getState().pirLevel - 1] * Math.min(1, tsn / 0.8)
+    sensShow.current += (target - sensShow.current) * Math.min(1, dt * 6)
+    walker.current.visible = warm || tsn >= 0
+    if (tsn >= 0) {
+      walker.current.position.x = sensX(tsn)
+      walker.current.position.y = FAN_Y + Math.abs(Math.sin(tsn * 6)) * 0.03
+      walker.current.rotation.y = Math.cos(tsn * 0.9) >= 0 ? 0 : Math.PI
+    }
+    const tag = sensTag.current
+    if (tag) {
+      const on = sensDetect()
+      tag.textContent = tsn < 1.2 ? '' : on ? 'Movimento detectado' : 'Fora do alcance: não dispara'
+      tag.style.background = on ? 'hsl(0 84% 60%)' : 'rgba(0,0,0,.65)'
+      tag.style.opacity = tsn < 1.2 ? '0' : '1'
+    }
   })
 
   // LED de status: verde piscando; vermelho fixo no alerta do PIR
@@ -631,31 +737,41 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
           <CameraFlash power={flashPower} position={[0, LEDWIN_Y + 0.04, HD + 0.1]} />
           {/* a foto chega no aplicativo: a tela "Imagem", com a pessoa marcada pela IA (como no app oficial) */}
           {camPhase === 0 && (
-            <Html position={[1.55, LENS_Y - 0.15, HD + 0.2]} center style={{ pointerEvents: 'none' }}>
-              {/* o celular vem de longe até a frente; chega a notificação e, em seguida, abre a tela "Imagem" com a foto */}
-              <div className="fx-tag relative w-48 overflow-hidden rounded-[24px] border-[5px] border-[#1b1d22] bg-[#0b0c10] text-white shadow-2xl" lang="pt-BR"
+            <Html position={[-1.35, LENS_Y - 0.35, HD + 0.3]} center style={{ pointerEvents: 'none' }}>
+              {/* o celular vem de longe até a frente, já com a tela "Imagem" do app aberta; a notificação passa por cima */}
+              <div className="fx-tag overflow-hidden rounded-[24px] border-[5px] border-[#1b1d22] bg-[#0b0c10] shadow-2xl"
                 style={{ animation: 'phone-in 0.9s cubic-bezier(.16,.84,.3,1) both' }}>
-                <div className="flex items-center justify-between px-3 pt-1.5 text-[8px] font-semibold"><span>08:08</span><span>●●● ▮</span></div>
-                <div className="absolute inset-x-2 top-6 z-10 rounded-xl bg-white/95 px-2 py-1.5 text-[9px] text-slate-700 shadow" style={{ animation: 'notif-out 0.6s 0.9s ease-in both' }}>
-                  <b className="text-[#e03131]">Alarme 365</b> · Nova imagem do fotossensor
-                </div>
-                <div style={{ animation: 'screen-in 0.5s 1.3s cubic-bezier(.16,.84,.3,1) both' }}>
-                <div className="flex items-center gap-2 px-2.5 py-1.5 text-[11px]"><span className="text-base leading-none">‹</span><span className="flex-1">Imagem</span><span>⋮</span></div>
-                <img src={aiPhotoDataUrl(true)} alt="" width={182} height={136} className="block w-full" />
-                <div className="mx-2 my-2 rounded-xl bg-white/5 px-2 py-1.5 text-center text-[9px] leading-snug">
-                  <div className="mx-auto mb-1 h-0.5 w-6 rounded bg-white/30" />
-                  <div>Agora</div>
-                  <div>Detecção de presença</div>
-                  <div className="text-white/50">1 detecção · Sala de estar</div>
-                  <div className="mt-1.5 font-semibold">Pessoa (100% de previsão)</div>
-                  <div className="mt-1 flex justify-center gap-1"><span className="h-1 w-1 rounded-full bg-white" /><span className="h-1 w-1 rounded-full bg-white/30" /><span className="h-1 w-1 rounded-full bg-white/30" /></div>
-                </div>
-                </div>
+                <ImageScreen scale={0.6} />
+              </div>
+            </Html>
+          )}
+          {/* mão que mexe no sensor (gira junto com ele) */}
+          <group ref={hand} visible={false}>
+            <mesh geometry={handG.skin} material={skinMat} userData={{ fx: true }} raycast={() => null} castShadow />
+            <mesh geometry={handG.sleeve} material={M.greyDark} userData={{ fx: true }} raycast={() => null} castShadow />
+          </group>
+          {(sabPhase === 0 || sabPhase === 1) && (
+            <Html position={[0.3, 1.05, 0]} center style={{ pointerEvents: 'none' }}>
+              <div className="fx-tag whitespace-nowrap rounded-full bg-alert px-4 py-1.5 text-sm font-bold text-white">Sabotagem detectada</div>
+            </Html>
+          )}
+          {/* o aviso chega no aplicativo: notificação e o evento em "Últimos eventos" */}
+          {sabPhase === 1 && (
+            <Html position={[-1.2, 0.0, HD + 0.3]} center style={{ pointerEvents: 'none' }}>
+              <div className="fx-tag overflow-hidden rounded-[24px] border-[5px] border-[#1b1d22] bg-white shadow-2xl"
+                style={{ animation: 'phone-in 0.9s cubic-bezier(.16,.84,.3,1) both' }}>
+                <SabotageScreen scale={0.6} />
               </div>
             </Html>
           )}
           <DetectionFan position={[0, FAN_Y, HD - 0.1]} length={4.2} labels={pirPhase >= 0} alert={() => alertV.current}
-            show={() => { const t = actionTime('pir'); return t < 0 ? 0 : bump(t, 0, 1.2, 13, 14) }} />
+            show={() => { const t = actionTime('pir'); return t < 0 ? sensShow.current : bump(t, 0, 1.2, 13, 14) }} />
+          <group ref={walker} position={[0, FAN_Y, SENS_Z]} visible={false}><LowPolyPerson scale={1.5} /></group>
+          {sensPhase === 0 && (
+            <Html position={[0, 1.0, SENS_Z]} center style={{ pointerEvents: 'none' }}>
+              <div ref={sensTag} className="fx-tag whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-bold text-white transition-colors" style={{ opacity: 0 }} />
+            </Html>
+          )}
           <group ref={person} position={[0, FAN_Y, PERSON_Z]} visible={false}><LowPolyPerson scale={1.5} /></group>
           <group ref={dog} position={[0, FAN_Y, 2.0]} visible={false}><LowPolyDog scale={1.1} /></group>
           {pirPhase === 1 && alertBadge()}

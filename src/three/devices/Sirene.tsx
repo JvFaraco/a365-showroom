@@ -119,7 +119,7 @@ function supportFeet() {
  * três pés. A traseira tem o berço da bateria, o elemento sonoro e o tamper; por dentro fica a placa. A sirene NÃO
  * gira para encaixar: desce de cima para baixo no suporte e trava com um clique; para tirar, sobe e sai.
  */
-export function Sirene({ interactive = false, sounding }: DeviceProps & { sounding?: () => boolean }) {
+export function Sirene({ interactive = false, sounding, waves = [5, 1.9] }: DeviceProps & { sounding?: () => boolean; waves?: [number, number] }) {
   const body = useRef<THREE.Group>(null!)
   const shell = useRef<THREE.Group>(null!)
   const batt = useRef<THREE.Group>(null!)
@@ -130,7 +130,6 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
   const plate = useMemo(supportPlate, [])
   const feet = useMemo(supportFeet, [])
   const slit = useMemo(() => stadiumGeometry(0.13, 0.048, 0.004, 0.002), []) // janela do LED na face: ~9 × 3,5 mm
-  const lens = useMemo(() => { const m = M.crystal.clone(); m.opacity = 0.2; return m }, []) // lente fina: deixa a cor do LED passar
   // tampa do tamper: disco em degraus (anéis concêntricos) com o miolo abaulado, virado para trás
   const tamperCap = useMemo(() => smoothLatheZ([[0.31, 0.0], [0.305, -0.03], [0.28, -0.04], [0.225, -0.042], [0.21, -0.07], [0.13, -0.075], [0.1, -0.1], [0.04, -0.115], [0.001, -0.118]], 64, 48), [])
   const piezo = useMemo(() => smoothLatheZ([[0.04, 0.06], [0.2, 0.06], [0.225, 0.05], [0.23, 0.03], [0.23, -0.04], [0.22, -0.05], [0.001, -0.05]], 48, 24), [])
@@ -161,7 +160,7 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
   useEffect(() => { if (clicPhase === 0) beep('click') }, [clicPhase])
 
   const isOn = () => (sounding ? sounding() : interactive && useShowroom.getState().sirenOn)
-  const sampleLed = (t: number, o: { color: string; on: number }) => { const on = isOn(); o.color = on ? '#ff2a2a' : '#2f6dff'; o.on = on ? (t % 0.3 < 0.15 ? 1 : 0.05) : 0.55 }
+  const sampleLed = (t: number, o: { color: string; on: number }) => { const on = isOn(); o.color = on ? '#ff2a2a' : '#2f6dff'; o.on = on ? (t % 0.3 < 0.15 ? 1 : 0) : 1 } // aceso em cheio, como o do módulo (meio aceso vira só um fundo azul)
   const level = () => (isOn() ? (interactive ? useShowroom.getState().sirenLevel : 2) : 0)
 
   useFrame(({ clock }) => {
@@ -190,8 +189,8 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
     batt.current.position.set(0, out * 0.1, -out * 0.55)
     // tamper: pressionado pelo suporte; solta quando a sirene se desprende dele
     const free = clamp01(Math.max(away * 5, explodeAmt.v * 4))
-    // o botão da micro-chave: apertado pelo suporte; solto, sobe ~1 mm
-    lever.current.position.z = -free * 0.016
+    // a alavanquinha da chave: escondida com a sirene no suporte; solta, sai ~2,5 mm
+    lever.current.position.z = -free * (2.5 / 64)
   })
 
   return (
@@ -208,10 +207,9 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
             piscando ao tocar) e, por cima, a lente de cristal fina */}
         <ClickablePart id="led">
           <group position={[0, LED_Y, FACE_Z]}>
-            <mesh geometry={slit} material={M.hole} position={[0, 0, -0.0035]} scale={[1.16, 1.4, 1]} />
-            {/* o LED em si: ponto pequeno e forte no meio da janela (como o do módulo); a janela fica escura */}
-            <Led on="shell" sample={sampleLed} boost={9} baseColor="#14161b" position={[0, 0, 0.0008]}><circleGeometry args={[0.022, 24]} /></Led>
-            <mesh geometry={slit} material={lens} position={[0, 0, 0.0012]} scale={[1, 1, 0.5]} />
+            <mesh geometry={slit} material={M.white} position={[0, 0, -0.0035]} scale={[1.16, 1.4, 1]} />
+            {/* o LED: igual ao do módulo, o mesmo ponto de luz sobre o plástico branco (sem janela escura nem lente) */}
+            <Led on="shell" sample={sampleLed} boost={9} baseColor="#14161b" position={[0, 0, 0.0008]}><circleGeometry args={[2.24 / 64, 24]} /></Led>
           </group>
         </ClickablePart>
 
@@ -259,7 +257,8 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
           <mesh material={M.pcb} position={[TAMPER[0], TAMPER[1] + 0.04, BACK - 0.008]}><boxGeometry args={[15 / 64, 20 / 64, 0.014]} /></mesh>
           <mesh material={M.chip} position={[TAMPER[0], TAMPER[1], BACK - 0.03]}><boxGeometry args={[6 / 64, 6 / 64, 0.035]} /></mesh>
           <group ref={lever}>
-            <mesh material={M.greyDark} position={[TAMPER[0], TAMPER[1], BACK - 0.052]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.02, 0.02, 0.016, 12]} /></mesh>
+            {/* alavanquinha preta (~2,5 mm): com a sirene no suporte, fica escondida na carcaça da chave; fora, ela sai */}
+            <mesh material={M.chip} position={[TAMPER[0], TAMPER[1], BACK - 0.03]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.013, 0.013, 2.5 / 64, 10]} /></mesh>
           </group>
           {/* conector branco da bateria, no topo da plaquinha, com os fios vermelho e preto */}
           <group ref={plugRef}>
@@ -304,7 +303,7 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
         <mesh material={sparkMat} position={[TAMPER[0], TAMPER[1] + 0.15, BACK - 0.12]} userData={{ fx: true }} raycast={() => null}><sphereGeometry args={[0.05, 12, 8]} /></mesh>
         </group>
 
-        <SoundWaves level={level} position={[0, 0, 0.36]} count={5} maxRadius={1.9} />
+        <SoundWaves level={level} position={[0, 0, 0.36]} count={waves[0]} maxRadius={waves[1]} />
         <mesh material={ringMat} position={[0, 0, SEAM]} userData={{ fx: true }} raycast={() => null}><torusGeometry args={[1.02, 0.022, 8, 96]} /></mesh>
       </group>
 

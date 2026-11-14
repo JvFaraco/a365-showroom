@@ -80,7 +80,7 @@ function HoverTag() {
 
 // avisos das micro-animações: toast centralizado logo abaixo da barra de modos, por cima da lista de Partes
 const TOASTS: Partial<Record<ActionId, { at: number; until?: number; text: string }>> = {
-  tamper: { at: 0.6, text: 'Sirene aberta: o sistema não arma' },
+  tamper: { at: 0.6, text: 'Tamper aberto: a alavanca saiu, o sistema avisa e não arma' },
 }
 function ActionToast() {
   const id = useShowroom((s) => s.action?.id)

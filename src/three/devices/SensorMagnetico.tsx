@@ -7,12 +7,13 @@ import { M } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
 import { boxesGeometry, roundedRectGeometry, stadiumGeometry, type Block } from '../common/shapes'
-import { DeviceCtx, bump, useActionPhase, type DeviceProps } from '../common/util'
-import { actionTime, now, useShowroom } from '../../store/showroomStore'
+import { DeviceCtx, bump, seg, useActionPhase, type DeviceProps } from '../common/util'
+import { actionTau, actionTime, now, useShowroom } from '../../store/showroomStore'
 import { MagneticField } from '../fx/MagneticField'
 import { RadioPulse } from '../fx/RadioPulse'
 import { SoundWaves } from '../fx/SoundWaves'
 import { MiniModulo } from '../fx/MiniModulo'
+import { TamperTag } from '../fx/TamperTag'
 
 // Montagem da foto de instalação: as duas peças na horizontal, no alto da porta, paralelas e alinhadas no
 // comprimento. O corpo vai na folha (embaixo) e o ímã no batente (em cima), com vão de poucos milímetros.
@@ -81,9 +82,11 @@ const alarmOn = () => doorOpen() > 0.08 || knockFired()
  * baixo-relevo no meio e a base de fixação na outra ponta) + ímã (barra fina e longa, paralela ao corpo).
  * Frente em +Z.
  */
-export function SensorMagnetico({ interactive = false, open }: DeviceProps & { open?: () => number }) {
+export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: DeviceProps & { open?: () => number; swing?: number }) {
   const mg = (magGeo ??= buildMag())
   const door = useRef<THREE.Group>(null!)
+  const baseRef = useRef<THREE.Group>(null!)
+  const tPin = useRef<THREE.Group>(null!)
   // anel em volta da janela do LED, por dentro da tampa (guia de luz)
   const ledPipe = useMemo(() => {
     // oval deitado, como a janela: mais comprido na largura da face
@@ -142,18 +145,24 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
 
   useFrame(() => {
     const o = open ? open() : interactive ? doorOpen() : 0
-    let rot = -o * 0.6
+    let rot = -o * swing // swing: quanto a folha abre (a cena "Em ação" abre a porta inteira para o invasor passar)
     if (interactive) {
       const tk = knockT()
       if (tk >= 0 && tk < 0.7) rot += Math.sin(tk * 70) * 0.012 * (1 - tk / 0.7)
     }
     door.current.rotation.y = rot
+    // anti-sabotagem: separar a tampa da base (a base vai para trás); o pino da chave sobe quando o da base sai
+    const ts = interactive ? actionTau('tamper-mag') : -1
+    const sep = ts < 0 ? 0 : seg(ts, 0.1, 1.0)
+    baseRef.current.position.z = -sep * 0.32
+    tPin.current.position.z = -Math.min(1, sep * 6) * mm(2.5)
   })
 
   // LED: azul fraco em repouso; quando a porta abre (ou a batida dispara), pisca em azul forte
   const sampleLed = (t: number, o: { color: string; on: number }) => {
     const on = interactive ? alarmOn() : (open?.() ?? 0) > 0.08
-    o.color = '#3d7bff'; o.on = on ? (t % 0.4 < 0.2 ? 1 : 0.05) : 0.12
+    // aceso em azul, como o do módulo e o da sirene; pisca rápido ao detectar
+    o.color = '#3d7bff'; o.on = on ? (t % 0.4 < 0.2 ? 1 : 0.15) : 1
   }
 
   return (
@@ -164,7 +173,7 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
           <group position={[-HINGE_X, 0, 0.3]}>
             {/* corpo em duas peças: a base (atrás, presa à porta) e a tampa (na frente), com a emenda entre elas */}
             <ClickablePart follow="corpo" explode={[0, 0, 0]}>
-              <group rotation={DEITA}>
+              <group rotation={DEITA}><group ref={baseRef}>
                 {/* base: fundo e paredes; por dentro, o ressalto em cruz, as guias da placa, a divisória da ponta, o rasgo e o
                     furo dos parafusos de fixação na porta */}
                 <RoundedBox args={[BODY.w, BODY.len, FLOOR_T]} radius={0.012} smoothness={2} position={[BODY.x, 0, BACK + FLOOR_T / 2]} material={M.white} castShadow />
@@ -183,7 +192,7 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
                   )))}
                 </group>
                 <mesh geometry={shells.seam} material={M.partition} position={[BODY.x, 0, 0]} />
-              </group>
+              </group></group>
             </ClickablePart>
             <ClickablePart id="corpo">
               <group rotation={DEITA}>
@@ -203,9 +212,9 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
             {/* janela do LED: pequena (~8 × 4 mm), atravessada na face, entre o logo e a tampinha da ponta */}
             <ClickablePart id="led">
               <group rotation={DEITA}>
-                <mesh geometry={slit} material={M.blackGloss} position={[BODY.x, LED_Y, FRONT - 0.007]} />
-                {/* o LED em si: ponto pequeno e forte no meio da janela (como o do módulo); a janela fica escura */}
-                <Led on="shell" sample={sampleLed} boost={9} baseColor="#14161b" position={[BODY.x, LED_Y, FRONT + 0.0035]}><circleGeometry args={[0.017, 24]} /></Led>
+                <mesh geometry={slit} material={M.white} position={[BODY.x, LED_Y, FRONT - 0.007]} />
+                {/* o LED: igual ao do módulo, o mesmo ponto de luz sobre o plástico branco (sem janela escura em volta) */}
+                <Led on="shell" sample={sampleLed} boost={9} baseColor="#14161b" position={[BODY.x, LED_Y, FRONT + 0.0035]}><circleGeometry args={[2.24 / 49.5, 24]} /></Led>
               </group>
             </ClickablePart>
             {/* placa eletrônica: comprida e estreita (~74 × 19 mm). Numa ponta, o borne preto de 2 parafusos, no canto; da
@@ -229,7 +238,11 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
             <ClickablePart id="tamper">
               <group rotation={DEITA}>
                 <mesh material={M.chip} position={[BODY.x, mm(39), PCB.z - 0.011 - 0.012]}><boxGeometry args={[mm(6), mm(6), 0.024]} /></mesh>
-                <mesh material={M.greyDark} position={[BODY.x, mm(39), PCB.z - 0.011 - 0.024 - 0.01]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(1.3), mm(1.3), 0.02, 12]} /></mesh>
+                {/* alavanquinha preta da chave (~2,5 mm): o pino da base a mantém escondida dentro da carcaça; separada a
+                    base, ela sai */}
+                <group ref={tPin}>
+                  <mesh material={M.chip} position={[BODY.x, mm(39), PCB.z - 0.011 - 0.024 + mm(1.25)]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[mm(0.8), mm(0.8), mm(2.5), 10]} /></mesh>
+                </group>
               </group>
             </ClickablePart>
             {/* sensor de choque: um CI pequeno na placa */}
@@ -285,6 +298,7 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
         </group>
       </ClickablePart>
 
+      {interactive && <TamperTag id="tamper-mag" openAt={0.4} position={[-0.6, 0.75, 0]} />}
       {interactive && (
         <>
           {/* batente: a parede em cima e dos lados da folha */}
@@ -308,7 +322,7 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
           {knock && (
             <Html key={knock.t0} position={[1.0, -0.75, 0.2]} center style={{ pointerEvents: 'none' }}>
               <div className={`fx-tag rounded-full px-4 py-1.5 text-sm font-bold text-white ${knock.fired ? 'bg-alert' : 'bg-black/70'}`}>
-                {knock.fired ? 'Disparou antes de a porta abrir' : 'Vibração abaixo do nível: não dispara'}
+                {knock.fired ? 'Disparou antes de a porta abrir' : useShowroom.getState().shockLevel === 0 ? 'Sensor de choque desligado: não dispara' : 'Vibração abaixo do nível: não dispara'}
               </div>
             </Html>
           )}

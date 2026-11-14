@@ -5,11 +5,11 @@ export type Vec3 = [number, number, number]
 
 export type ActionId =
   // Módulo de Comando
-  | 'antena' | 'sos190' | 'led' | 'audio' | 'bateria-modulo' | 'abrir-modulo' | 'cabos' | 'desplugar-bateria'
+  | 'antena' | 'sos190' | 'led' | 'audio' | 'bateria-modulo' | 'abrir-modulo' | 'cabos' | 'desplugar-bateria' | 'tamper-modulo'
   // Fotossensor
-  | 'pir' | 'camera' | 'suporte' | 'tampa-foto'
+  | 'pir' | 'camera' | 'suporte' | 'tampa-foto' | 'sabotagem' | 'sensibilidade'
   // Sensor magnético
-  | 'ima' | 'choque'
+  | 'ima' | 'choque' | 'tamper-mag'
   // Sirene
   | 'som' | 'encaixe' | 'bateria-sirene' | 'tamper'
   // Controle remoto
@@ -28,6 +28,7 @@ export type Part = {
   camera: { position: Vec3; target: Vec3 }
   internal?: boolean // só clicável explodido / raio-X
   action?: ActionId // micro-animação do "Ver em ação"
+  more?: ActionId[] // outras ações da mesma parte (botões a mais no card)
   explode?: Vec3 // deslocamento da parte na vista explodida (0..1)
   pin?: Vec3 // Modo Manual: desloca o pino a partir do centro da parte (para não cair em cima de outro)
 }
@@ -63,7 +64,7 @@ export const DEVICES: Device[] = [
         id: 'antena',
         name: 'Antena',
         what: 'Antena removível, que se rosqueia até travar.',
-        facts: ['Garante o sinal do chip 4G', 'Chip multi-operadora'],
+        facts: ['Garante o sinal do chip 4G, a via de reserva', 'Chip multi-operadora'],
         tip: 'Deixe o módulo perto de janelas ou de paredes externas para ter melhor sinal.',
         camera: { position: [1.4, 1.1, -2.7], target: [-0.35, 0.35, -1.15] },
         action: 'antena',
@@ -115,7 +116,7 @@ export const DEVICES: Device[] = [
         id: 'ethernet',
         name: 'Porta Ethernet',
         what: 'Entrada para cabo de rede, na parede do bolsão do fundo: o cabo vem por trás e entra deitado.',
-        facts: ['Terceira via de comunicação: cabo de rede'],
+        facts: ['Via de comunicação pelo cabo de rede'],
         camera: { position: [0.35, -1.7, -2.3], target: [0, -0.36, -0.3] },
         action: 'cabos',
       },
@@ -148,7 +149,7 @@ export const DEVICES: Device[] = [
       {
         id: 'chip-4g',
         name: 'Cartão do chip 4G',
-        what: 'Chip 4G multi-operadora: a primeira via de comunicação, já ativa de fábrica.',
+        what: 'Chip 4G multi-operadora: a via de reserva. Se o Wi-Fi e a internet a cabo caírem, ele assume a comunicação.',
         facts: [],
         camera: { position: [1.2, 1.3, 1.4], target: [0.2, -0.03, 0.35] },
         internal: true,
@@ -157,7 +158,7 @@ export const DEVICES: Device[] = [
       {
         id: 'wifi',
         name: 'Módulo Wi-Fi / rede',
-        what: 'Wi-Fi e Ethernet: a segunda e a terceira vias de comunicação.',
+        what: 'Wi-Fi e Ethernet: as vias de comunicação do dia a dia; se as duas caírem, o chip 4G assume.',
         facts: [],
         camera: { position: [-1.2, 1.3, 1.3], target: [-0.31, -0.04, 0.32] },
         internal: true,
@@ -184,9 +185,10 @@ export const DEVICES: Device[] = [
       {
         id: 'tamper',
         name: 'Anti-sabotagem (tamper)',
-        what: 'Botão na placa, à esquerda, logo atrás do Wi-Fi. A tampa o mantém apertado: se o módulo for aberto, ele solta e o sistema avisa.',
+        what: 'Chave preta pequena na placa, à esquerda, logo atrás do Wi-Fi. Com a tampa fechada, a alavanquinha fica escondida dentro dela: tamper fechado. Se o módulo for aberto, a alavanca sai e o sistema avisa: tamper aberto.',
         facts: [],
         camera: { position: [-1.7, 1.3, 1.5], target: [-0.45, -0.05, 0.05] },
+        action: 'tamper-modulo',
         internal: true,
         explode: [0, 0.75, 0],
       },
@@ -212,7 +214,7 @@ export const DEVICES: Device[] = [
         id: 'bateria',
         name: 'Bateria de lítio',
         what: 'Mantém tudo funcionando sem energia. Fica por baixo da placa.',
-        facts: ['Cerca de 3 horas de autonomia', 'Depende do número de aparelhos e do uso'],
+        facts: ['Cerca de 2 horas de autonomia', 'Depende do número de aparelhos e do uso'],
         camera: { position: [1.7, 0.7, 1.7], target: [0.1, -0.24, 0.1] },
         internal: true,
         action: 'desplugar-bateria',
@@ -265,9 +267,10 @@ export const DEVICES: Device[] = [
         id: 'pir',
         name: 'Lente PIR',
         what: 'Sensor infravermelho de movimento.',
-        facts: ['Campo de 90°', 'Alcance de 8 a 10 m', 'Pet Immune: ignora animais pequenos'],
+        facts: ['Campo de 90°', 'Alcance de 8 a 10 m', 'Pet Immune: ignora animais pequenos', 'Sensibilidade ajustável'],
         camera: { position: [0.7, -0.3, 2.2], target: [0, -0.48, 0.3] },
         action: 'pir',
+        more: ['sensibilidade'],
         explode: [0, 0.22, 1.05],
       },
       {
@@ -282,7 +285,7 @@ export const DEVICES: Device[] = [
       {
         id: 'suporte',
         name: 'Suporte de parede',
-        what: 'Faz parte da base: sobe pela traseira e tem o encaixe em "Λ" onde entra a peça de fixação da parede. Fica parado; o sensor gira sobre ele para a esquerda e para a direita, sempre em pé, para apontar para a área.',
+        what: 'Faz parte da base: sobe pela traseira e tem o encaixe em "Λ" onde entra a peça de fixação da parede. O sensor é fixo nele, e os dois giram juntos para a esquerda e para a direita, sempre em pé, para apontar para a área.',
         facts: ['Altura de instalação: 2,10 m a 2,40 m do chão'],
         tip: 'Instale no canto, entre 2,10 m e 2,40 m do chão, apontando para o centro da área.',
         camera: { position: [1.5, -0.2, -2.2], target: [0, -0.6, -0.6] },
@@ -340,9 +343,11 @@ export const DEVICES: Device[] = [
       {
         id: 'sensor-pir',
         name: 'Sensor PIR',
-        what: 'Cilindro metálico na placa principal, atrás da lente PIR.',
-        facts: [],
+        what: 'Cilindro metálico na placa principal, atrás da lente PIR. Se alguém mexe no fotossensor depois de instalado, ele avisa sabotagem no aplicativo. Abrir a tampa das pilhas não dispara nada.',
+        facts: ['Sistema anti-sabotagem'],
         camera: { position: [0.8, -0.3, 2.0], target: [0, -0.55, 0.15] },
+        action: 'sabotagem',
+        more: ['sensibilidade'],
         internal: true,
         explode: [0, 0.22, 0.3],
       },
@@ -408,16 +413,17 @@ export const DEVICES: Device[] = [
       {
         id: 'tamper',
         name: 'Anti-sabotagem (tamper)',
-        what: 'Botão na placa, apertado por um pino da base. Se a tampa for separada da base, ele solta e o sistema avisa.',
+        what: 'Chave preta atrás da placa: o pino da base mantém a alavanquinha escondida dentro dela (tamper fechado). Se a tampa for separada da base, a alavanca sai e o sistema avisa (tamper aberto).',
         facts: [],
         camera: { position: [0.9, -0.5, 2.2], target: [-0.6, -0.19, -0.1] },
+        action: 'tamper-mag',
         internal: true,
         explode: [0, 0, 0.32],
       },
       {
         id: 'choque',
         name: 'Sensor de choque',
-        what: 'Detector de vibração com níveis de sensibilidade.',
+        what: 'Detector de vibração com níveis de sensibilidade (alta, média, baixa e baixíssima). Pode ser desligado.',
         facts: ['Identifica a tentativa de arrombamento antes de a porta abrir'],
         camera: { position: [-0.5, 0.5, 2.2], target: [-0.28, -0.23, 0] },
         internal: true,
@@ -485,7 +491,7 @@ export const DEVICES: Device[] = [
       {
         id: 'tamper',
         name: 'Anti-sabotagem (tamper)',
-        what: 'Micro-chave que o suporte mantém apertada; se a sirene sai do suporte, o sistema é avisado.',
+        what: 'Chave preta na traseira: o suporte mantém a alavanquinha escondida dentro dela (tamper fechado). Se a sirene sai do suporte, a alavanca sai e o sistema é avisado (tamper aberto).',
         facts: ['Fica numa plaquinha na traseira, ao lado do conector da bateria'],
         tip: 'Com a sirene aberta, não é possível armar.',
         camera: { position: [-0.6, -0.2, -2.4], target: [-0.08, -0.5, -0.3] },
@@ -702,15 +708,15 @@ export const DEVICES: Device[] = [
       {
         id: 'ultimos-eventos',
         name: 'Últimos eventos',
-        what: 'Histórico com ícones.',
-        facts: ['Cadeado vermelho: arme', 'Cadeado azul: desarme', 'Alto-falante vermelho: disparo', 'Escudo com "!": alerta'],
+        what: 'Os eventos mais recentes, como no Histórico: o nome do evento, quem fez (a pessoa ou o aparelho) e quando.',
+        facts: ['Cadeado azul: desarme', 'Cadeado vermelho: arme e arme parcial', 'Alto-falante vermelho: disparo', 'Escudo com "!": imagem e avisos, como falha de energia'],
         camera: { position: [0.20, -0.45, 2.50], target: [0, -0.48, 0.05] },
       },
       {
         id: 'menu',
         name: 'Menu inferior',
         what: 'Navegação do aplicativo.',
-        facts: ['5 abas: Início, Comandos, Equipamentos, Contatos e Eventos'],
+        facts: ['5 abas: Início, Comandos, Equipamentos, Contatos e Histórico'],
         camera: { position: [0.20, -0.85, 2.40], target: [0, -0.84, 0.05] },
       },
     ],

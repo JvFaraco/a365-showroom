@@ -94,6 +94,9 @@ const ARM_BTN: { id: ArmState; label: string; Icon: typeof LockOpen }[] = [
   { id: 'disarmed', label: 'Desarmado', Icon: LockOpen }, { id: 'armed', label: 'Armado', Icon: LockClosed }, { id: 'partial', label: 'Armado parcial', Icon: HomePerson },
 ]
 const LEVELS = ['Baixa', 'Média', 'Alta']
+const SHOCK = ['Desligado', 'Baixíssima', 'Baixa', 'Média', 'Alta']
+// força da batida: 1 leve … 4 arrombamento; dispara quando força + nível ≥ 5 (desligado nunca)
+const KNOCKS = ['Leve', 'Média', 'Forte', 'Arrombamento'] as const
 
 /** Controles da micro-animação ativa ("Ver em ação"). */
 export function ActionPanel() {
@@ -101,13 +104,14 @@ export function ActionPanel() {
   const sirenOn = useShowroom((s) => s.sirenOn)
   const sirenLevel = useShowroom((s) => s.sirenLevel)
   const shock = useShowroom((s) => s.shockLevel)
+  const pirLevel = useShowroom((s) => s.pirLevel)
   const arm = useShowroom((s) => s.armState)
   const pending = useShowroom((s) => s.armPending)
   const photo = useShowroom((s) => s.appPhoto)
   const set = useShowroom((s) => s.set)
   if (!action) return null
   const a = ACTIONS[action.id]
-  const knock = (strength: 1 | 2) => { beep('click'); set({ knock: { t0: now(), fired: strength + useShowroom.getState().shockLevel >= 4 } }) }
+  const knock = (strength: number) => { beep('click'); const lv = useShowroom.getState().shockLevel; set({ knock: { t0: now(), fired: lv > 0 && strength + lv >= 5 } }) }
 
   return (
     <div className="mt-3 rounded-xl border border-white/10 bg-black/30 p-3">
@@ -131,14 +135,23 @@ export function ActionPanel() {
       )}
       {action.id === 'choque' && (
         <div className="space-y-2">
-          <label className="block text-xs text-white/70">Sensibilidade: <b className="text-white">{LEVELS[shock - 1]}</b>
-            <input type="range" min={1} max={3} step={1} value={shock} aria-label="Sensibilidade do sensor de choque"
-              onChange={(e) => set({ shockLevel: Number(e.target.value) as 1 | 2 | 3 })} className="mt-1 w-full accent-[#F9E000]" />
+          <label className="block text-xs text-white/70">Sensibilidade: <b className="text-white">{SHOCK[shock]}</b>
+            <input type="range" min={0} max={4} step={1} value={shock} aria-label="Sensibilidade do sensor de choque"
+              onChange={(e) => set({ shockLevel: Number(e.target.value) as 0 | 1 | 2 | 3 | 4 })} className="mt-1 w-full accent-[#F9E000]" />
           </label>
-          <div className="flex gap-2">
-            <button className="btn flex-1" onClick={() => knock(1)}>Batida leve</button>
-            <button className="btn flex-1" onClick={() => knock(2)}>Batida forte</button>
+          <div className="grid grid-cols-2 gap-2">
+            {KNOCKS.map((k, i) => <button key={k} className="btn" onClick={() => knock(i + 1)}>{k === 'Arrombamento' ? k : `Batida ${k.toLowerCase()}`}</button>)}
           </div>
+          <p className="text-xs text-white/60">Quanto mais sensível, mais leve a batida que dispara. Desligado, o choque não dispara (só a abertura da porta).</p>
+        </div>
+      )}
+      {action.id === 'sensibilidade' && (
+        <div className="space-y-2">
+          <label className="block text-xs text-white/70">Sensibilidade do PIR: <b className="text-white">{LEVELS[pirLevel - 1]}</b>
+            <input type="range" min={1} max={3} step={1} value={pirLevel} aria-label="Sensibilidade do sensor PIR"
+              onChange={(e) => { beep('click'); set({ pirLevel: Number(e.target.value) as 1 | 2 | 3 }) }} className="mt-1 w-full accent-[#F9E000]" />
+          </label>
+          <p className="text-xs text-white/60">Mais sensível, o sensor percebe movimento mais longe e com menos esforço. Menos sensível, precisa de mais movimento para disparar.</p>
         </div>
       )}
       {action.id === 'alarme-geral' && (
@@ -153,7 +166,7 @@ export function ActionPanel() {
       )}
       {action.id === 'solicitar-imagem' && (
         <div>
-          <p className="mb-2 text-xs text-white/70">Toque em "Solicitar imagem atualizada" na tela do celular (ou aqui). No demo leva ~4 s.</p>
+          <p className="mb-2 text-xs text-white/70">Abre o Histórico de imagens do fotossensor, como ao tocar nele em Equipamentos. Toque em "Solicitar imagem atualizada" no celular (ou aqui). No demo leva ~4 s.</p>
           <button className="btn btn-primary w-full" disabled={photo === 'loading'} onClick={() => set({ appPhoto: 'loading' })}>
             {photo === 'loading' ? 'Solicitando…' : photo === 'done' ? 'Solicitar de novo' : 'Solicitar imagem atualizada'}
           </button>

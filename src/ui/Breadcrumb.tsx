@@ -8,6 +8,9 @@ export function Breadcrumb() {
   const partId = useShowroom((s) => s.part)
   const d = DEVICE_BY_ID[device]
   const part = getPart(device, partId)
+  // com a lista de partes aberta, o card fica numa linha só (da altura do botão "Partes"): com a frase, ele descia
+  // por cima da lista
+  const listOpen = useShowroom((s) => s.listOpen)
   return (
     <nav aria-label="Você está em" className="pointer-events-auto flex min-w-0 items-center gap-2">
       {part && (
@@ -20,7 +23,7 @@ export function Breadcrumb() {
           <button className={part ? 'text-white/85 underline-offset-4 hover:text-white hover:underline' : 'text-white'} onClick={() => useShowroom.getState().selectPart(null)}>{d.name}</button>
           {part && <><span className="mx-1.5 text-accent">›</span><span className="text-white">{part.name}</span></>}
         </div>
-        {!part && <div className="truncate text-[0.8em] text-white/75">{d.tagline}</div>}
+        {!part && !listOpen && <div className="truncate text-[0.8em] text-white/75">{d.tagline}</div>}
       </div>
     </nav>
   )
