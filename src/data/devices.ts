@@ -346,6 +346,7 @@ export const DEVICES: Device[] = [
         facts: ['Sistema anti-sabotagem'],
         camera: { position: [0.8, -0.3, 2.0], target: [0, -0.55, 0.15] },
         action: 'sabotagem',
+        more: ['sensibilidade'],
         internal: true,
         explode: [0, 0.22, 0.3],
       },
