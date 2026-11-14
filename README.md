@@ -121,7 +121,7 @@ A lista de partes de cada aparelho, com primitivas, proporções e materiais, es
 
 ## Pendências a confirmar com a Orsegups
 
-- Destino do QR Code do verso da placa. O que aparece no demo é ilustrativo e não codifica nada.
+- Destino do QR Code do rodapé da placa. O que aparece no demo é ilustrativo e não codifica nada.
 - Cor do filete lateral do controle: azul na arte oficial, amarelo na foto real. O demo usa o azul.
 - Disco central do controle: não é botão. A arte de marketing mostra o logo nele e o ícone do sistema mostra liso; o demo usa o logo em baixo-relevo discreto.
 - Sensor magnético: a foto de instalação mostra o corpo na folha da porta e o ímã no batente (o texto antigo dizia o contrário); confirmar no manual. As fotos novas do sensor instalado mostram só as duas peças (corpo e ímã); o terceiro bloco branco da foto antiga não faz parte dele. Qual ponta fica com o borne e qual com a antena é suposição: a foto da placa não mostra o lado da tampinha.

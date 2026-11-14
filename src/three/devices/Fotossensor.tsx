@@ -10,7 +10,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { boxesGeometry, stadiumGeometry, type Block } from '../common/shapes'
 import { DeviceCtx, bump, seg, useActionPhase, type DeviceProps } from '../common/util'
 import { actionTau, actionTime, useShowroom } from '../../store/showroomStore'
-import { DetectionFan, LowPolyDog, LowPolyPerson } from '../fx/DetectionFan'
+import { DetectionFan, LowPolyPerson } from '../fx/DetectionFan'
 import { CameraFlash } from '../fx/CameraFlash'
 import { REF_ON } from '../../dev/RefMode'
 import { ImageScreen, SabotageScreen } from '../../ui/AppScreen'
@@ -96,7 +96,6 @@ const BOARD = { y0: H(24), y1: H(128), hw: mm(27), z: PCB_DZ + 0.1 } // placa pr
 const UP = 0.22 // na vista explodida tudo sobe um pouco e a base cinza fica embaixo (é como ela "desce" sem entrar no pedestal)
 const FAN_Y = Y0 - 0.01 // altura do chão da cena do PIR
 const personX = (t: number) => -3.4 + seg(t, 2.5, 6.5) * 6.8
-const dogX = (t: number) => -3.4 + seg(t, 8, 12) * 6.8
 const PERSON_Z = 2.5
 
 /** Profundidade do contorno na posição x: para trás (cantos de raio RB) e para a frente (raio RC). */
@@ -415,7 +414,6 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   const cellRefs = useRef<(THREE.Group | null)[]>([])
   const arrowPhase = useActionPhase('tampa-foto', [0.8, 1.5], true)
   const person = useRef<THREE.Group>(null!)
-  const dog = useRef<THREE.Group>(null!)
   const walker = useRef<THREE.Group>(null!)
   const sensTag = useRef<HTMLDivElement>(null)
   const sensShow = useRef(0)
@@ -430,11 +428,11 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   const springMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#b87333', roughness: 0.38, metalness: 1 }), [])
   const shellMat = useMemo(() => { const m = M.white.clone(); m.side = THREE.DoubleSide; return m }, [])
   const mountMat = useMemo(() => { const m = M.grey.clone(); m.color.set('#9a9ea6'); return m }, [])
-  const lensBack = useMemo(() => new THREE.MeshStandardMaterial({ color: '#e3e5e8', roughness: 0.7 }), [])
+  const lensBack = useMemo(() => new THREE.MeshStandardMaterial({ color: '#bfc4ca', roughness: 0.7 }), []) // janela translúcida, um pouco mais escura que o corpo (fotos)
   const pirMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#f1f2f3', roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12, transparent: true, opacity: 0.8, envMapIntensity: 1.4 }), [])
   const rulerMat = useMemo(() => fxBasic('#ffffff', 0.5), [])
   const bandMat = useMemo(() => fxBasic('#35d46a', 0.35), [])
-  const pirPhase = useActionPhase('pir', [0, 3.1, 5.9, 9.5])
+  const pirPhase = useActionPhase('pir', [0, 3.1, 5.9])
   const supPhase = useActionPhase('suporte')
   const camPhase = useActionPhase('camera', [1.0, 6.4])
   const sabPhase = useActionPhase('sabotagem', [1.7, 2.6, 8.6])
@@ -495,15 +493,12 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
     }
     // no aquecimento, os efeitos que só aparecem numa ação ficam visíveis uma vez, para compilar os shaders deles
     const warm = useShowroom.getState().warm
-    // PIR: pessoa dispara, cachorro não
+    // PIR: a pessoa passa pelo campo e dispara
     const tp = actionTime('pir')
     person.current.visible = warm || (tp > 2.3 && tp < 6.8)
-    dog.current.visible = warm || (tp > 7.8 && tp < 12.3)
     if (tp >= 0) {
       person.current.position.x = personX(tp)
       person.current.position.y = FAN_Y + Math.abs(Math.sin(tp * 7)) * 0.03
-      dog.current.position.x = dogX(tp)
-      dog.current.position.y = FAN_Y + Math.abs(Math.sin(tp * 10)) * 0.04
     }
     alertV.current += (pirAlert() - alertV.current) * Math.min(1, dt * 10)
     // sensibilidade: o leque cresce ou encolhe suave conforme o nível; a pessoa vai e volta
@@ -525,10 +520,10 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
     }
   })
 
-  // LED de status: verde piscando; vermelho fixo no alerta do PIR
+  // LED de status: azul (como no aparelho); pisca fraco em repouso e acende forte quando o PIR detecta
   const sampleStatus = (t: number, o: { color: string; on: number }) => {
     const al = interactive ? alertV.current : 0
-    o.color = al > 0.5 ? '#ff2a2a' : '#27d455'
+    o.color = '#0f5bff'
     o.on = al > 0.5 ? 1 : t % 3 < 0.25 ? 0.9 : 0.25
   }
 
@@ -773,13 +768,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
             </Html>
           )}
           <group ref={person} position={[0, FAN_Y, PERSON_Z]} visible={false}><LowPolyPerson scale={1.5} /></group>
-          <group ref={dog} position={[0, FAN_Y, 2.0]} visible={false}><LowPolyDog scale={1.1} /></group>
           {pirPhase === 1 && alertBadge()}
-          {pirPhase === 3 && (
-            <Html position={[0, 0.2, 2.0]} center style={{ pointerEvents: 'none' }}>
-              <div className="fx-tag rounded-full bg-ok px-4 py-1.5 text-sm font-bold text-[#05210c]">Pet Immune ✓</div>
-            </Html>
-          )}
           <group ref={ruler} visible={false} position={[-0.95, 0, -0.78]}>
             <mesh material={rulerMat} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[0.02, 3.2, 0.02]} /></mesh>
             <mesh material={bandMat} userData={{ fx: true }} raycast={() => null}><boxGeometry args={[0.12, 1.9, 0.01]} /></mesh>

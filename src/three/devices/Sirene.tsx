@@ -200,7 +200,7 @@ export function Sirene({ interactive = false, sounding, waves = [5, 1.9] }: Devi
           <group ref={shell}>
             <mesh geometry={dome} material={M.white} castShadow />
             {/* o mesmo símbolo do módulo em sulcos finos, no centro da face */}
-            <LogoGroove r={0.26} position={[0, 0.02, FACE_Z + 0.004]} />
+            <LogoGroove r={0.425} position={[0, 0, FACE_Z + 0.004]} />
           </group>
         </ClickablePart>
         {/* LED: janela pequena na face, perto da borda, centralizada embaixo. Moldura escura, luz forte (azul; vermelho

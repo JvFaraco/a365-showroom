@@ -2,7 +2,7 @@
 
 Todos os modelos são procedurais (three.js). As proporções vêm das fotos de referência e das medidas externas dos aparelhos (contorno, alturas e raios de fora); por dentro, as peças grandes estão no lugar, sem medida exata. Cada linha é uma malha (ou grupo) separada, com o `part.id` usado em `src/data/devices.ts`. Partes marcadas com (i) são internas: só ficam clicáveis no modo Explodir ou no Raio-X.
 
-Materiais: plástico branco acetinado #F1F2F4 com verniz leve e micro-textura (`white`), cinza-azulado fosco #8A93A3 (`grey`), preto soft-touch #1A1C20 (`black`), cromado (`chrome`), placa verde com textura de trilhas (`pcb`), linhas de partição (`partition`), logo em sulcos (`logoGroove`) e LEDs emissivos com bloom. Nenhuma marca de fornecedor, número de série ou QR legível: etiquetas são retângulos lisos.
+Materiais: plástico branco acetinado #F1F2F4 com verniz leve e micro-textura (`white`), cinza-azulado fosco #8A93A3 (`grey`), preto soft-touch #1A1C20 (`black`), cromado (`chrome`), placa verde com textura de trilhas (`pcb`), linhas de partição (`partition`), logo em sulcos finos, branco sobre branco como na peça real (`logoLight`; na sirene com 55 mm, no magnético com 14,5 mm, pelas medidas externas) e LEDs emissivos com bloom. Nenhuma marca de fornecedor, número de série ou QR legível: etiquetas são retângulos lisos.
 
 ## Módulo de Comando (planta de 144 × 145 mm, 38 mm de altura; 1 un = 80 mm; frente em +Z)
 
@@ -104,11 +104,11 @@ As cores da marca saem exatas: o material da chapa leva `userData.brand`, e o `C
 | `logo` | Anel amarelo com o corte, em canvas de 2048 px, sobre a chapa azul de cantos redondos. |
 | `telefone` | Plano com "ORSEGUPS" (amarelo, letras largas) e "4020.4411" (branco). |
 | `faixa` | Faixa amarela de ponta a ponta: câmera de segurança (haste, braço, corpo inclinado e lente) e o aviso em azul. |
-| `verso` | Plano traseiro com "ALARME 365" e o QR Code ilustrativo. No rodapé da frente o QR é branco sobre o azul, como na arte. |
+| `verso` | Plano traseiro liso, na cor da chapa (o usuário confirmou que o verso é liso). No rodapé da frente o QR é branco sobre o azul, como na arte. |
 
 ## Aplicativo (0,95 × 1,95)
 
-O corpo do celular é uma extrusão de cantos redondos com aro metálico, botão de liga à direita, dois de volume à esquerda e, atrás, a ilha da câmera com duas lentes. A tela é React de verdade dentro do 3D (`<Html transform occlude>`, em `src/ui/AppScreen.tsx`), e cada região é uma parte: `sos`, `alarme-geral`, `ultimas-imagens`, `ultimos-eventos` e `menu`. O desenho segue as telas do aplicativo de hoje, no tema escuro: no topo, o perfil, o logo Orsegups e o sino (que abre "Notificações"); "Olá!" com o SOS só no contorno; o cartão do patrimônio (sem endereço); o Alarme geral com os três estados (o selecionado em azul); Últimas imagens com a etiqueta da zona e o botão amarelo; Últimos eventos no formato do Histórico (ícone, nome do evento, quem fez e quando, com os nomes reais: Desarme, Arme, Arme Parcial, Disparo, Imagem); e o menu com Início, Comandos, Equipamentos, Contatos e Histórico, a aba atual em amarelo. Nenhum nome de pessoa: quem usou o app aparece como "Você". Os avisos que chegam no celular usam os nomes das notificações do app ("Disparo do sensor", "Imagem do disparo").
+O corpo do celular é uma extrusão de cantos redondos com aro metálico claro (aço, como na arte), botão de liga à direita, dois de volume e a chave de mudo à esquerda, saindo ~0,7 mm do aro e, atrás, a ilha da câmera com duas lentes. A tela é React de verdade dentro do 3D (`<Html transform occlude>`, em `src/ui/AppScreen.tsx`), e cada região é uma parte: `sos`, `alarme-geral`, `ultimas-imagens`, `ultimos-eventos` e `menu`. O desenho segue as telas do aplicativo de hoje, no tema escuro: no topo, o perfil, o logo Orsegups e o sino (que abre "Notificações"); "Olá!" com o SOS só no contorno; o cartão do patrimônio (sem endereço); o Alarme geral com os três estados (o selecionado em azul); Últimas imagens com a etiqueta da zona e o botão amarelo; Últimos eventos no formato do Histórico (ícone, nome do evento, quem fez e quando, com os nomes reais: Desarme, Arme, Arme Parcial, Disparo, Imagem); e o menu com Início, Comandos, Equipamentos, Contatos e Histórico, a aba atual em amarelo. Nenhum nome de pessoa: quem usou o app aparece como "Você". Os avisos que chegam no celular usam os nomes das notificações do app ("Disparo do sensor", "Imagem do disparo").
 
 ## Placas internas
 

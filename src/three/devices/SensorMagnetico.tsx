@@ -191,7 +191,7 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
                     <mesh key={`${y}${sx}`} material={M.white} position={[sx * (BODY.w / 2 - WALL_T - mm(0.8)), mm(y), mm(3)]}><boxGeometry args={[mm(1.6), mm(2.5), mm(6)]} /></mesh>
                   )))}
                 </group>
-                <mesh geometry={shells.seam} material={M.partition} position={[BODY.x, 0, 0]} />
+                <mesh geometry={shells.seam} material={M.logoGroove} position={[BODY.x, 0, 0]} />
               </group></group>
             </ClickablePart>
             <ClickablePart id="corpo">
@@ -204,9 +204,9 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
                   <mesh material={M.white} position={[0, mm(31.5), mm(4)]}><boxGeometry args={[mm(5), mm(2), mm(8)]} /></mesh>
                 </group>
                 {/* logo em relevo, no meio do comprimento */}
-                <LogoGroove r={0.12} position={[BODY.x, 0, FRONT + 0.0005]} />
+                <LogoGroove r={0.146} position={[BODY.x, 0, FRONT + 0.0005]} />
                 {/* emenda da tampinha da ponta: dá a volta na frente e nos dois lados */}
-                <mesh geometry={capSeam} material={M.partition} position={[BODY.x, CAP_Y, (FRONT + SPLIT - 0.1) / 2]} rotation={[Math.PI / 2, 0, 0]} />
+                <mesh geometry={capSeam} material={M.logoGroove} position={[BODY.x, CAP_Y, (FRONT + SPLIT - 0.1) / 2]} rotation={[Math.PI / 2, 0, 0]} />
               </group>
             </ClickablePart>
             {/* janela do LED: pequena (~8 × 4 mm), atravessada na face, entre o logo e a tampinha da ponta */}
@@ -223,7 +223,7 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
               <group rotation={DEITA}>
                 <mesh material={M.pcb} position={[BODY.x, PCB.y, PCB.z]}><boxGeometry args={[PCB.w, PCB.len, 0.022]} /></mesh>
                 {/* o LED de verdade fica na placa, embaixo da janela; com o aparelho explodido, é ele que acende */}
-                <Led on="board" sample={sampleLed} position={[BODY.x, LED_Y, PCB.z + 0.016]}><boxGeometry args={[0.06, 0.035, 0.012]} /></Led>
+                <Led on="board" sample={sampleLed} core={0} boost={2.4} position={[BODY.x, LED_Y, PCB.z + 0.016]}><boxGeometry args={[0.06, 0.035, 0.012]} /></Led>
                 <mesh geometry={spring} material={copper} position={[BODY.x + 0.02, PCB_END - 0.012, PCB.z + 0.03]} />
                 <mesh material={M.chip} position={[BODY.x - 0.12, PCB.y + PCB.len / 2 - 0.09, PCB.z + 0.05]}><boxGeometry args={[0.16, 0.17, 0.08]} /></mesh>
                 {[-0.04, 0.04].map((dy) => <mesh key={dy} material={M.metal} position={[BODY.x - 0.12, PCB.y + PCB.len / 2 - 0.09 + dy, PCB.z + 0.092]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.026, 0.026, 0.008, 10]} /></mesh>)}
@@ -288,7 +288,7 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
           <mesh geometry={mg.baseWalls} material={M.white} position={[MAG_X, 0, 0]} castShadow />
           <mesh geometry={mg.tongue} material={M.white} position={[MAG_X, 0, 0]} />
           <mesh geometry={mg.inside} material={M.white} position={[MAG_X, 0, 0]} />
-          <mesh geometry={mg.seam} material={M.partition} position={[MAG_X, 0, 0]} />
+          <mesh geometry={mg.seam} material={M.logoGroove} position={[MAG_X, 0, 0]} />
         </group>
       </ClickablePart>
       {/* o ímã em si: barra cinza deitada sobre as nervuras, no meio do comprimento (posição aproximada) */}
