@@ -172,8 +172,10 @@ Frente sempre em +Z. As medidas citadas são externas, em mm. Detalhe de cada pa
 - **Placa de aviso** (`Placa.tsx`). Chapa de 1,5 × 2,0 em faixas de textura nas proporções da arte oficial: logo no
   alto (56% da largura), "ORSEGUPS" e telefone, faixa amarela "AVISO À POLÍCIA" e rodapé com "ALARME 365" e QR
   branco. Verso com "ALARME 365" e QR (suposição: a arte só mostra a frente).
-- **Aplicativo** (`Smartphone.tsx` + `AppScreen.tsx`). Celular com aro, botões e ilha de câmera; a tela segue a tela
-  inicial do app oficial (fundo branco, seções com o nome por fora, cartões cinza-claros, menu de 5 abas).
+- **Aplicativo** (`Smartphone.tsx` + `AppScreen.tsx`). Celular com aro, botões e ilha de câmera; a tela segue as telas
+  do app de hoje no tema escuro (o usuário pediu escuro): perfil, logo e sino (abre Notificações) no topo, menu Início,
+  Comandos, Equipamentos, Contatos e Histórico, eventos e avisos com os nomes reais do app. Sem nome de pessoa nem
+  endereço. As telas de referência estão em `ref/06-placa-kit-app/` (só local).
 
 ## 6. Referências
 
