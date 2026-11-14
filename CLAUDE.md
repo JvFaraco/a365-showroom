@@ -254,7 +254,7 @@ Frente sempre em +Z. As medidas citadas são externas, em mm. Detalhe de cada pa
 - **Pendente do usuário:** foto do outro lado da placa do magnético (posição do LED) e gravações dos sons do módulo e
   da sirene (para imitar por síntese).
 - Decisões do usuário nesta rodada: o fotossensor NÃO tem tamper (abrir a tampa não dispara); a bateria da sirene não
-  é trocada pelo usuário; o suporte do fotossensor é fixo e o sensor gira em pé sobre ele; a sirene toca assim que o
+  é trocada pelo usuário; o fotossensor é fixo no suporte e os dois giram juntos, em pé, na articulação com a peça de fixação da parede (nunca inclina); a sirene toca assim que o
   magnético detecta a porta abrindo; o LED do magnético pisca em azul (apagado em repouso); não há modo Manual; o
   fotossensor avisa sabotagem quando alguém mexe nele (ação "Mexer no sensor", no Sensor PIR: no app, só o evento de
   sabotagem); o magnético é a bateria de lítio, como no manual.

@@ -89,8 +89,9 @@ const ZC = (z: number) => (z - 50.9) / 79.07 // profundidade em mm a partir da p
 const WALL = { hw: mm(15.5), top: H(63.5), floor: ZC(11), back: ZC(3.5), plate0: ZC(0.5), plate1: ZC(2.3), guide: ZC(10) }
 /** Meia largura do encaixe da luva na altura h (mm): 13 mm embaixo, 5,5 mm no alto. */
 const slotHW = (h: number) => mm(13 - (7.5 * h) / 68)
-// eixo vertical no centro do corpo (redondo): o sensor gira sobre o suporte, para a esquerda e para a direita
-const PAN: [number, number, number] = [0, Y0, 0]
+// articulação: eixo vertical no encaixe da peça de fixação da parede. O sensor é fixo no suporte (a luva da base) e
+// os dois giram juntos, em pé, para a esquerda e para a direita; só a peça de fixação fica parada
+const PAN: [number, number, number] = [0, Y0, WALL.floor]
 const PCB_DZ = -0.17 // a placa principal fica ~5 mm atrás do eixo do aparelho; o funil vem da lente até o sensor, na frente dela
 const BOARD = { y0: H(24), y1: H(128), hw: mm(27), z: PCB_DZ + 0.1 } // placa principal: da altura do funil até o topo
 const UP = 0.22 // na vista explodida tudo sobe um pouco e a base cinza fica embaixo (é como ela "desce" sem entrar no pedestal)
@@ -429,11 +430,11 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
 
   useFrame((_, dt) => {
     if (!interactive) return
-    // suporte: fica parado; o fotossensor gira sobre ele para a esquerda e para a direita, sempre em pé (não inclina),
-    // em torno do próprio eixo vertical. A luva, que está no mesmo grupo do corpo, gira de volta para ficar parada
+    // suporte: o fotossensor é fixo nele e os dois giram juntos para a esquerda e para a direita, sempre em pé (não
+    // inclina), na articulação com a peça de fixação da parede, que fica parada
     const ts = actionTime('suporte')
     const amp = ts < 0 ? 0 : bump(ts, 0, 0.8, 7, 8)
-    // sabotagem: a mão chega, pega o sensor pelo lado e o sacode para os lados (gira sobre o suporte), e vai embora
+    // sabotagem: a mão chega, pega o sensor pelo lado e o sacode para os lados (gira na articulação), e vai embora
     const tb = actionTime('sabotagem')
     const shake = tb < 0 ? 0 : bump(tb, 1.15, 1.45, 3.3, 3.7) * (Math.sin((tb - 1.15) * 10.5) * 0.12 + Math.sin((tb - 1.15) * 3.4) * 0.07)
     const pan = Math.sin(ts * 1.3) * 0.45 * amp + shake
@@ -441,9 +442,10 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
     const ease = (x: number) => 1 - Math.pow(1 - x, 3)
     const away = tb < 0 ? 1 : Math.max(1 - ease(seg(tb, 0.1, 1.15)), Math.pow(seg(tb, 3.8, 4.8), 2))
     hand.current.visible = useShowroom.getState().warm || (tb >= 0 && away < 0.999)
+    // a mão gira junto com o sensor, em volta da mesma articulação
+    const hx = HAND_OUT.x * away * 2.2, hz = HAND_OUT.z * away * 2.2 - PAN[2], c = Math.cos(pan), sn = Math.sin(pan)
     hand.current.rotation.y = pan
-    hand.current.position.set(HAND_OUT.x * away * 2.2, HAND_Y + HAND_OUT.y * away * 2.2, HAND_OUT.z * away * 2.2)
-    if (swing.current[0]) swing.current[0].rotation.y = -pan
+    hand.current.position.set(hx * c + hz * sn, HAND_Y + HAND_OUT.y * away * 2.2, -hx * sn + hz * c + PAN[2])
     ruler.current.visible = ts >= 0
     // troca das pilhas: o sensor vira de costas; aperta-se a aba de cima e a tampa abre pelo alto, girando nas
     // presilhas de baixo (~30°), e sai para cima e para trás. As 3 pilhas velhas saem uma a uma, as novas entram, a
