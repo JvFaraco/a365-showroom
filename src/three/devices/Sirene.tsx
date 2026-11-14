@@ -209,7 +209,8 @@ export function Sirene({ interactive = false, sounding }: DeviceProps & { soundi
         <ClickablePart id="led">
           <group position={[0, LED_Y, FACE_Z]}>
             <mesh geometry={slit} material={M.hole} position={[0, 0, -0.0035]} scale={[1.16, 1.4, 1]} />
-            <Led on="shell" geometry={slit} boost={6} sample={sampleLed} position={[0, 0, -0.003]} />
+            {/* o LED em si: ponto pequeno e forte no meio da janela (como o do módulo); a janela fica escura */}
+            <Led on="shell" sample={sampleLed} boost={9} baseColor="#14161b" position={[0, 0, 0.0008]}><circleGeometry args={[0.022, 24]} /></Led>
             <mesh geometry={slit} material={lens} position={[0, 0, 0.0012]} scale={[1, 1, 0.5]} />
           </group>
         </ClickablePart>

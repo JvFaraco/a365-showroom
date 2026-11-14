@@ -202,9 +202,8 @@ export function SensorMagnetico({ interactive = false, open }: DeviceProps & { o
             <ClickablePart id="led">
               <group rotation={DEITA}>
                 <mesh geometry={slit} material={M.blackGloss} position={[BODY.x, LED_Y, FRONT - 0.007]} />
-                <Led on="shell" sample={sampleLed} position={[BODY.x, LED_Y, FRONT + 0.006]}>
-                  <boxGeometry args={[0.115, 0.045, 0.004]} />
-                </Led>
+                {/* o LED em si: ponto pequeno e forte no meio da janela (como o do módulo); a janela fica escura */}
+                <Led on="shell" sample={sampleLed} boost={9} baseColor="#14161b" position={[BODY.x, LED_Y, FRONT + 0.0035]}><circleGeometry args={[0.017, 24]} /></Led>
               </group>
             </ClickablePart>
             {/* placa eletrônica: comprida e estreita (~74 × 19 mm). Numa ponta, o borne preto de 2 parafusos, no canto; da

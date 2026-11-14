@@ -632,10 +632,16 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
           {/* a foto chega no aplicativo: a tela "Imagem", com a pessoa marcada pela IA (como no app oficial) */}
           {camPhase === 0 && (
             <Html position={[1.55, LENS_Y - 0.15, HD + 0.2]} center style={{ pointerEvents: 'none' }}>
-              <div className="fx-tag w-44 overflow-hidden rounded-[22px] border-[5px] border-[#1b1d22] bg-[#0b0c10] text-white shadow-2xl" lang="pt-BR">
+              {/* o celular vem de longe até a frente; chega a notificação e, em seguida, abre a tela "Imagem" com a foto */}
+              <div className="fx-tag relative w-48 overflow-hidden rounded-[24px] border-[5px] border-[#1b1d22] bg-[#0b0c10] text-white shadow-2xl" lang="pt-BR"
+                style={{ animation: 'phone-in 0.9s cubic-bezier(.16,.84,.3,1) both' }}>
                 <div className="flex items-center justify-between px-3 pt-1.5 text-[8px] font-semibold"><span>08:08</span><span>●●● ▮</span></div>
+                <div className="absolute inset-x-2 top-6 z-10 rounded-xl bg-white/95 px-2 py-1.5 text-[9px] text-slate-700 shadow" style={{ animation: 'notif-out 0.6s 0.9s ease-in both' }}>
+                  <b className="text-[#e03131]">Alarme 365</b> · Nova imagem do fotossensor
+                </div>
+                <div style={{ animation: 'screen-in 0.5s 1.3s cubic-bezier(.16,.84,.3,1) both' }}>
                 <div className="flex items-center gap-2 px-2.5 py-1.5 text-[11px]"><span className="text-base leading-none">‹</span><span className="flex-1">Imagem</span><span>⋮</span></div>
-                <img src={aiPhotoDataUrl(true)} alt="" width={166} height={124} className="block w-full" />
+                <img src={aiPhotoDataUrl(true)} alt="" width={182} height={136} className="block w-full" />
                 <div className="mx-2 my-2 rounded-xl bg-white/5 px-2 py-1.5 text-center text-[9px] leading-snug">
                   <div className="mx-auto mb-1 h-0.5 w-6 rounded bg-white/30" />
                   <div>Agora</div>
@@ -643,6 +649,7 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
                   <div className="text-white/50">1 detecção · Sala de estar</div>
                   <div className="mt-1.5 font-semibold">Pessoa (100% de previsão)</div>
                   <div className="mt-1 flex justify-center gap-1"><span className="h-1 w-1 rounded-full bg-white" /><span className="h-1 w-1 rounded-full bg-white/30" /><span className="h-1 w-1 rounded-full bg-white/30" /></div>
+                </div>
                 </div>
               </div>
             </Html>
