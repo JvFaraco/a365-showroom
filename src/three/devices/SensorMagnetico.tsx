@@ -162,7 +162,7 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
   const sampleLed = (t: number, o: { color: string; on: number }) => {
     const on = interactive ? alarmOn() : (open?.() ?? 0) > 0.08
     // aceso em azul, como o do módulo e o da sirene; pisca rápido ao detectar
-    o.color = '#1a3cff'; o.on = on ? (t % 0.4 < 0.2 ? 1 : 0.15) : 1
+    o.color = '#0b34ff'; o.on = on ? (t % 0.4 < 0.2 ? 1 : 0.15) : 1
   }
 
   return (
@@ -214,7 +214,7 @@ export function SensorMagnetico({ interactive = false, open, swing = 0.6 }: Devi
               <group rotation={DEITA}>
                 <mesh geometry={slit} material={M.white} position={[BODY.x, LED_Y, FRONT - 0.007]} />
                 {/* o LED: a lentezinha inteira acende em azul vivo (cor pura, sem clarear para o branco) */}
-                <Led on="shell" sample={sampleLed} boost={9} core={0} baseColor="#14161b" geometry={slit} position={[BODY.x, LED_Y, FRONT - 0.004]} scale={[0.9, 0.9, 0.6]} />
+                <Led on="shell" sample={sampleLed} boost={2.4} core={0} baseColor="#14161b" geometry={slit} position={[BODY.x, LED_Y, FRONT - 0.004]} scale={[0.9, 0.9, 0.6]} />
               </group>
             </ClickablePart>
             {/* placa eletrônica: comprida e estreita (~74 × 19 mm). Numa ponta, o borne preto de 2 parafusos, no canto; da
