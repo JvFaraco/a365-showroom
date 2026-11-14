@@ -79,9 +79,9 @@ function HoverTag() {
 }
 
 // avisos das micro-animações: toast centralizado logo abaixo da barra de modos, por cima da lista de Partes
-const TOASTS: Partial<Record<ActionId, { at: number; text: string }>> = {
+const TOASTS: Partial<Record<ActionId, { at: number; until?: number; text: string }>> = {
   tamper: { at: 0.6, text: 'Sirene aberta: o sistema não arma' },
-  'tampa-foto': { at: 2.7, text: 'Tampa aberta: o sistema avisa a Central' },
+  'tampa-foto': { at: 1.45, until: 7.15, text: 'Tampa aberta: o sistema avisa a Central' },
 }
 function ActionToast() {
   const id = useShowroom((s) => s.action?.id)
@@ -90,7 +90,7 @@ function ActionToast() {
   useEffect(() => {
     if (!id || !cfg) return
     let raf = 0
-    const tick = () => { if (el.current) el.current.style.opacity = actionTau(id) >= cfg.at ? '1' : '0'; raf = requestAnimationFrame(tick) }
+    const tick = () => { if (el.current) { const t = actionTau(id); el.current.style.opacity = t >= cfg.at && t < (cfg.until ?? Infinity) ? '1' : '0' }; raf = requestAnimationFrame(tick) }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
   }, [id, cfg])

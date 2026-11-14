@@ -1,57 +1,16 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { easing } from 'maath'
-import { DEVICES, DEVICE_BY_ID, type DeviceId } from '../../data/devices'
+import { DEVICES, type DeviceId } from '../../data/devices'
 import { holdRef, now, useShowroom } from '../../store/showroomStore'
 import { DEVICE_COMPONENTS } from '../devices'
 import { ManualPins, PartCallout } from '../parts/PartCallout'
 import { explodeAmt, reducedMotion } from '../common/util'
-import { fxBasic } from '../common/materials'
-import { compiledDevices, deviceRoots, partCenter, warmBounds } from '../common/registry'
+import { compiledDevices, deviceRoots, warmBounds } from '../common/registry'
 import { boot, bootWantsShowroom } from '../../boot'
 
 const easeOut = (x: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3)
-const UP = new THREE.Vector3(0, 1, 0)
-
-/** Linhas-guia da vista explodida: do lugar original de cada parte até onde ela foi parar. */
-function ExplodeLines() {
-  const device = useShowroom((s) => s.device)
-  const ready = useShowroom((s) => s.ready)
-  const group = useRef<THREE.Group>(null!)
-  const mat = useMemo(() => fxBasic('#8fb4ff', 0), [])
-  const items = useMemo(() => {
-    if (!ready) return []
-    const seen = new Set<string>()
-    return DEVICE_BY_ID[device].parts.filter((p) => p.explode && Math.hypot(...p.explode) > 0.1).filter((p) => {
-      const k = p.explode!.join()
-      return seen.has(k) ? false : (seen.add(k), true)
-    }).map((p) => {
-      const dir = new THREE.Vector3(...p.explode!)
-      const len = dir.length()
-      dir.normalize()
-      return { from: partCenter(device, p.id, 0, new THREE.Vector3()), dir, len, q: new THREE.Quaternion().setFromUnitVectors(UP, dir) }
-    })
-  }, [device, ready])
-  useFrame(() => {
-    const k = explodeAmt.v
-    mat.opacity = k * 0.45
-    group.current.visible = k > 0.02 && useShowroom.getState().scene === 'showroom'
-    items.forEach((it, i) => {
-      const m = group.current.children[i]
-      if (!m) return
-      m.position.copy(it.from).addScaledVector(it.dir, (it.len * k) / 2)
-      m.scale.set(1, Math.max(0.001, it.len * k), 1)
-    })
-  })
-  return (
-    <group ref={group}>
-      {items.map((it, i) => (
-        <mesh key={`${device}${i}`} material={mat} quaternion={it.q} userData={{ fx: true }} raycast={() => null}><cylinderGeometry args={[0.004, 0.004, 1, 5]} /></mesh>
-      ))}
-    </group>
-  )
-}
 
 /** Progresso do botão segurado por 5 s (190 no módulo, ✱ no controle). Corre em `holdRef`, fora do React. */
 function HoldDriver() {
@@ -180,11 +139,10 @@ export function Boot() {
   return null
 }
 
-/** Camada do showroom que depende da seleção: linhas da vista explodida, pinos, linha-guia e botão segurado. */
+/** Camada do showroom que depende da seleção: pinos, linha-guia e botão segurado. */
 export function Showroom() {
   return (
     <>
-      <ExplodeLines />
       <ManualPins />
       <PartCallout />
       <HoldDriver />

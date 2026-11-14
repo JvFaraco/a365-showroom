@@ -6,7 +6,9 @@ import { ClickablePart } from '../parts/ClickablePart'
 import { M, fxBasic } from '../common/materials'
 import { LogoGroove } from '../common/Logo'
 import { Led } from '../common/Led'
-import { polaroidTexture } from '../common/textures'
+import { aiPhotoDataUrl } from '../common/textures'
+import { RadioPulse } from '../fx/RadioPulse'
+import { MiniModulo } from '../fx/MiniModulo'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { boxesGeometry, stadiumGeometry, type Block } from '../common/shapes'
 import { DeviceCtx, bump, seg, useActionPhase, type DeviceProps } from '../common/util'
@@ -175,8 +177,8 @@ function shellGeometry() {
   // `fan`: tampa de cima ou de baixo, em leque: o anel (em `inset`) é puxado para o centro da planta (0..1)
   type Row = { y: number; inset: number; bay: boolean; fan?: number }
   const rows: Row[] = []
-  // fundo (tampado pela faixa cinza) e lábio arredondado da base
-  rows.push({ y: Y_BASE, inset: 0.032, bay: false, fan: 1 }, { y: Y_BASE, inset: 0.032, bay: false, fan: 0.5 }, { y: Y_BASE, inset: 0.032, bay: false })
+  // embaixo o corpo é aberto (o fundo é só o da base cinza): começa no lábio arredondado que assenta na base
+  rows.push({ y: Y_BASE, inset: 0.032, bay: false })
   rows.push({ y: Y_BASE + 0.012, inset: 0.014, bay: false }, { y: Y_BASE + 0.03, inset: 0.004, bay: false })
   const yA = Y_BASE + 0.055, yB = Y_TOP - TOP_R, N = 132
   for (let i = 0; i <= N; i++) {
@@ -341,7 +343,6 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   const pin = useRef<THREE.Mesh>(null!)
   const cellRefs = useRef<(THREE.Group | null)[]>([])
   const arrowPhase = useActionPhase('tampa-foto', [0.8, 1.5], true)
-  const polaroid = useRef<THREE.Group>(null!)
   const person = useRef<THREE.Group>(null!)
   const dog = useRef<THREE.Group>(null!)
   const ruler = useRef<THREE.Group>(null!)
@@ -354,11 +355,12 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
   const mountMat = useMemo(() => { const m = M.grey.clone(); m.color.set('#9a9ea6'); return m }, [])
   const lensBack = useMemo(() => new THREE.MeshStandardMaterial({ color: '#e3e5e8', roughness: 0.7 }), [])
   const pirMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#f1f2f3', roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12, transparent: true, opacity: 0.8, envMapIntensity: 1.4 }), [])
-  const polMat = useMemo(() => new THREE.MeshBasicMaterial({ map: polaroidTexture(), toneMapped: false, side: THREE.DoubleSide }), [])
   const rulerMat = useMemo(() => fxBasic('#ffffff', 0.5), [])
   const bandMat = useMemo(() => fxBasic('#35d46a', 0.35), [])
   const pirPhase = useActionPhase('pir', [0, 3.1, 5.9, 9.5])
   const supPhase = useActionPhase('suporte')
+  const camPhase = useActionPhase('camera', [1.0, 6.4])
+  const tamperPhase = useActionPhase('tampa-foto', [1.45, 7.15])
 
   const flashPower = () => {
     if (flash) return flash()
@@ -368,35 +370,42 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
 
   useFrame((_, dt) => {
     if (!interactive) return
-    // suporte: o sensor inclina para a frente e volta, girando no eixo horizontal do pé do suporte (que fica parado)
+    // suporte: o sensor inclina para os lados (não para a frente e para trás), girando no pé do suporte (que fica parado)
     const ts = actionTime('suporte')
     const amp = ts < 0 ? 0 : bump(ts, 0, 0.8, 7, 8)
-    tilt.current.rotation.x = (0.09 - Math.cos(ts * 1.4) * 0.07) * amp
+    tilt.current.rotation.z = Math.sin(ts * 1.3) * 0.2 * amp
     ruler.current.visible = ts >= 0
-    // tampa: o sensor vira de costas, a tampa solta pela aba de cima, inclina ~25° e sai para o lado;
-    // o pino do anti-sabotagem salta e as 3 pilhas dão um leve salto, uma de cada vez, sem sair do compartimento
-    const tt = actionTau('tampa-foto')
+    // troca das pilhas: o sensor vira de costas; aperta-se a aba de cima e a tampa abre pelo alto, girando nas
+    // presilhas de baixo (~30°), e sai para cima e para trás. Ao sair, solta o pino do anti-sabotagem, que dispara. As 3
+    // pilhas velhas saem uma a uma, as novas entram, a tampa volta, fecha com um clique e o sensor vira de frente
+    const tt = actionTime('tampa-foto')
+    const sm = (x: number) => x * x * (3 - 2 * x)
+    const at = (a: number, b: number) => (tt < 0 ? 0 : sm(seg(tt, a, b)))
     // (no modo de referência a câmera já está atrás: o aparelho não vira)
-    flip.current.rotation.y = tt < 0 || REF_ON ? 0 : seg(tt, 0, 0.8) * Math.PI
-    const off = tt < 0 ? 0 : seg(tt, 2.0, 2.6)
-    // "clic" ao fechar: a tampa assenta com um leve pulso
-    const clic = tt >= 0 && tt < 1.5 ? bump(tt, 1.2, 1.35, 1.4, 1.5) * 0.015 : 0
-    cover.current.rotation.x = -(tt < 0 ? 0 : seg(tt, 1.5, 2.0)) * 0.44
-    cover.current.position.set(off * 0.72, -off * 0.08, -off * 0.4 + clic)
-    pin.current.position.z = -(CELL.s + 0.06) - (tt < 0 ? 0 : seg(tt, 2.6, 2.8)) * 0.03
+    flip.current.rotation.y = REF_ON ? 0 : (at(0, 0.8) - at(7.9, 8.7)) * Math.PI
+    const press = tt < 0 ? 0 : bump(tt, 0.9, 1.0, 1.1, 1.2) // a aba de cima é apertada
+    const clic = tt < 0 ? 0 : bump(tt, 7.3, 7.38, 7.44, 7.6) * 0.012
+    const open = at(1.2, 1.9) * (1 - at(6.7, 7.3)), lift = at(2.0, 2.7) * (1 - at(5.9, 6.6))
+    cover.current.rotation.x = -open * 0.52
+    cover.current.position.set(0, -press * 0.012 + lift * 0.22, -lift * 0.5 + clic)
+    pin.current.position.z = -(CELL.s + 0.06) - (tt < 0 ? 0 : seg(tt, 1.35, 1.5) * (1 - seg(tt, 7.05, 7.2))) * 0.03
     for (let i = 0; i < 3; i++) {
       const c = cellRefs.current[i]
-      if (c) c.position.z = -(tt < 0 ? 0 : bump(tt, 2.9 + i * 0.18, 3.1 + i * 0.18, 3.25 + i * 0.18, 3.5 + i * 0.18)) * 0.022
+      if (!c) continue
+      if (tt < 0) { c.position.set(0, 0, 0); continue }
+      const d = i * 0.3
+      if (tt < 4.3 + d) {
+        // a velha sai: para trás (para fora do compartimento) e depois para o lado
+        const o = seg(tt, 2.9 + d, 3.7 + d)
+        c.position.set(sm(Math.max(0, o * 2 - 1)) * 1.9, 0, -sm(Math.min(1, o * 2)) * 0.35)
+      } else {
+        // a nova vem do outro lado e entra no lugar
+        const n = seg(tt, 4.3 + d, 5.1 + d)
+        c.position.set(-(1 - sm(Math.min(1, n * 2))) * 1.9, 0, -(1 - sm(Math.max(0, n * 2 - 1))) * 0.35)
+      }
     }
-    // câmera: polaroid voa para fora
-    const tc = actionTime('camera')
-    const k = tc < 0 ? 0 : bump(tc, 0.9, 2.0, 6.3, 6.9)
     // no aquecimento, os efeitos que só aparecem numa ação ficam visíveis uma vez, para compilar os shaders deles
     const warm = useShowroom.getState().warm
-    polaroid.current.visible = warm || k > 0.001
-    polaroid.current.position.set(k * 1.05, LENS_Y + k * 0.05, HD + 0.12 + k * 0.3)
-    polaroid.current.scale.setScalar(0.05 + k * 0.95)
-    polaroid.current.rotation.set(0, -0.25 * k, (1 - k) * 1.2 - 0.08)
     // PIR: pessoa dispara, cachorro não
     const tp = actionTime('pir')
     person.current.visible = warm || (tp > 2.3 && tp < 6.8)
@@ -412,7 +421,8 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
 
   // LED de status: verde piscando; vermelho fixo no alerta do PIR
   const sampleStatus = (t: number, o: { color: string; on: number }) => {
-    const al = interactive ? alertV.current : 0
+    const tp = actionTime('tampa-foto')
+    const al = interactive ? Math.max(alertV.current, tp > 1.45 && tp < 7.15 ? 1 : 0) : 0
     o.color = al > 0.5 ? '#ff2a2a' : '#27d455'
     o.on = al > 0.5 ? 1 : t % 3 < 0.25 ? 0.9 : 0.25
   }
@@ -620,9 +630,31 @@ export function Fotossensor({ interactive = false, flash }: DeviceProps & { flas
       {interactive && (
         <>
           <CameraFlash power={flashPower} position={[0, LEDWIN_Y + 0.04, HD + 0.1]} />
-          <group ref={polaroid} visible={false}>
-            <mesh material={polMat} userData={{ fx: true }} raycast={() => null}><planeGeometry args={[0.8, 0.8]} /></mesh>
-          </group>
+          {/* a foto chega no aplicativo: a tela "Imagem", com a pessoa marcada pela IA (como no app oficial) */}
+          {camPhase === 0 && (
+            <Html position={[1.55, LENS_Y - 0.15, HD + 0.2]} center style={{ pointerEvents: 'none' }}>
+              <div className="fx-tag w-44 overflow-hidden rounded-[22px] border-[5px] border-[#1b1d22] bg-[#0b0c10] text-white shadow-2xl" lang="pt-BR">
+                <div className="flex items-center justify-between px-3 pt-1.5 text-[8px] font-semibold"><span>08:08</span><span>●●● ▮</span></div>
+                <div className="flex items-center gap-2 px-2.5 py-1.5 text-[11px]"><span className="text-base leading-none">‹</span><span className="flex-1">Imagem</span><span>⋮</span></div>
+                <img src={aiPhotoDataUrl(true)} alt="" width={166} height={124} className="block w-full" />
+                <div className="mx-2 my-2 rounded-xl bg-white/5 px-2 py-1.5 text-center text-[9px] leading-snug">
+                  <div className="mx-auto mb-1 h-0.5 w-6 rounded bg-white/30" />
+                  <div>Agora</div>
+                  <div>Detecção de presença</div>
+                  <div className="text-white/50">1 detecção · Sala de estar</div>
+                  <div className="mt-1.5 font-semibold">Pessoa (100% de previsão)</div>
+                  <div className="mt-1 flex justify-center gap-1"><span className="h-1 w-1 rounded-full bg-white" /><span className="h-1 w-1 rounded-full bg-white/30" /><span className="h-1 w-1 rounded-full bg-white/30" /></div>
+                </div>
+              </div>
+            </Html>
+          )}
+          {/* anti-sabotagem: ao abrir a tampa, o fotossensor avisa o módulo (o aviso em texto é o toast da ação) */}
+          {tamperPhase === 0 && (
+            <>
+              <MiniModulo position={[2.4, 1.2, 0]} led={() => 'disparo'} />
+              <RadioPulse from={[0, 0.5, 0]} to={[2.4, 1.2, 0]} color="#ff5050" on={() => actionTime('tampa-foto') > 1.45} />
+            </>
+          )}
           <DetectionFan position={[0, FAN_Y, HD - 0.1]} length={4.2} labels={pirPhase >= 0} alert={() => alertV.current}
             show={() => { const t = actionTime('pir'); return t < 0 ? 0 : bump(t, 0, 1.2, 13, 14) }} />
           <group ref={person} position={[0, FAN_Y, PERSON_Z]} visible={false}><LowPolyPerson scale={1.5} /></group>

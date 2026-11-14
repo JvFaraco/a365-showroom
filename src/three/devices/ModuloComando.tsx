@@ -130,7 +130,7 @@ function stickerGeometry() {
 // Fundo (pelo vídeo de fábrica). Tudo em coordenadas do corpo, antes do achatamento em Y.
 const Y_BOT = BOTTOM
 // Visto por baixo, com a antena para cima: o bolsão fica NO MEIO (um nada para a esquerda) e é um rasgo aberto na
-// borda de trás, por onde saem os cabos; a antena sai ao lado dele, à direita (−X); o furo pequeno fica à esquerda (+X).
+// borda de trás, por onde saem os cabos; a antena sai ao lado dele, à direita (−X), e o furo do reset fica do mesmo lado, mais para a frente.
 const POCKET = { x0: -0.2, x1: 0.3, z1: -0.22, d: 0.3 } // bolsão fundo dos cabos, no meio: começa em z1 e vai até a borda de trás, aberto
 const PLATE = { x0: POCKET.x0 + 0.03, x1: POCKET.x1 - 0.03, z0: -0.78, z1: POCKET.z1 + 0.02 } // moldura da grade de som, na face funda
 const LABEL = { x0: -0.365, x1: 0.375, z0: 0.075, z1: 0.425 } // rebaixo raso da etiqueta (fica vazio): ~59 × 28 mm, à frente do bolsão
@@ -330,8 +330,8 @@ function build() {
     // antena de fio do rádio dos sensores: acompanha a borda da placa
     // antena do rádio: fio amarelo soldado atrás do rádio, que sobe pela borda de trás, por cima da caixinha do alto-falante
     yellow: wire([[-0.43, PCB_Y + 0.012, -0.45], [-0.36, PCB_Y + 0.04, -0.6], [-0.18, 0.075, -0.64], [0.06, 0.08, -0.64], [0.2, 0.075, -0.6], [0.25, 0.07, -0.52], [0.24, 0.062, -0.45]], 0.009),
-    spkA: wire([[0.0, 0.02, -0.27], [-0.08, 0.03, -0.2], [-0.2, PCB_Y + 0.03, -0.14], [-0.24, PCB_Y + 0.012, -0.1]], 0.007),
-    spkB: wire([[0.07, 0.02, -0.27], [-0.01, 0.03, -0.19], [-0.13, PCB_Y + 0.03, -0.11], [-0.2, PCB_Y + 0.012, -0.06]], 0.007),
+    spkA: wire([[0.01, 0.075, -0.33], [-0.06, 0.09, -0.24], [-0.1, 0.06, -0.19], [-0.2, PCB_Y + 0.03, -0.14], [-0.24, PCB_Y + 0.012, -0.1]], 0.007),
+    spkB: wire([[0.08, 0.075, -0.33], [0.02, 0.09, -0.23], [-0.04, 0.06, -0.17], [-0.13, PCB_Y + 0.03, -0.11], [-0.2, PCB_Y + 0.012, -0.06]], 0.007),
     micA: wire([[0.36, -0.2, -0.26], [0.4, -0.1, -0.2], [0.38, PCB_Y + 0.03, -0.12], [0.33, PCB_Y + 0.012, -0.08]], 0.006),
     micB: wire([[0.39, -0.2, -0.24], [0.44, -0.1, -0.17], [0.42, PCB_Y + 0.03, -0.1], [0.37, PCB_Y + 0.012, -0.05]], 0.006),
     // cabo da bateria: sai da ponta da bateria (embaixo da placa), sobe por fora da borda e passa por cima da placa até o conector
@@ -556,8 +556,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
               <mesh material={M.hole} position={[0, -0.0305, 0]} rotation={[Math.PI / 2, 0, 0]}><circleGeometry args={[0.02, 12]} /></mesh>
             </group>
           ))}
-          {/* furo pequeno, à esquerda do bolsão */}
-          <mesh material={M.hole} position={[0.42, Y_BOT - 0.001, -0.56]} rotation={[Math.PI / 2, 0, 0]}><circleGeometry args={[0.022, 14]} /></mesh>
+          {/* furo do botão de reset (o botão fica na placa, logo acima): do lado da antena, ao lado do bolsão */}
+          <mesh material={M.hole} position={[-0.42, Y_BOT - 0.001, -0.56]} rotation={[Math.PI / 2, 0, 0]}><circleGeometry args={[0.022, 14]} /></mesh>
           {/* ressalto da rosca da antena: bloco de face plana na borda de trás, à direita do bolsão; aparece sob o arco de trás da tampa */}
           <RoundedBox args={[0.16, 0.341, 0.122]} radius={0.03} smoothness={3} position={[ANT_X, -0.2255, -0.679]} material={M.grey} />
           {/* duas travas cinza, em lados opostos, que prendem a placa */}
@@ -671,6 +671,8 @@ export function ModuloComando({ interactive = false, ledOverride }: DeviceProps 
           <group position={[GRILLE.x, -0.02, -0.5]}>
             <mesh geometry={g.cone} material={M.black} position={[0, 0.045, 0]} />
             <mesh geometry={g.magnet} material={M.chrome} position={[0, 0.05, 0]} />
+            {/* as duas abas de solda na borda do cone, onde chegam os fios */}
+            {[-0.04, 0.03].map((x) => <mesh key={x} material={M.metal} position={[x, 0.093, 0.172]}><boxGeometry args={[0.03, 0.006, 0.03]} /></mesh>)}
           </group>
           <mesh geometry={g.spkA} material={M.wireBlue} />
           <mesh geometry={g.spkB} material={M.brown} />

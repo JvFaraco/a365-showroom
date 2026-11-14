@@ -195,10 +195,11 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
   const coin = useRef<THREE.Group>(null!)
   const range = useRef<THREE.Mesh>(null!)
   const rangeMat = useMemo(() => fxBasic('#5b8cff', 0), [])
-  const cmdPhase = useActionPhase(CMD, [0, 1.5])
+  // o módulo só confirma o comando ~2,7 s depois do aperto (não é instantâneo): aí o LED dele muda
+  const cmdPhase = useActionPhase(CMD, [0, 2.7])
   const panicOn = useActionPhase('panico') >= 0
   const rangePhase = useActionPhase('alcance', [1.2])
-  const coverPhase = useActionPhase('tampa-controle', [0.8, 1.6], true)
+  const coverPhase = useActionPhase('tampa-controle', [0.8, 1.6])
   const tx = () => {
     if (!interactive) return !!pressed?.()
     const t = cmdTime(), s = useShowroom.getState()
@@ -230,15 +231,24 @@ export function ControleRemoto({ interactive = false, pressed }: DeviceProps & {
       g.position.z = -down * 0.022
     })
     if (!interactive) return
-    // tampa: o controle vira de costas, a tampa inclina ~25° pela borda de cima e sai para trás;
-    // por fim a bateria-moeda desliza para fora do suporte
-    const tt = actionTau('tampa-controle')
-    root.current.rotation.y = tt < 0 ? 0 : seg(tt, 0, 0.8) * Math.PI
-    const off = tt < 0 ? 0 : seg(tt, 2.0, 2.7)
-    cover.current.rotation.x = -(tt < 0 ? 0 : seg(tt, 1.5, 2.0)) * 0.44
+    // troca da bateria: o controle vira de costas, a tampa inclina ~25° pela borda de cima e sai para trás; a bateria
+    // velha desliza para fora do suporte e cai; a nova vem pelo mesmo lado aberto do suporte e entra; a tampa volta e o
+    // controle vira de frente
+    const tt = actionTime('tampa-controle')
+    const sm = (x: number) => x * x * (3 - 2 * x)
+    const at = (a: number, b: number) => (tt < 0 ? 0 : sm(seg(tt, a, b)))
+    root.current.rotation.y = (at(0, 0.8) - at(6.9, 7.7)) * Math.PI
+    const off = at(2.0, 2.7) * (1 - at(5.5, 6.1))
+    cover.current.rotation.x = -at(1.5, 2.0) * (1 - at(6.1, 6.5)) * 0.44
     cover.current.position.set(0, -off * 0.25, -off * 0.7)
-    const slide = tt < 0 ? 0 : seg(tt, 2.9, 3.25), out = tt < 0 ? 0 : seg(tt, 3.2, 3.6)
-    coin.current.position.set(-slide * 0.2 - out * 0.55, -out * 0.25, -out * 0.3)
+    if (tt < 4.05) {
+      const slide = at(2.9, 3.25), out = at(3.2, 3.6), drop = at(3.6, 4.0)
+      coin.current.position.set(-slide * 0.2 - out * 0.55, -out * 0.25 - drop * 2.4, -out * 0.3)
+    } else {
+      const k1 = at(4.1, 4.6), k2 = at(4.6, 5.0), k3 = at(5.0, 5.3)
+      const x = -2.4 + k1 * 1.65 + k2 * 0.55 + k3 * 0.2, y = 0.4 - k1 * 0.65 + k2 * 0.25, z = -0.3 + k2 * 0.3
+      coin.current.position.set(x, y, z)
+    }
     const ta = actionTime('alcance')
     const k = ta < 0 ? 0 : seg(ta, 0.2, 2.6)
     range.current.scale.setScalar(0.2 + k * 5.2)

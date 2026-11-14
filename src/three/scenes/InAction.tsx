@@ -17,11 +17,19 @@ import { DetectionFan } from '../fx/DetectionFan'
 import { SoundWaves } from '../fx/SoundWaves'
 import { bump, seg } from '../common/util'
 import { aiPhotoDataUrl } from '../common/textures'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
 const T = () => ia.t
 const smooth = (x: number) => x * x * (3 - 2 * x)
-// a porta abre empurrada pelo invasor: acelera, desacelera e balança um pouco no fim (fica aberta)
-const doorOpen = () => { const t = T(), k = smooth(seg(t, 3.2, 4.5)); return k + Math.sin(seg(t, 4.5, 5.3) * Math.PI) * 0.05 }
+// a porta: o invasor abre (acelera, desacelera, balança no fim), entra e ela volta a se fechar atrás dele; na fuga ele
+// abre de novo, com força, pouco antes de chegar nela, e sai deixando aberta
+const doorOpen = () => {
+  const t = T()
+  const enter = smooth(seg(t, 3.2, 4.5)) + Math.sin(seg(t, 4.5, 5.3) * Math.PI) * 0.05
+  const close = smooth(seg(t, 6.0, 7.2))
+  const flee = smooth(seg(t, 11.1, 11.5)) + Math.sin(seg(t, 11.5, 12.1) * Math.PI) * 0.08
+  return t < 11.1 ? enter * (1 - close) : flee
+}
 const flashP = () => bump(T(), 7.6, 7.66, 7.74, 8.2)
 const SIREN = [10, 16.5] as const
 const sirenOn = () => T() >= SIREN[0] && T() < SIREN[1]
@@ -122,6 +130,66 @@ function Intruder() {
   )
 }
 
+type Bx = [number, number, number, number, number, number, number?] // centro, tamanho e giro em Y
+const boxes = (items: Bx[]) => mergeGeometries(items.map(([x, y, z, w, h, d, ry = 0]) => { const g = new THREE.BoxGeometry(w, h, d); g.rotateY(ry); g.translate(x, y, z); return g }))
+const cyl = (x: number, y: number, z: number, r0: number, r1: number, h: number, seg = 16) => { const g = new THREE.CylinderGeometry(r0, r1, h, seg); g.translate(x, y, z); return g }
+
+/**
+ * Detalhes que fazem a sala parecer uma casa: cortina e peitoril na janela, abajur de chão e almofadas no sofá,
+ * planta no canto, livros no aparador, quadro, tomadas, interruptor e moldura no alto das paredes. Cada material é uma
+ * malha só (poucas chamadas de desenho); materiais padrão, sem textura (o mesmo programa de shader da sala).
+ */
+function Decor({ trim, wood, rug }: { trim: THREE.Material; wood: THREE.Material; rug: THREE.Material }) {
+  const m = useMemo(() => {
+    const mk = (color: string, roughness = 0.9) => new THREE.MeshStandardMaterial({ color, roughness })
+    return { curtain: mk('#cfc6b5', 0.95), metal: mk('#2c2f36', 0.45), shade: mk('#ece4d2', 0.8), pot: mk('#a2603f', 0.85), leaf: mk('#3e6e48', 0.8), pillow: mk('#b8995e', 0.95), bookA: mk('#8a3b34', 0.8), bookB: mk('#2f4f6e', 0.8) }
+  }, [])
+  const g = useMemo(() => {
+    // cortina: dois painéis com pregas (faixas alternadas para frente e para trás), dos lados da janela
+    const folds: Bx[] = []
+    for (const z0 of [0.18, 1.86]) for (let i = 0; i < 6; i++) folds.push([-3.9 + (i % 2) * 0.035, 1.62, z0 + i * 0.07, 0.03, 2.3, 0.075])
+    const leaves = mergeGeometries([[0, 0.62, 0, 0.32], [0.12, 0.8, 0.05, 0.24], [-0.1, 0.86, -0.06, 0.22], [0.02, 1.02, 0.02, 0.2], [-0.04, 0.7, 0.13, 0.22]].map(([x, y, z, r]) => {
+      const s = new THREE.IcosahedronGeometry(r, 1); s.scale(1, 0.75, 1); s.translate(x, y, z); return s
+    }))
+    leaves.translate(-3.62, 0, -2.6)
+    return {
+      curtain: boxes(folds),
+      // varão da cortina, base e haste do abajur
+      metal: mergeGeometries([(() => { const r = cyl(0, 0, 0, 0.018, 0.018, 2.3, 10); r.rotateX(Math.PI / 2); r.translate(-3.9, 2.82, 1.2); return r })(),
+        cyl(2.3, 0.05, 0.3, 0.17, 0.19, 0.04, 24), cyl(2.3, 0.85, 0.3, 0.014, 0.014, 1.6, 8)]),
+      shade: cyl(2.3, 1.72, 0.3, 0.17, 0.26, 0.32, 24),
+      pot: cyl(-3.62, 0.2, -2.6, 0.2, 0.15, 0.4, 20),
+      leaf: leaves,
+      // almofadas nos cantos do sofá, um pouco tortas
+      pillow: boxes([[-0.32, 0.82, 0.44, 0.42, 0.4, 0.13, 0.25], [1.52, 0.82, 0.44, 0.42, 0.4, 0.13, -0.3]]),
+      // livros deitados na ponta do aparador
+      bookA: boxes([[-3.2, 1.03, -2.3, 0.3, 0.05, 0.22, 0.1], [-3.2, 1.13, -2.3, 0.26, 0.05, 0.2, -0.05]]),
+      bookB: boxes([[-3.2, 1.08, -2.3, 0.28, 0.05, 0.21, -0.15]]),
+      // peitoril da janela, moldura no alto das paredes, interruptor ao lado da porta e tomadas
+      trim: boxes([[-3.93, 1.14, 1.2, 0.12, 0.04, 1.8], [-1.45, 3.36, -2.985, 5.1, 0.08, 0.06], [3.06, 3.36, -2.985, 1.9, 0.08, 0.06], [-3.985, 3.36, 0, 0.06, 0.08, 6],
+        [0.86, 1.1, -2.996, 0.08, 0.12, 0.012], [-1.0, 0.3, -2.996, 0.08, 0.08, 0.012], [-3.996, 0.3, -1.0, 0.012, 0.08, 0.08], [2.6, 0.3, -2.996, 0.08, 0.08, 0.012]]),
+      // quadro na parede da esquerda: moldura e tela
+      frame: boxes([[-3.985, 1.85, -1.1, 0.03, 0.7, 0.55]]),
+      canvas: boxes([[-3.968, 1.85, -1.1, 0.004, 0.58, 0.43]]),
+    }
+  }, [])
+  return (
+    <group raycast={() => null}>
+      <mesh geometry={g.curtain} material={m.curtain} />
+      <mesh geometry={g.metal} material={m.metal} />
+      <mesh geometry={g.shade} material={m.shade} />
+      <mesh geometry={g.pot} material={m.pot} />
+      <mesh geometry={g.leaf} material={m.leaf} />
+      <mesh geometry={g.pillow} material={m.pillow} />
+      <mesh geometry={g.bookA} material={m.bookA} />
+      <mesh geometry={g.bookB} material={m.bookB} />
+      <mesh geometry={g.trim} material={trim} />
+      <mesh geometry={g.frame} material={wood} />
+      <mesh geometry={g.canvas} material={rug} />
+    </group>
+  )
+}
+
 /** Em ação: corte de uma sala com os aparelhos instalados e a sequência de um disparo. */
 export function InAction() {
   const mk = (color: string, roughness = 0.9) => new THREE.MeshStandardMaterial({ color, roughness })
@@ -195,6 +263,7 @@ export function InAction() {
           <mesh material={glass} position={[-0.9, 1.08, 0.06]} rotation={[0, 0, Math.PI / 2]} raycast={() => null}><cylinderGeometry args={[0.016, 0.016, 0.14, 8]} /></mesh>
         </group>
       </group>
+      <Decor trim={trim} wood={wood} rug={rug} />
       {/* móveis: aparador com pés (o módulo fica em cima), sofá com almofadas e tapete */}
       <group raycast={() => null}>
         <mesh material={wood} position={[-2.7, 0.56, -2.3]}><boxGeometry args={[1.3, 0.88, 0.7]} /></mesh>
